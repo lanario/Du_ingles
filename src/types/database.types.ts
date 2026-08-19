@@ -546,6 +546,57 @@ export type Database = {
           },
         ];
       };
+      finance_entries: {
+        Row: {
+          amount_cents: number;
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          id: string;
+          kind: Database["public"]["Enums"]["finance_entry_kind"];
+          occurred_on: string;
+          organization_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          id?: string;
+          kind: Database["public"]["Enums"]["finance_entry_kind"];
+          occurred_on: string;
+          organization_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          id?: string;
+          kind?: Database["public"]["Enums"]["finance_entry_kind"];
+          occurred_on?: string;
+          organization_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "finance_entries_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "finance_entries_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       groups: {
         Row: {
           course_id: string | null;
@@ -882,6 +933,7 @@ export type Database = {
         Row: {
           avatar_url: string | null;
           birth_date: string | null;
+          cpf: string | null;
           created_at: string;
           deleted_at: string | null;
           email: string;
@@ -898,6 +950,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null;
           birth_date?: string | null;
+          cpf?: string | null;
           created_at?: string;
           deleted_at?: string | null;
           email: string;
@@ -914,6 +967,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null;
           birth_date?: string | null;
+          cpf?: string | null;
           created_at?: string;
           deleted_at?: string | null;
           email?: string;
@@ -1093,6 +1147,76 @@ export type Database = {
           },
         ];
       };
+      user_invites: {
+        Row: {
+          accepted_at: string | null;
+          accepted_profile_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          expires_at: string;
+          full_name: string;
+          id: string;
+          organization_id: string;
+          phone: string;
+          role: Database["public"]["Enums"]["app_role"];
+          status: Database["public"]["Enums"]["user_invite_status"];
+          token_hash: string;
+          updated_at: string;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          accepted_profile_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          expires_at: string;
+          full_name: string;
+          id?: string;
+          organization_id: string;
+          phone: string;
+          role: Database["public"]["Enums"]["app_role"];
+          status?: Database["public"]["Enums"]["user_invite_status"];
+          token_hash: string;
+          updated_at?: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          accepted_profile_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          expires_at?: string;
+          full_name?: string;
+          id?: string;
+          organization_id?: string;
+          phone?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          status?: Database["public"]["Enums"]["user_invite_status"];
+          token_hash?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_invites_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_invites_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_invites_accepted_profile_id_fkey";
+            columns: ["accepted_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1149,7 +1273,9 @@ export type Database = {
       attendance_status: "present" | "absent" | "late" | "excused";
       cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
       enrollment_status: "active" | "paused" | "completed" | "cancelled";
+      finance_entry_kind: "revenue" | "professional_cost" | "operating_expense";
       session_status: "scheduled" | "in_progress" | "completed" | "cancelled";
+      user_invite_status: "pending" | "accepted" | "revoked";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1165,7 +1291,9 @@ export const Constants = {
       attendance_status: ["present", "absent", "late", "excused"],
       cefr_level: ["A1", "A2", "B1", "B2", "C1", "C2"],
       enrollment_status: ["active", "paused", "completed", "cancelled"],
+      finance_entry_kind: ["revenue", "professional_cost", "operating_expense"],
       session_status: ["scheduled", "in_progress", "completed", "cancelled"],
+      user_invite_status: ["pending", "accepted", "revoked"],
     },
   },
 } as const;

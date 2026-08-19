@@ -52,3 +52,32 @@ export const createGroupSchema = z.object({
   }),
 });
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
+
+/**
+ * Criação a partir da área logada. O `teacherId` é opcional no schema porque
+ * quem decide não é o formulário: o admin escolhe o responsável, o professor
+ * cai em si mesmo. A Server Action resolve isso pela sessão.
+ */
+export const createGroupFromAppSchema = createGroupSchema
+  .omit({ teacherId: true })
+  .extend({
+    teacherId: z
+      .string()
+      .uuid("Selecione um professor.")
+      .optional()
+      .or(z.literal(""))
+      .transform((v) => v || undefined),
+  });
+export type CreateGroupFromAppInput = z.infer<typeof createGroupFromAppSchema>;
+
+/**
+ * Edição de turma. `schedule` é opcional: mexer em nome ou lotação não deve
+ * obrigar a redigitar a grade de horários.
+ */
+export const updateGroupSchema = createGroupFromAppSchema.partial({ schedule: true }).extend({
+  id: z.string().uuid(),
+  isActive: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .transform((v) => v === true || v === "true"),
+});
+export type UpdateGroupInput = z.infer<typeof updateGroupSchema>;

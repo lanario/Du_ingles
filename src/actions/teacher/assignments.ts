@@ -13,8 +13,6 @@ export async function createAssignmentAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = createAssignmentSchema.safeParse({
     groupId: formData.get("groupId"),
@@ -63,8 +61,6 @@ export async function gradeSubmissionAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = gradeSubmissionSchema.safeParse({
     score: formData.get("score"),

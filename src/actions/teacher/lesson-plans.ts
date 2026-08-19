@@ -17,8 +17,6 @@ export async function createLessonPlanAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = createLessonPlanSchema.safeParse({
     title: formData.get("title"),
@@ -46,9 +44,7 @@ export async function updateLessonPlanContentAction(
   planId: string,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
+  await requireRole(["teacher"]);
 
   const parsed = updateLessonPlanContentSchema.safeParse({
     content: formData.get("content"),
@@ -74,9 +70,7 @@ export async function updateLessonPlanMetaAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
+  await requireRole(["teacher"]);
 
   const parsed = updateLessonPlanMetaSchema.safeParse({
     title: formData.get("title"),
@@ -104,8 +98,6 @@ export async function duplicateLessonPlanAction(
   planId: string,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const result = await repo.duplicateLessonPlan(planId, ctx.organizationId, ctx.userId);
   if (!result.success || !result.id) return fail("INTERNAL_ERROR", "Falha ao duplicar.");
@@ -117,9 +109,7 @@ export async function duplicateLessonPlanAction(
 export async function deleteLessonPlanAction(
   planId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
+  await requireRole(["teacher"]);
 
   const success = await repo.deleteLessonPlan(planId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir.");

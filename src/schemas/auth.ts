@@ -11,7 +11,7 @@ export const requestPasswordResetSchema = z.object({
 });
 export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
 
-const passwordRules = z
+export const passwordRules = z
   .string()
   .min(8, "A senha precisa ter no mínimo 8 caracteres.")
   .regex(/[a-z]/, "A senha precisa de ao menos uma letra minúscula.")

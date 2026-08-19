@@ -15,8 +15,6 @@ export async function createGroupAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = createGroupSchema.safeParse({
     name: formData.get("name"),
@@ -59,8 +57,6 @@ export async function enrollStudentAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = createEnrollmentSchema.safeParse({
     studentId: formData.get("studentId"),
@@ -95,8 +91,6 @@ export async function unenrollStudentAction(
   enrollmentId: string,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const success = await unenrollStudent(enrollmentId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");

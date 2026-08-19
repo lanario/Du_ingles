@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export interface NotificationItem {
   id: string;
@@ -39,4 +40,29 @@ export async function countUnreadNotifications(): Promise<number> {
     .select("id", { count: "exact", head: true })
     .is("read_at", null);
   return count ?? 0;
+}
+
+/**
+ * Notifica outro usuario. Vai por service-role porque `notifications` so tem
+ * policy de select/update para o proprio destinatario — nenhum cliente pode
+ * escrever na caixa de outra pessoa (secao 5.3).
+ */
+export async function createNotification(input: {
+  organizationId: string;
+  recipientId: string;
+  type: string;
+  title: string;
+  body?: string | null;
+  link?: string | null;
+}): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin.from("notifications").insert({
+    organization_id: input.organizationId,
+    recipient_id: input.recipientId,
+    type: input.type,
+    title: input.title,
+    body: input.body ?? null,
+    link: input.link ?? null,
+  });
+  return !error;
 }

@@ -11,8 +11,6 @@ export async function createAnnouncementAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = createAnnouncementSchema.safeParse({
     scope: formData.get("scope"),

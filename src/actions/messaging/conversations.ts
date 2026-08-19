@@ -15,8 +15,6 @@ export async function startConversationAction(
 ): Promise<ActionResult<never>> {
   const ctx = await getSessionContext();
   if (!ctx) return fail("UNAUTHENTICATED", "Sessão expirada.");
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = startConversationSchema.safeParse({
     contactId: formData.get("contactId"),
@@ -68,8 +66,6 @@ export async function sendMessageAction(
 ): Promise<ActionResult<never>> {
   const ctx = await getSessionContext();
   if (!ctx) return fail("UNAUTHENTICATED", "Sessão expirada.");
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = sendMessageSchema.safeParse({ body: formData.get("body") });
   if (!parsed.success) {

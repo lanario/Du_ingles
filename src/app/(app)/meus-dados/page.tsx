@@ -9,7 +9,7 @@ export default async function MeusDadosPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Meus dados</h1>
+      <h1 className="text-2xl font-semibold text-navy-900">Meus dados</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Seus direitos como titular de dados pessoais, conforme a LGPD.
       </p>

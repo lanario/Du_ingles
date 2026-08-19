@@ -1,8 +1,8 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { generateTemporaryPassword } from "@/lib/generate-password";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/domain";
-import type { CreateUserInput, UpdateUserInput } from "@/schemas/users";
+import type { UpdateUserInput } from "@/schemas/users";
 
 export interface UserListItem {
   id: string;
@@ -27,6 +27,7 @@ export interface UserDetail extends UserListItem {
     currentLevel: string;
     guardianName: string | null;
     guardianEmail: string | null;
+    guardianPhone: string | null;
   } | null;
 }
 
@@ -95,7 +96,7 @@ export async function getUserById(id: string): Promise<UserDetail | null> {
   if (profile.role === "student") {
     const { data } = await admin
       .from("student_profiles")
-      .select("current_level, guardian_name, guardian_email")
+      .select("current_level, guardian_name, guardian_email, guardian_phone")
       .eq("profile_id", id)
       .single();
     if (data) {
@@ -103,6 +104,7 @@ export async function getUserById(id: string): Promise<UserDetail | null> {
         currentLevel: data.current_level,
         guardianName: data.guardian_name,
         guardianEmail: data.guardian_email,
+        guardianPhone: data.guardian_phone,
       };
     }
   }
@@ -123,70 +125,6 @@ export async function getUserById(id: string): Promise<UserDetail | null> {
   };
 }
 
-export type CreateUserResult =
-  | { success: true; userId: string; tempPassword: string }
-  | { success: false; message: string };
-
-/**
- * Cria em auth.users (service-role — API não exposta ao client comum),
- * depois o profile e o subtipo (teacher_profiles/student_profiles). Se o
- * profile falhar, desfaz o auth.users criado para não deixar órfão.
- */
-export async function createUser(
-  input: CreateUserInput,
-  organizationId: string,
-): Promise<CreateUserResult> {
-  const admin = createAdminSupabaseClient();
-  const tempPassword = generateTemporaryPassword();
-
-  const { data: created, error: authError } = await admin.auth.admin.createUser({
-    email: input.email,
-    password: tempPassword,
-    email_confirm: true,
-  });
-
-  if (authError || !created.user) {
-    return { success: false, message: authError?.message ?? "Falha ao criar usuário." };
-  }
-
-  const { error: profileError } = await admin.from("profiles").insert({
-    id: created.user.id,
-    organization_id: organizationId,
-    role: input.role as AppRole,
-    full_name: input.fullName,
-    email: input.email,
-    phone: input.phone ?? null,
-    birth_date: input.birthDate ?? null,
-    must_change_password: true,
-  });
-
-  if (profileError) {
-    await admin.auth.admin.deleteUser(created.user.id);
-    return { success: false, message: "Falha ao criar o perfil do usuário." };
-  }
-
-  if (input.role === "teacher") {
-    await admin.from("teacher_profiles").insert({
-      profile_id: created.user.id,
-      organization_id: organizationId,
-      bio: input.bio ?? null,
-      is_public: input.isPublic ?? false,
-    });
-  }
-
-  if (input.role === "student") {
-    await admin.from("student_profiles").insert({
-      profile_id: created.user.id,
-      organization_id: organizationId,
-      guardian_name: input.guardianName ?? null,
-      guardian_email: input.guardianEmail ?? null,
-      guardian_phone: input.guardianPhone ?? null,
-    });
-  }
-
-  return { success: true, userId: created.user.id, tempPassword };
-}
-
 export async function updateUserProfile(
   id: string,
   input: UpdateUserInput,
@@ -201,6 +139,40 @@ export async function updateUserProfile(
     })
     .eq("id", id);
   return !error;
+}
+
+/** Papel + organização do alvo — o mínimo para autorizar uma ação de admin sobre ele. */
+export async function getUserRoleAndOrg(
+  id: string,
+): Promise<{ role: AppRole; organizationId: string } | null> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .select("role, organization_id")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return { role: data.role, organizationId: data.organization_id };
+}
+
+/**
+ * Troca a senha de OUTRA pessoa. Só a Admin API consegue isso: o
+ * `updateUser` do cliente normal age sobre a sessão de quem chama. Marca
+ * `must_change_password` para que a senha definida pelo admin seja apenas
+ * provisória — no próximo login o dono da conta escolhe a dele.
+ */
+export async function setUserPassword(id: string, password: string): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin.auth.admin.updateUserById(id, { password });
+  if (error) return false;
+
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ must_change_password: true })
+    .eq("id", id);
+  return !profileError;
 }
 
 export async function setUserActive(id: string, isActive: boolean): Promise<boolean> {
@@ -237,4 +209,20 @@ export async function changeUserRole(id: string, role: AppRole): Promise<boolean
 export async function revokeUserSessions(id: string): Promise<void> {
   const admin = createAdminSupabaseClient();
   await admin.rpc("revoke_user_sessions", { p_user_id: id });
+}
+
+/**
+ * Nome do próprio usuário logado. Passa pela RLS normal
+ * (`profiles_select_self`) — não precisa de admin client, e a mesma função
+ * serve professor e aluno.
+ */
+export async function getMyDisplayName(userId: string): Promise<string | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return data?.full_name ?? null;
 }

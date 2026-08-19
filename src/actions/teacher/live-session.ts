@@ -25,8 +25,6 @@ export async function startSessionAction(
   lessonPlanId: string | null,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const session = await loadOwnSession(sessionId, ctx.userId);
   if (!session) return fail("NOT_FOUND", "Sessão não encontrada.");
@@ -51,8 +49,6 @@ export async function startSessionAction(
 
 export async function endSessionAction(sessionId: string): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const session = await loadOwnSession(sessionId, ctx.userId);
   if (!session) return fail("NOT_FOUND", "Sessão não encontrada.");
@@ -87,8 +83,6 @@ export async function saveContentAction(
   homework?: string,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const session = await loadOwnSession(sessionId, ctx.userId);
   if (!session) return fail("NOT_FOUND", "Sessão não encontrada.");
@@ -103,7 +97,6 @@ export async function saveContentAction(
 
 export async function saveVersionAction(sessionId: string, content: Json): Promise<void> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs) return;
 
   const session = await loadOwnSession(sessionId, ctx.userId);
   if (!session) return;
@@ -128,8 +121,6 @@ export async function recordAttendanceAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const session = await loadOwnSession(sessionId, ctx.userId);
   if (!session) return fail("NOT_FOUND", "Sessão não encontrada.");

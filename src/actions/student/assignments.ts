@@ -13,8 +13,6 @@ export async function submitAssignmentAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["student"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = submitAssignmentSchema.safeParse({
     content: formData.get("content"),

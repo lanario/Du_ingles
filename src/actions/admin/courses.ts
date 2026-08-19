@@ -12,8 +12,6 @@ export async function createCourseAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   const parsed = createCourseSchema.safeParse({
     name: formData.get("name"),

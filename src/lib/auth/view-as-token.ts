@@ -3,7 +3,8 @@ import { requireViewAsSecret } from "@/lib/env";
 import type { AppRole } from "@/types/domain";
 
 /**
- * Cookie assinado (HMAC-SHA256) do modo "Ver como Professor" (§3.3). Usa
+ * Cookie assinado (HMAC-SHA256) do modo "Ver como" (§3.3) — hoje aceita
+ * tanto `teacher` quanto `student` como papel de pré-visualização. Usa
  * Web Crypto (`crypto.subtle`) em vez do módulo `node:crypto` porque o
  * middleware roda em Edge Runtime — `subtle` funciona nos dois ambientes.
  *
@@ -12,7 +13,8 @@ import type { AppRole } from "@/types/domain";
  */
 export interface ViewAsPayload {
   role: AppRole;
-  targetTeacherId?: string;
+  /** Perfil escolhido como referência da pré-visualização (professor ou aluno). */
+  targetUserId?: string;
   exp: number;
 }
 

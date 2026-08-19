@@ -1,16 +1,18 @@
 import { requireRole } from "@/lib/auth/session";
-import { logoutAction } from "@/actions/auth/logout";
 import { AdminSidebar } from "@/components/features/admin/sidebar";
-import { NotificationBell } from "@/components/features/notification-bell";
+import { RoleSwitch } from "@/components/features/admin/role-switch";
 import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
 
 /**
- * Tema visualmente distinto (grafite + acento âmbar, §8.1) — requisito
- * explícito do cliente para que o admin nunca confunda em qual contexto
- * está. `data-admin-theme` isola os tokens só dentro desta subárvore.
+ * Tema visualmente distinto (§8.1) — requisito explícito do cliente para que
+ * o admin nunca confunda em qual contexto está. A separação agora vem da
+ * inversão do chrome: barra lateral e topo em azul marinho sólido com acento
+ * dourado, contra o canvas claro do conteúdo (a área do aluno/professor usa
+ * exatamente o oposto). `data-admin-theme` mantém os tokens isolados nesta
+ * subárvore.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireRole(["admin"]);
@@ -22,31 +24,27 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div
       data-admin-theme
-      className="flex min-h-screen flex-col bg-admin-background text-admin-foreground"
+      className="fixed inset-0 flex overflow-hidden bg-admin-background text-admin-foreground"
     >
-      <header className="flex h-14 flex-none items-center justify-between border-b border-admin-border px-6">
-        <span className="font-semibold text-admin-accent">Du Inglês · Admin</span>
-        <div className="flex items-center gap-4 text-sm">
-          <NotificationBell
-            userId={ctx.userId}
-            initialNotifications={notifications}
-            initialUnreadCount={unreadCount}
-            theme="admin"
-          />
-          <span>{ctx.email}</span>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="rounded-md border border-admin-border px-3 py-1.5 text-sm hover:bg-admin-muted"
-            >
-              Sair
-            </button>
-          </form>
+      <AdminSidebar
+        organizationLabel="Painel administrativo"
+        userId={ctx.userId}
+        email={ctx.email}
+        initialNotifications={notifications}
+        initialUnreadCount={unreadCount}
+      />
+
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center gap-4 px-6 pt-4 text-admin-foreground">
+          <span className="pointer-events-auto hidden text-sm font-semibold tracking-tight sm:inline md:hidden">
+            Du Inglês <span className="text-accent">· Admin</span>
+          </span>
+          <div className="pointer-events-auto ml-auto rounded-full border border-admin-accent p-0.5">
+            <RoleSwitch active="admin" awayLabel="Aluno" awayRole="student" />
+          </div>
         </div>
-      </header>
-      <div className="flex flex-1">
-        <AdminSidebar />
-        <main className="flex-1 p-6">{children}</main>
+
+        <main className="bg-admin-canvas min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pb-6 pt-20">{children}</main>
       </div>
     </div>
   );

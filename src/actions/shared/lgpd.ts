@@ -3,7 +3,7 @@
 import { requireRole } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { auditLog } from "@/lib/audit";
-import { fail, ok, type ActionResult } from "@/types/action-result";
+import { ok, type ActionResult } from "@/types/action-result";
 
 /**
  * Direito de exclusão (LGPD art. 18, V) implementado como SOLICITAÇÃO, não
@@ -15,8 +15,6 @@ import { fail, ok, type ActionResult } from "@/types/action-result";
  */
 export async function requestDataDeletionAction(): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin", "teacher", "student"]);
-  if (ctx.isViewAs)
-    return fail("READ_ONLY_MODE", "Modo de visualização é somente leitura.");
 
   await auditLog({
     organizationId: ctx.organizationId,

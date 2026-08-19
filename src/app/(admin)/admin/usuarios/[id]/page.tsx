@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/features/admin/users/status-badge";
 import { EditUserForm } from "@/components/features/admin/users/edit-user-form";
 import { UserLifecycleActions } from "@/components/features/admin/users/user-lifecycle-actions";
 import { ChangeRoleForm } from "@/components/features/admin/users/change-role-form";
+import { SetPasswordForm } from "@/components/features/admin/users/set-password-form";
 
 export const metadata: Metadata = { title: "Usuário" };
 
@@ -47,6 +48,18 @@ export default async function UsuarioDetailPage({ params }: PageProps) {
         </h2>
         <ChangeRoleForm userId={user.id} currentRole={user.role} />
       </section>
+
+      {user.role !== "admin" && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-admin-foreground/60">
+            Senha
+          </h2>
+          <SetPasswordForm
+            userId={user.id}
+            userName={user.fullName.split(" ")[0] ?? "o usuário"}
+          />
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-admin-foreground/60">

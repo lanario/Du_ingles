@@ -1,24 +1,85 @@
 @import "tailwindcss";
 
+/**
+ * Paleta Du Inglês: fundo branco, azul marinho como cor institucional e
+ * dourado como acento. Um único conjunto de tokens serve as duas áreas —
+ * o que muda entre elas é o *chrome* (header/sidebar), não o canvas.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-  --ring: #2563eb;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
+  /* Escala azul marinho */
+  --navy-950: #050f22;
+  --navy-900: #0a1f44;
+  --navy-800: #0f2c5c;
+  --navy-700: #143a76;
+  --navy-600: #1c4c95;
+  --navy-500: #2a63b8;
+  --navy-300: #7fa3d8;
+  --navy-100: #dbe5f5;
+  --navy-50: #eef3fb;
 
-  /* Tema isolado da área admin (§8.1): grafite + acento âmbar. */
-  --admin-background: #0f1115;
-  --admin-foreground: #f4f4f5;
-  --admin-muted: #1c1f26;
-  --admin-accent: #f59e0b;
-  --admin-accent-foreground: #0f1115;
-  --admin-border: #26292f;
+  /* Escala dourada */
+  --gold-700: #8a6d1b;
+  --gold-600: #a8842a;
+  --gold-500: #c9a227;
+  --gold-400: #d9b45b;
+  --gold-300: #e7cd8c;
+  --gold-100: #f7edd2;
+  --gold-50: #fdf8ec;
+
+  --background: #ffffff;
+  --foreground: #0b1a33;
+  --muted: #f4f7fc;
+  --muted-foreground: #5a6b85;
+  --border: #e3e9f3;
+  --ring: #c9a227;
+  --primary: #0f2c5c;
+  --primary-foreground: #ffffff;
+  --accent: #c9a227;
+  --accent-foreground: #0b1a33;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #0f7a5a;
+  --warning: #b7791f;
+
+  /*
+   * Área admin (§8.1): continua isolada e reconhecível à primeira vista,
+   * mas agora pela inversão do chrome (shell dourado sólido sobre canvas
+   * branco) em vez de um tema grafite/âmbar separado.
+   */
+  --admin-background: #f6f8fc;
+  --admin-surface: #ffffff;
+  --admin-foreground: #0b1a33;
+  --admin-muted: #eef2f9;
+  --admin-accent: #c9a227;
+  --admin-accent-foreground: #0b1a33;
+  --admin-border: #dfe6f2;
+
+  --admin-shell: #c9a227;
+  --admin-shell-foreground: #050f22;
+  --admin-shell-muted: #a8842a;
+  --admin-shell-border: #8a6d1b;
+
+  /*
+   * Área aluno/professor: espelha o admin com chrome sólido reconhecível à
+   * primeira vista (rail e barra mobile), só que na cor invertida — azul
+   * marinho sólido em vez de dourado sólido — contra o mesmo canvas branco.
+   */
+  --app-shell: #0a1f44;
+  --app-shell-foreground: #eaf0fa;
+  --app-shell-muted: #12294f;
+  --app-shell-border: #1b3a68;
+
+  /* Séries de gráfico — navy → dourado, legíveis lado a lado */
+  --chart-1: #0f2c5c;
+  --chart-2: #c9a227;
+  --chart-3: #2a63b8;
+  --chart-4: #d9b45b;
+  --chart-5: #7fa3d8;
+  --chart-6: #8a6d1b;
+
+  --shadow-card: 0 1px 2px rgba(11, 26, 51, 0.04), 0 8px 24px rgba(11, 26, 51, 0.06);
+  --shadow-card-hover:
+    0 2px 4px rgba(11, 26, 51, 0.06), 0 16px 40px rgba(11, 26, 51, 0.1);
 }
 
 @theme inline {
@@ -30,34 +91,144 @@
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-navy-600: var(--navy-600);
+  --color-navy-500: var(--navy-500);
+  --color-navy-300: var(--navy-300);
+  --color-navy-100: var(--navy-100);
+  --color-navy-50: var(--navy-50);
+
+  --color-gold-700: var(--gold-700);
+  --color-gold-600: var(--gold-600);
+  --color-gold-500: var(--gold-500);
+  --color-gold-400: var(--gold-400);
+  --color-gold-300: var(--gold-300);
+  --color-gold-100: var(--gold-100);
+  --color-gold-50: var(--gold-50);
 
   --color-admin-background: var(--admin-background);
+  --color-admin-surface: var(--admin-surface);
   --color-admin-foreground: var(--admin-foreground);
   --color-admin-muted: var(--admin-muted);
   --color-admin-accent: var(--admin-accent);
   --color-admin-accent-foreground: var(--admin-accent-foreground);
   --color-admin-border: var(--admin-border);
+  --color-admin-shell: var(--admin-shell);
+  --color-admin-shell-foreground: var(--admin-shell-foreground);
+  --color-admin-shell-muted: var(--admin-shell-muted);
+  --color-admin-shell-border: var(--admin-shell-border);
+
+  --color-app-shell: var(--app-shell);
+  --color-app-shell-foreground: var(--app-shell-foreground);
+  --color-app-shell-muted: var(--app-shell-muted);
+  --color-app-shell-border: var(--app-shell-border);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
-    --border: #27272a;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Números de métrica não devem "dançar" enquanto o count-up roda. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/*
+ * Trio de efeitos emprestado do modelo do FV_representante, adaptado à
+ * paleta clara: em vez de clarear uma superfície escura, o brilho pousa
+ * como um véu dourado bem sutil sobre o branco — mesma linguagem, tom
+ * calibrado para não "estourar" sobre `--background`.
+ */
+
+/* Brilho no canto do card, tingido pela cor definida em `--tone` (default
+   dourado). Ativado no hover pelo elemento que o usa. */
+.tone-glow {
+  background: radial-gradient(
+    130% 110% at 0% 0%,
+    color-mix(in srgb, var(--tone, var(--gold-500)) 14%, transparent),
+    transparent 62%
+  );
+}
+
+/* Varredura de luz sobre barras de progresso (frequência, metas). */
+.progress-shimmer {
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, #ffffff 60%, transparent) 50%,
+    transparent 80%
+  );
+  animation: progress-shimmer 2.8s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/*
+ * Canvas de cada área com um degradê sutil tingido pela cor de destaque —
+ * dourado no aluno/professor, azul marinho no admin. O branco predomina; o
+ * degradê só precisa ser perceptível o bastante para marcar em qual área
+ * você está, sem competir com o conteúdo.
+ */
+.bg-app-canvas {
+  background: linear-gradient(160deg, #ffffff 0%, var(--gold-50) 100%);
+}
+
+.bg-admin-canvas {
+  background: linear-gradient(160deg, #ffffff 0%, var(--navy-50) 100%);
+}
+
+/* Ponto pulsante do indicador "ao vivo" (aula em andamento agora). */
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--success);
+  animation: live-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes live-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

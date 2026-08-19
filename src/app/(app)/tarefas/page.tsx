@@ -4,15 +4,9 @@ import { requireRole } from "@/lib/auth/session";
 import { listMyGroups } from "@/repositories/groups";
 import { listGroupAssignments, listStudentAssignments } from "@/repositories/assignments";
 import { CreateAssignmentForm } from "@/components/features/assignments/create-assignment-form";
+import { StudentAssignments } from "@/components/features/assignments/student-assignments";
 
 export const metadata: Metadata = { title: "Tarefas" };
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pendente",
-  submitted: "Enviada",
-  graded: "Corrigida",
-  late: "Atrasada",
-};
 
 interface PageProps {
   searchParams: Promise<{ turma?: string }>;
@@ -24,37 +18,14 @@ export default async function TarefasPage({ searchParams }: PageProps) {
   if (ctx.effectiveRole === "student") {
     const assignments = await listStudentAssignments(ctx.userId);
     return (
-      <div>
-        <h1 className="text-2xl font-semibold">Tarefas</h1>
-        {assignments.length === 0 ? (
-          <p className="mt-8 rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-            Nenhuma tarefa por aqui ainda.
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-navy-900">Tarefas</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            O que seus professores esperam de você, por prazo.
           </p>
-        ) : (
-          <ul className="mt-6 divide-y divide-border rounded-lg border border-border">
-            {assignments.map((a) => (
-              <li key={a.id}>
-                <Link
-                  href={`/tarefas/${a.id}`}
-                  className="flex items-center justify-between px-4 py-3 text-sm hover:bg-muted"
-                >
-                  <div>
-                    <p className="font-medium">{a.title}</p>
-                    <p className="text-muted-foreground">{a.groupName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p>{STATUS_LABEL[a.myStatus ?? "pending"]}</p>
-                    {a.dueAt && (
-                      <p className="text-muted-foreground">
-                        até {new Date(a.dueAt).toLocaleDateString("pt-BR")}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        </div>
+        <StudentAssignments assignments={assignments} />
       </div>
     );
   }
@@ -66,7 +37,7 @@ export default async function TarefasPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Tarefas</h1>
+      <h1 className="text-2xl font-semibold text-navy-900">Tarefas</h1>
 
       {groups.length === 0 ? (
         <p className="mt-8 rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">

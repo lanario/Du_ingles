@@ -48,14 +48,17 @@ export function UserLifecycleActions({ user }: { user: UserDetail }) {
           </button>
         )}
 
-        {user.role === "teacher" && (
+        {(user.role === "teacher" || user.role === "student") && (
           <form action={enterViewAsModeAction}>
-            <input type="hidden" name="targetTeacherId" value={user.id} />
+            <input type="hidden" name="role" value={user.role} />
+            <input type="hidden" name="targetUserId" value={user.id} />
             <button
               type="submit"
               className="rounded-md border border-admin-border px-3 py-1.5 text-sm hover:bg-admin-muted"
             >
-              Ver como este professor
+              {user.role === "teacher"
+                ? "Ver como este professor"
+                : "Ver como este aluno"}
             </button>
           </form>
         )}

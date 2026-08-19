@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { getSessionPdfUrlAction } from "@/actions/shared/session-pdf";
+import { DownloadIcon } from "@/components/ui/icons";
 
 export function DownloadPdfButton({
   sessionId,
@@ -33,8 +34,9 @@ export function DownloadPdfButton({
             window.open(result.data, "_blank", "noopener,noreferrer");
           });
         }}
-        className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-navy-700 transition-colors hover:text-navy-900 disabled:opacity-50"
       >
+        <DownloadIcon className="h-4 w-4" />
         {isPending ? "Gerando link…" : "Baixar PDF"}
       </button>
       {error && <span className="text-xs text-destructive">{error}</span>}

@@ -1,21 +1,9 @@
 import * as usersRepo from "@/repositories/users";
 import type { AppRole } from "@/types/domain";
-import type { CreateUserInput, UpdateUserInput } from "@/schemas/users";
+import type { UpdateUserInput } from "@/schemas/users";
 
 export type ServiceResult<T> =
   { success: true; data: T } | { success: false; message: string };
-
-export async function createUser(
-  input: CreateUserInput,
-  organizationId: string,
-): Promise<ServiceResult<{ userId: string; tempPassword: string }>> {
-  const result = await usersRepo.createUser(input, organizationId);
-  if (!result.success) return { success: false, message: result.message };
-  return {
-    success: true,
-    data: { userId: result.userId, tempPassword: result.tempPassword },
-  };
-}
 
 export async function updateUser(
   id: string,
@@ -62,5 +50,42 @@ export async function changeUserRole(
   // Claim `app_role` só é atualizada na renovação do token — sem revogar a
   // sessão, o usuário continuaria agindo com o papel antigo até o refresh (§3.1).
   await usersRepo.revokeUserSessions(id);
+  return { success: true, data: undefined };
+}
+
+/**
+ * Redefinição de senha pelo admin. A regra do produto é estreita de
+ * propósito: o admin troca a senha de professores e alunos, e de mais
+ * ninguém. Contas admin — inclusive a dele — ficam de fora, senão um admin
+ * poderia tomar a conta de outro (e a própria já tem o fluxo de
+ * "esqueci minha senha"). A checagem mora aqui, junto da regra, e não só na
+ * UI: qualquer chamada da action precisa passar por ela.
+ */
+export async function setUserPassword(
+  actorOrganizationId: string,
+  targetId: string,
+  password: string,
+): Promise<ServiceResult<void>> {
+  const target = await usersRepo.getUserRoleAndOrg(targetId);
+  if (!target) return { success: false, message: "Usuário não encontrado." };
+
+  if (target.organizationId !== actorOrganizationId) {
+    return { success: false, message: "Usuário não encontrado." };
+  }
+
+  if (target.role === "admin") {
+    return {
+      success: false,
+      message:
+        "A senha de um admin só pode ser alterada pelo próprio, pelo fluxo de recuperação.",
+    };
+  }
+
+  const ok = await usersRepo.setUserPassword(targetId, password);
+  if (!ok) return { success: false, message: "Falha ao redefinir a senha." };
+
+  // Senha trocada por terceiro: derruba as sessões abertas para que ninguém
+  // siga autenticado com a credencial antiga (§3.4).
+  await usersRepo.revokeUserSessions(targetId);
   return { success: true, data: undefined };
 }

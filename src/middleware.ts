@@ -24,11 +24,39 @@ function roleHomePath(role: AppRole): string {
   return role === "admin" ? "/admin" : "/dashboard";
 }
 
+/**
+ * Mesma regra do `getSessionContext`: `profiles.role` manda, a claim
+ * `app_role` é só fallback. A claim depende do `custom_access_token_hook`
+ * estar ligado nas Auth Hooks do projeto e só se atualiza na renovação do
+ * token — confiar nela sozinha derruba um admin em `/403` no próprio painel.
+ */
+async function resolveRole(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string,
+): Promise<AppRole> {
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  const profileRole = (data as { role?: AppRole } | null)?.role;
+  if (profileRole) return profileRole;
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const claims = session ? decodeJwtClaims(session.access_token) : {};
+  return (
+    typeof claims["app_role"] === "string" ? claims["app_role"] : "student"
+  ) as AppRole;
+}
+
 export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  // O Fast Refresh do `next dev` injeta o runtime via `eval()` (devtool
+  // `eval-source-map` do webpack) — sem 'unsafe-eval' aqui, o CSP mata a
+  // hidratação inteira da página em dev. Em produção o build não usa eval,
+  // então a política fica tão restrita quanto antes.
+  const isDev = process.env.NODE_ENV !== "production";
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.supabase.co",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
@@ -85,13 +113,7 @@ export async function middleware(request: NextRequest) {
       return redirectTo("/login");
     }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const claims = session ? decodeJwtClaims(session.access_token) : {};
-    const appRole = (
-      typeof claims["app_role"] === "string" ? claims["app_role"] : "student"
-    ) as AppRole;
+    const appRole = await resolveRole(supabase, user.id);
 
     if (pathname !== FORCED_PASSWORD_PATH) {
       const { data: profile } = await supabase
@@ -112,13 +134,7 @@ export async function middleware(request: NextRequest) {
     // Usuário já autenticado batendo em /login etc. — manda para o painel
     // correto. Se ainda precisar trocar a senha, a rota protegida seguinte
     // vai interceptar e mandar para /definir-senha.
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const claims = session ? decodeJwtClaims(session.access_token) : {};
-    const appRole = (
-      typeof claims["app_role"] === "string" ? claims["app_role"] : "student"
-    ) as AppRole;
+    const appRole = await resolveRole(supabase, user.id);
     return redirectTo(roleHomePath(appRole));
   }
 

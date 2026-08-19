@@ -48,10 +48,23 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   } = await supabase.auth.getSession();
   const claims = session ? decodeJwtClaims(session.access_token) : {};
 
-  const realRole = (
-    typeof claims["app_role"] === "string" ? claims["app_role"] : "student"
-  ) as AppRole;
-  const organizationId = typeof claims["org_id"] === "string" ? claims["org_id"] : "";
+  // `profiles` é a fonte da verdade do papel — não o JWT. A claim `app_role`
+  // só existe se o `custom_access_token_hook` estiver ligado nas Auth Hooks do
+  // projeto, e mesmo ligado ela só muda na renovação do token: promover
+  // alguém a admin ficaria invisível até o refresh. Ler o perfil não custa
+  // round-trip novo (a query de `must_change_password` já acontecia aqui);
+  // as claims ficam só como fallback caso a linha não exista.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, organization_id, must_change_password")
+    .eq("id", user.id)
+    .single();
+
+  const claimRole = typeof claims["app_role"] === "string" ? claims["app_role"] : null;
+  const claimOrg = typeof claims["org_id"] === "string" ? claims["org_id"] : null;
+
+  const realRole = (profile?.role ?? claimRole ?? "student") as AppRole;
+  const organizationId = profile?.organization_id ?? claimOrg ?? "";
 
   let effectiveRole = realRole;
   let isViewAs = false;
@@ -68,14 +81,6 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     }
   }
 
-  // must_change_password mora em `profiles`, não no JWT — precisa de uma
-  // query extra, mas passa pela mesma policy `profiles_select_self`.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("must_change_password")
-    .eq("id", user.id)
-    .single();
-
   return {
     userId: user.id,
     email: user.email ?? "",
@@ -87,30 +92,27 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   };
 });
 
+/** Admin é o papel de maior privilégio: nenhuma tela ou escrita lhe é negada. */
+export function isAdmin(ctx: SessionContext): boolean {
+  return ctx.realRole === "admin";
+}
+
 /**
- * Autentica e autoriza no servidor. Aceita tanto o papel efetivo (para que
- * o admin em modo "ver como" veja as mesmas telas do professor) quanto o
- * papel real (para que o admin sempre consiga voltar ao próprio painel).
+ * Autentica e autoriza no servidor. Aceita o papel efetivo (para que o admin
+ * navegando como professor/aluno veja as mesmas telas deles) e o papel real.
+ *
+ * Admin passa sempre — trocar de contexto é uma lente sobre a interface, não
+ * um rebaixamento de privilégio.
  */
 export async function requireRole(allowed: AppRole[]): Promise<SessionContext> {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
-  if (!allowed.includes(ctx.effectiveRole) && !allowed.includes(ctx.realRole)) {
+  if (
+    !isAdmin(ctx) &&
+    !allowed.includes(ctx.effectiveRole) &&
+    !allowed.includes(ctx.realRole)
+  ) {
     redirect("/403");
   }
   return ctx;
-}
-
-export class ReadOnlyModeError extends Error {
-  constructor(message = "Modo de visualização é somente leitura.") {
-    super(message);
-    this.name = "ReadOnlyModeError";
-  }
-}
-
-/** Chamar no início de toda Server Action de escrita. */
-export function assertNotViewAs(ctx: SessionContext): void {
-  if (ctx.isViewAs) {
-    throw new ReadOnlyModeError();
-  }
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
+
 export function LibraryFilter({
   groups,
   selected,
@@ -8,12 +10,12 @@ export function LibraryFilter({
   selected?: string;
 }) {
   return (
-    <form className="mt-6" action="/biblioteca">
-      <select
+    <form className="mt-5" action="/biblioteca">
+      <Select
         name="turma"
         defaultValue={selected ?? ""}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="h-10 rounded-md border border-border bg-background px-3 text-sm"
+        className="w-auto min-w-56"
       >
         <option value="">Todas as turmas</option>
         {groups.map((g) => (
@@ -21,7 +23,7 @@ export function LibraryFilter({
             {g.name}
           </option>
         ))}
-      </select>
+      </Select>
     </form>
   );
 }

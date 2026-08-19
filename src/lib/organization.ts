@@ -20,3 +20,11 @@ export const getDefaultOrganizationId = cache(async (): Promise<string> => {
   }
   return data.id;
 });
+
+/** Nome de exibição da organização — usado nos cabeçalhos do painel. */
+export const getOrganizationName = cache(async (id: string): Promise<string> => {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin.from("organizations").select("name").eq("id", id).single();
+
+  return data?.name ?? "Du Inglês";
+});
