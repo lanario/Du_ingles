@@ -276,6 +276,44 @@ export function LockIcon(props: IconProps) {
   );
 }
 
+/** Cadeado aberto — turma liberada para os alunos escreverem. */
+export function UnlockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="4.5" y="10" width="15" height="10.5" rx="2.5" />
+      <path d="M8 10V7.5a4 4 0 0 1 7.7-1.5" />
+    </Icon>
+  );
+}
+
+export function SendIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20.5 3.5 10.8 13.2" />
+      <path d="M20.5 3.5 14.3 20.5l-3.5-7.3-7.3-3.5Z" />
+    </Icon>
+  );
+}
+
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M19 12H5" />
+      <path d="m11 6-6 6 6 6" />
+    </Icon>
+  );
+}
+
+export function MegaphoneIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9.5v4a1.5 1.5 0 0 0 1.5 1.5H8l8 4.5V5L8 9.5H5.5A1.5 1.5 0 0 0 4 11Z" />
+      <path d="M19 9.8a3.5 3.5 0 0 1 0 4.4" />
+      <path d="M8 15.5V20" />
+    </Icon>
+  );
+}
+
 export function GraduationIcon(props: IconProps) {
   return (
     <Icon {...props}>

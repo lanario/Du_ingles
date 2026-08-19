@@ -100,6 +100,7 @@ export function AdminDashboardView({
             trend={studentTrend}
             changePercent={data.students.delta.changePercent}
             changeLabel="novos alunos vs. mês anterior"
+            hint={`${formatNumber(data.students.paying)} pagante(s) · ${formatNumber(data.students.inactive)} inativo(s)`}
           />
         </RevealItem>
         <RevealItem>
@@ -137,6 +138,7 @@ export function AdminDashboardView({
             tone="gold"
             trend={sessionTrend}
             changePercent={data.sessions.delta.changePercent}
+            hint={`${formatNumber(data.sessions.hoursThisMonth, 1)} h ministradas · ${formatNumber(data.sessions.cancelledThisMonth)} cancelada(s)`}
           />
         </RevealItem>
         <RevealItem>
@@ -272,7 +274,7 @@ export function AdminDashboardView({
           </Reveal>
 
           <Reveal delay={0.14} className="xl:col-span-2">
-            <Card className="h-full">
+            <Card className="flex h-full flex-col">
               <CardHeader
                 title={`DRE Simplificado — ${finance.statement.monthLabel}`}
                 subtitle="Competência fechada do mês corrente, conta a conta."
@@ -356,9 +358,15 @@ export function AdminDashboardView({
                   <EmptyState>Nenhum lead registrado.</EmptyState>
                 ) : (
                   <BarList
+                    valueLabel="lead(s)"
                     rows={data.leads.sources.map((source) => ({
                       label: source.source,
                       value: source.count,
+                      detail: `${formatNumber(source.count)} de ${formatNumber(data.leads.total)} lead(s) no total · ${
+                        data.leads.total > 0
+                          ? formatNumber((100 * source.count) / data.leads.total, 1)
+                          : "0"
+                      }% da captação`,
                     }))}
                   />
                 )}
@@ -398,11 +406,14 @@ export function AdminDashboardView({
                 ) : (
                   <BarList
                     max={100}
+                    suffix="%"
+                    valueLabel="de ocupação"
                     rows={data.occupancy.slice(0, 8).map((group) => ({
                       label: group.name,
                       sublabel: `${group.level} · ${group.teacherName}`,
                       value: group.occupancyRate,
                       display: `${group.enrolled}/${group.maxStudents}`,
+                      detail: `${formatNumber(group.maxStudents - group.enrolled)} vaga(s) livre(s) · professor(a) ${group.teacherName} · nível ${group.level}`,
                       color:
                         group.occupancyRate >= 90
                           ? `linear-gradient(90deg, ${PALETTE.gold}, ${PALETTE.goldSoft})`
@@ -440,7 +451,7 @@ export function AdminDashboardView({
                       {data.teacherRanking.slice(0, 8).map((teacher, index) => (
                         <tr
                           key={teacher.teacherId}
-                          className="border-b border-admin-border/50 last:border-0 transition-colors hover:bg-navy-50/60"
+                          className="group/row border-b border-admin-border/50 transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-navy-50/70 hover:shadow-[inset_2px_0_0_0_var(--gold-500)]"
                         >
                           <td className="px-5 py-2.5">
                             <span className="flex items-center gap-2.5">
@@ -454,8 +465,30 @@ export function AdminDashboardView({
                               >
                                 {index + 1}
                               </span>
-                              <span className="truncate font-medium text-admin-foreground">
-                                {teacher.name}
+                              <span className="min-w-0">
+                                <span className="block truncate font-medium text-admin-foreground">
+                                  {teacher.name}
+                                </span>
+                                {/* Derivadas que não cabem em coluna própria,
+                                    reveladas quando a linha está sob o mouse. */}
+                                <span className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out group-hover/row:grid-rows-[1fr]">
+                                  <span className="tabular block overflow-hidden text-[11px] text-admin-foreground/55 opacity-0 transition-opacity duration-200 group-hover/row:opacity-100">
+                                    {formatNumber(
+                                      teacher.groups > 0
+                                        ? teacher.students / teacher.groups
+                                        : 0,
+                                      1,
+                                    )}{" "}
+                                    aluno(s) por turma ·{" "}
+                                    {formatNumber(
+                                      teacher.sessionsCompleted > 0
+                                        ? teacher.hours / teacher.sessionsCompleted
+                                        : 0,
+                                      1,
+                                    )}{" "}
+                                    h por aula
+                                  </span>
+                                </span>
                               </span>
                             </span>
                           </td>
@@ -502,7 +535,7 @@ export function AdminDashboardView({
                     {data.upcoming.map((session) => (
                       <li
                         key={session.id}
-                        className="flex items-center justify-between gap-4 rounded-lg px-3 py-3 transition-colors hover:bg-navy-50/60"
+                        className="group/row flex items-center justify-between gap-4 rounded-lg px-3 py-3 transition-[background-color,box-shadow,transform] duration-200 ease-out hover:translate-x-0.5 hover:bg-navy-50/70 hover:shadow-[inset_2px_0_0_0_var(--gold-500)]"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-admin-foreground">
@@ -553,26 +586,58 @@ export function AdminDashboardView({
                     {data.riskStudents.map((student) => (
                       <li
                         key={`${student.groupName}:${student.studentId}`}
-                        className="flex items-center justify-between gap-4 rounded-lg px-3 py-3 transition-colors hover:bg-navy-50/60"
+                        className="group/row block rounded-lg px-3 py-3 transition-[background-color,box-shadow,transform] duration-200 ease-out hover:translate-x-0.5 hover:bg-navy-50/70 hover:shadow-[inset_2px_0_0_0_var(--gold-500)]"
                       >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-admin-foreground">
-                            {student.name}
-                          </p>
-                          <p className="truncate text-xs text-admin-foreground/55">
-                            {student.groupName} · {student.sessionsMissed} falta(s)
-                          </p>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-admin-foreground">
+                              {student.name}
+                            </p>
+                            <p className="truncate text-xs text-admin-foreground/55">
+                              {student.groupName} · {student.sessionsMissed} falta(s)
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              "tabular flex-none rounded-full px-2.5 py-1 text-xs font-semibold",
+                              student.attendanceRate < 50
+                                ? "bg-red-50 text-red-700"
+                                : "bg-amber-50 text-amber-700",
+                            )}
+                          >
+                            {formatNumber(student.attendanceRate, 1)}%
+                          </span>
                         </div>
-                        <span
-                          className={cn(
-                            "tabular flex-none rounded-full px-2.5 py-1 text-xs font-semibold",
-                            student.attendanceRate < 50
-                              ? "bg-red-50 text-red-700"
-                              : "bg-amber-50 text-amber-700",
-                          )}
-                        >
-                          {formatNumber(student.attendanceRate, 1)}%
-                        </span>
+
+                        {/* Detalhe do hover: a frequência do aluno contra o
+                            corte de 75%, marcado por um tique na régua. */}
+                        <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out group-hover/row:grid-rows-[1fr]">
+                          <div className="overflow-hidden opacity-0 transition-opacity duration-200 group-hover/row:pt-2.5 group-hover/row:opacity-100">
+                            <div className="relative h-1.5 rounded-full bg-admin-muted">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full",
+                                  student.attendanceRate < 50
+                                    ? "bg-red-500"
+                                    : "bg-amber-500",
+                                )}
+                                style={{
+                                  width: `${Math.min(100, student.attendanceRate)}%`,
+                                }}
+                              />
+                              <span
+                                className="absolute -top-0.5 h-2.5 w-px bg-admin-foreground/40"
+                                style={{ left: "75%" }}
+                                aria-hidden
+                              />
+                            </div>
+                            <p className="tabular mt-1 text-[11px] text-admin-foreground/55">
+                              {formatNumber(75 - student.attendanceRate, 1)} ponto(s)
+                              abaixo do corte de 75% · {student.sessionsMissed} falta(s)
+                              em {student.groupName}
+                            </p>
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -602,13 +667,17 @@ function MiniStat({
   tone?: "neutral" | "gold";
 }) {
   return (
-    <div className="border-b border-admin-border/70 px-5 py-4 last:border-b-0 sm:border-b-0">
-      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-admin-foreground/45">
+    <div className="group/stat relative border-b border-admin-border/70 px-5 py-4 transition-colors duration-300 last:border-b-0 hover:bg-navy-50/50 sm:border-b-0">
+      <span
+        className="absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-navy-700 to-gold-500 transition-transform duration-300 ease-out group-hover/stat:scale-x-100"
+        aria-hidden
+      />
+      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-admin-foreground/45 transition-colors duration-300 group-hover/stat:text-admin-foreground/65">
         {label}
       </p>
       <p
         className={cn(
-          "mt-1 text-xl font-semibold",
+          "mt-1 text-xl font-semibold transition-transform duration-300 ease-out group-hover/stat:-translate-y-0.5",
           tone === "gold" ? "text-gold-700" : "text-admin-foreground",
         )}
       >

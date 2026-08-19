@@ -5,7 +5,8 @@ export const sendMessageSchema = z.object({
 });
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
 
-export const startConversationSchema = z.object({
-  contactId: z.string().uuid("Selecione um contato."),
+export const togglePostingSchema = z.object({
+  conversationId: z.string().uuid(),
+  allowed: z.boolean(),
 });
-export type StartConversationInput = z.infer<typeof startConversationSchema>;
+export type TogglePostingInput = z.infer<typeof togglePostingSchema>;

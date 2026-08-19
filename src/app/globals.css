@@ -209,6 +209,54 @@ body {
   background: linear-gradient(160deg, #ffffff 0%, var(--navy-50) 100%);
 }
 
+/*
+ * Chat de turma. Os mesmos componentes servem a área do aluno/professor e a
+ * do admin — o que muda é a origem dos tokens, declarada uma vez na raiz da
+ * tela. Sem isso, cada peça do chat precisaria carregar um prop `tone` só
+ * para escolher entre `border-border` e `border-admin-border`.
+ */
+.chat-theme {
+  --chat-surface: var(--background);
+  --chat-canvas: var(--muted);
+  --chat-border: var(--border);
+  --chat-fg: var(--foreground);
+  --chat-muted-fg: var(--muted-foreground);
+  --chat-accent: var(--accent);
+  --chat-own: var(--primary);
+  --chat-own-fg: var(--primary-foreground);
+}
+
+[data-admin-theme] .chat-theme {
+  --chat-surface: var(--admin-surface);
+  --chat-canvas: var(--admin-muted);
+  --chat-border: var(--admin-border);
+  --chat-fg: var(--admin-foreground);
+  --chat-muted-fg: color-mix(in srgb, var(--admin-foreground) 55%, transparent);
+  --chat-accent: var(--admin-accent);
+  --chat-own: var(--navy-800);
+  --chat-own-fg: #ffffff;
+}
+
+/*
+ * Papel de parede da thread: uma trama diagonal quase imperceptível que
+ * separa o "chão" da conversa das superfícies sólidas ao redor (lista,
+ * cabeçalho, campo de escrita) sem introduzir mais uma cor.
+ */
+.chat-weave {
+  background-color: var(--chat-canvas);
+  background-image:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      color-mix(in srgb, var(--chat-accent) 7%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--chat-fg) 2.5%, transparent) 0 1px,
+      transparent 1px 11px
+    );
+}
+
 /* Ponto pulsante do indicador "ao vivo" (aula em andamento agora). */
 .live-dot::after {
   content: "";

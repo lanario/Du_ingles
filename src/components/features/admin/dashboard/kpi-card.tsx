@@ -59,11 +59,15 @@ export function KpiCard({
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-admin-border bg-admin-surface p-5",
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-20px_rgba(11,26,51,0.4)]",
-        "transition-colors hover:border-gold-300",
+        "transition-[box-shadow,border-color] duration-300 ease-out hover:border-navy-100",
+        "hover:shadow-[0_2px_6px_rgba(11,26,51,0.06),0_24px_50px_-26px_rgba(11,26,51,0.45)]",
       )}
     >
       <span
-        className={cn("absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", TONE_TOP[tone])}
+        className={cn(
+          "absolute inset-x-0 top-0 h-0.5 origin-left bg-gradient-to-r transition-transform duration-500 ease-out group-hover:scale-y-[2.5]",
+          TONE_TOP[tone],
+        )}
         aria-hidden
       />
 
@@ -71,6 +75,7 @@ export function KpiCard({
         <span
           className={cn(
             "flex h-9 w-9 flex-none items-center justify-center rounded-xl",
+            "transition-transform duration-300 ease-out group-hover:-rotate-6 group-hover:scale-110",
             TONE_RING[tone],
           )}
           aria-hidden
@@ -78,7 +83,7 @@ export function KpiCard({
           {icon}
         </span>
         {trend && trend.length > 1 && (
-          <span className="w-24 opacity-70 transition-opacity group-hover:opacity-100">
+          <span className="w-24 opacity-70 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:opacity-100">
             <Sparkline
               values={trend}
               color={tone === "gold" ? PALETTE.gold : PALETTE.navyMid}
@@ -87,7 +92,7 @@ export function KpiCard({
         )}
       </div>
 
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-admin-foreground/50">
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-admin-foreground/50 transition-colors duration-300 group-hover:text-admin-foreground/70">
         {label}
       </p>
       <p className="mt-1 text-3xl font-semibold tracking-tight text-admin-foreground">
@@ -99,6 +104,16 @@ export function KpiCard({
           <DeltaBadge changePercent={changePercent} label={changeLabel} />
         ) : (
           hint && <p className="text-xs text-admin-foreground/55">{hint}</p>
+        )}
+
+        {/* Contexto extra só quando o admin pede atenção ao card. O truque de
+            grid 0fr→1fr anima altura sem precisar medir o conteúdo. */}
+        {changePercent !== undefined && hint && (
+          <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]">
+            <p className="overflow-hidden text-xs text-admin-foreground/50 opacity-0 transition-opacity duration-300 group-hover:pt-1.5 group-hover:opacity-100">
+              {hint}
+            </p>
+          </div>
         )}
       </div>
     </motion.article>

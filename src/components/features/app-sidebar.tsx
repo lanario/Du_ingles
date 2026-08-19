@@ -152,7 +152,7 @@ function sectionsFor(role: AppRole) {
 }
 
 const ROW_CLASS =
-  "group relative flex h-10 w-full items-center gap-3 rounded-xl pl-2.5 pr-3 text-sm transition-colors " +
+  "group relative flex h-10 w-full items-center gap-3 rounded-2xl pl-2.5 pr-3 text-sm transition-colors " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-app-shell";
 
 /** Emblema "Du" — mesma peça usada em todo o chrome logado, aqui em duas
@@ -407,7 +407,7 @@ function Sidebar({
                           ROW_CLASS,
                           active
                             ? "font-medium text-app-shell-foreground"
-                            : "text-app-shell-foreground/70 hover:text-app-shell-foreground",
+                            : "text-app-shell-foreground/70 hover:bg-gold-400/15 hover:text-gold-300",
                         )}
                       >
                         {active && (
@@ -419,7 +419,7 @@ function Sidebar({
                               damping: 38,
                               mass: 0.7,
                             }}
-                            className="absolute inset-0 -z-10 rounded-xl bg-app-shell-foreground/10"
+                            className="absolute inset-0 -z-10 rounded-2xl bg-gold-400/15"
                           />
                         )}
                         <span
@@ -435,7 +435,7 @@ function Sidebar({
                             "h-[18px] w-[18px] flex-none transition-colors",
                             active
                               ? "text-gold-400"
-                              : "text-app-shell-foreground/60 group-hover:text-app-shell-foreground",
+                              : "text-app-shell-foreground/60 group-hover:text-gold-300",
                           )}
                         />
                         <span
@@ -504,7 +504,7 @@ function Sidebar({
 const DRAWER_CLASS = "w-[min(18rem,84vw)]";
 
 const MOBILE_ROW_CLASS =
-  "group relative flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors " +
+  "group relative flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 text-[15px] font-medium transition-colors " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-app-shell";
 
 function NavMobile({
@@ -640,8 +640,8 @@ function NavMobile({
                             className={cn(
                               MOBILE_ROW_CLASS,
                               active
-                                ? "bg-app-shell-foreground/10 text-app-shell-foreground"
-                                : "text-app-shell-foreground/70 active:bg-app-shell-foreground/10",
+                                ? "bg-gold-400/15 text-app-shell-foreground"
+                                : "text-app-shell-foreground/70 hover:bg-gold-400/15 hover:text-gold-300 active:bg-gold-400/20",
                             )}
                           >
                             {active && (

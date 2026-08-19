@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
@@ -202,11 +202,34 @@ export function RevealItem({
   );
 }
 
+/** Tooltip flutuante dos gráficos — mesma casca visual em todos eles. */
+export function ChartTooltip({
+  children,
+  className,
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      style={style}
+      className={cn(
+        "pointer-events-none z-20 rounded-lg border border-admin-border bg-white/95 px-3 py-2 shadow-lg backdrop-blur",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** Cartão base do painel: superfície branca, borda fria, elevação no hover. */
 export function Card({
   children,
   className,
-  interactive = false,
+  interactive = true,
 }: {
   children: ReactNode;
   className?: string;
@@ -219,9 +242,10 @@ export function Card({
       whileHover={interactive && !reduced ? { y: -3 } : undefined}
       transition={{ type: "spring", stiffness: 320, damping: 26 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-admin-border bg-admin-surface",
+        "group/card relative overflow-hidden rounded-2xl border border-admin-border bg-admin-surface",
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-18px_rgba(11,26,51,0.35)]",
-        interactive && "transition-colors hover:border-gold-300",
+        interactive &&
+          "transition-[box-shadow,border-color] duration-300 ease-out hover:border-navy-100 hover:shadow-[0_2px_6px_rgba(11,26,51,0.06),0_24px_50px_-26px_rgba(11,26,51,0.45)]",
         className,
       )}
     >
@@ -240,7 +264,7 @@ export function CardHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-admin-border/70 px-5 py-4">
+    <div className="flex flex-none items-start justify-between gap-4 border-b border-admin-border/70 px-5 py-4">
       <div>
         <h2 className="text-sm font-semibold text-admin-foreground">{title}</h2>
         {subtitle && (
@@ -297,7 +321,7 @@ export function DeltaBadge({
 
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-admin-border px-4 py-10 text-center text-sm text-admin-foreground/50">
+    <p className="rounded-xl border border-dashed border-admin-border px-4 py-10 text-center text-sm text-admin-foreground/50 transition-colors duration-300 hover:border-gold-300/70 hover:bg-gold-50/30 hover:text-admin-foreground/70">
       {children}
     </p>
   );

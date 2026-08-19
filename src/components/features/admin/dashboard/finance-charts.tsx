@@ -352,6 +352,39 @@ export function RevenueAreaChart({
           <p className="tabular mt-0.5 text-sm font-semibold text-admin-foreground">
             {formatBRL(activePoint.revenueCents)}
           </p>
+          {/* Detalhe que só o hover revela: como esse mês se compara ao anterior. */}
+          {(() => {
+            const previous = points[active! - 1];
+            if (!previous) {
+              return (
+                <p className="mt-0.5 text-[11px] text-admin-foreground/45">
+                  primeiro mês da série
+                </p>
+              );
+            }
+            if (previous.revenueCents <= 0) {
+              return (
+                <p className="mt-0.5 text-[11px] text-admin-foreground/45">
+                  sem base de comparação
+                </p>
+              );
+            }
+            const change =
+              (100 * (activePoint.revenueCents - previous.revenueCents)) /
+              previous.revenueCents;
+            const up = change >= 0;
+            return (
+              <p
+                className={cn(
+                  "tabular mt-0.5 text-[11px] font-medium",
+                  up ? "text-emerald-700" : "text-red-700",
+                )}
+              >
+                {up ? "▲" : "▼"} {formatNumber(Math.abs(change), 1)}% vs.{" "}
+                {previous.label}
+              </p>
+            );
+          })()}
         </div>
       )}
     </div>
@@ -376,8 +409,15 @@ interface StatementRow {
  * conta do mês. A barra é o que dá noção de peso — sem ela, três números
  * soltos não dizem se a despesa está grande.
  */
+/** Peso de uma conta sobre a receita bruta — `—` quando não há receita. */
+function shareOfRevenue(cents: number, grossRevenueCents: number): string {
+  if (grossRevenueCents <= 0) return "sem receita como base";
+  return `${formatNumber((100 * cents) / grossRevenueCents, 1)}% da receita bruta`;
+}
+
 export function IncomeStatementPanel({ statement }: { statement: IncomeStatement }) {
   const reduced = useReducedMotion();
+  const [active, setActive] = useState<string | null>(null);
 
   const rows: StatementRow[] = [
     {
@@ -408,41 +448,96 @@ export function IncomeStatementPanel({ statement }: { statement: IncomeStatement
   const positive = statement.netResultCents >= 0;
 
   return (
-    <div className="flex h-full min-w-0 flex-col gap-5 p-5">
-      <ul className="min-w-0 space-y-4">
-        {rows.map((row, index) => (
-          <li key={row.label} className="min-w-0">
-            <div className="flex min-w-0 items-baseline justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-2 truncate text-sm text-admin-foreground/80">
-                <span aria-hidden className="text-xs" style={{ color: row.from }}>
-                  {row.direction === "in" ? "↗" : "↘"}
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-5 p-5">
+      <ul className="min-w-0 space-y-2" onPointerLeave={() => setActive(null)}>
+        {rows.map((row, index) => {
+          const isActive = active === row.label;
+          const dimmed = active !== null && !isActive;
+
+          return (
+            <li
+              key={row.label}
+              className={cn(
+                "-mx-2 min-w-0 rounded-lg px-2 py-1.5",
+                "transition-[background-color,opacity] duration-200",
+                isActive && "bg-admin-muted/60",
+                dimmed && "opacity-45",
+              )}
+              onPointerEnter={() => setActive(row.label)}
+              onFocus={() => setActive(row.label)}
+              onBlur={() => setActive(null)}
+              tabIndex={0}
+            >
+              <div className="flex min-w-0 items-baseline justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2 truncate text-sm text-admin-foreground/80">
+                  <span aria-hidden className="text-xs" style={{ color: row.from }}>
+                    {row.direction === "in" ? "↗" : "↘"}
+                  </span>
+                  <span className="truncate">{row.label}</span>
                 </span>
-                <span className="truncate">{row.label}</span>
-              </span>
-              <span
-                className="tabular flex-none text-sm font-semibold"
-                style={{ color: row.direction === "in" ? MONEY.ink : row.from }}
+                <span
+                  className="tabular flex-none text-sm font-semibold"
+                  style={{ color: row.direction === "in" ? MONEY.ink : row.from }}
+                >
+                  {row.direction === "out" && "- "}
+                  <MoneyCountUp cents={row.cents} duration={1 + index * 0.12} />
+                </span>
+              </div>
+              <div
+                className={cn(
+                  "mt-1.5 overflow-hidden rounded-full bg-admin-muted transition-[height] duration-200",
+                  isActive ? "h-2.5" : "h-1.5",
+                )}
               >
-                {row.direction === "out" && "- "}
-                <MoneyCountUp cents={row.cents} duration={1 + index * 0.12} />
-              </span>
-            </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-admin-muted">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: `linear-gradient(90deg, ${row.from}, ${row.to})` }}
-                initial={reduced ? false : { width: 0 }}
-                whileInView={{ width: `${(100 * row.cents) / ceiling}%` }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{
-                  duration: 0.9,
-                  delay: 0.1 + index * 0.1,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-              />
-            </div>
-          </li>
-        ))}
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: `linear-gradient(90deg, ${row.from}, ${row.to})` }}
+                  initial={reduced ? false : { width: 0 }}
+                  whileInView={{ width: `${(100 * row.cents) / ceiling}%` }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{
+                    duration: 0.9,
+                    delay: 0.1 + index * 0.1,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                />
+              </div>
+
+              {/* Detalhe da conta: só o hover abre. Grid 0fr→1fr anima a
+                  altura sem precisar medir o texto. */}
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-200 ease-out",
+                  isActive ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}
+              >
+                <div
+                  className={cn(
+                    "overflow-hidden transition-opacity duration-200",
+                    isActive ? "pt-1.5 opacity-100" : "opacity-0",
+                  )}
+                >
+                  <p className="tabular flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-admin-foreground/60">
+                    <span>
+                      {row.direction === "in"
+                        ? "Base do mês (100% da receita)"
+                        : shareOfRevenue(row.cents, statement.grossRevenueCents)}
+                    </span>
+                    <span>
+                      {formatNumber((100 * row.cents) / ceiling, 1)}% da maior conta
+                      do mês
+                    </span>
+                    <span>
+                      Impacto no resultado:{" "}
+                      {row.direction === "in" ? "+" : "-"}
+                      {formatBRL(row.cents)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       <motion.div

@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { getSessionContext } from "@/lib/auth/session";
+import { requireRole } from "@/lib/auth/session";
+import { getMyDisplayName } from "@/repositories/users";
 import {
-  listMyConversations,
-  getConversationMessages,
-  listAllowedContacts,
-} from "@/repositories/conversations";
-import { MessageThread } from "@/components/features/messaging/message-thread";
-import { NewConversationForm } from "@/components/features/messaging/new-conversation-form";
+  canModerateChat,
+  getChatMessages,
+  listChatMembers,
+  listGroupChats,
+} from "@/repositories/group-chats";
+import {
+  MessagesView,
+  type SelectedChat,
+} from "@/components/features/messaging/messages-view";
 
 export const metadata: Metadata = { title: "Mensagens" };
 
@@ -15,61 +18,56 @@ interface PageProps {
   searchParams: Promise<{ c?: string }>;
 }
 
+/**
+ * Chat das turmas. O aluno vê a turma em que está matriculado; o professor,
+ * as turmas que leciona — os dois recortes vêm da RLS, não de um `if` aqui.
+ *
+ * A conversa selecionada é carregada no servidor: `chats.find` faz as vezes
+ * de guarda de acesso, porque a lista já só contém o que este usuário pode
+ * ver. Um `?c=` de outra turma simplesmente não casa e a tela volta ao vazio.
+ */
 export default async function MensagensPage({ searchParams }: PageProps) {
-  const ctx = await getSessionContext();
-  if (!ctx) return null;
-  const { c: selectedId } = await searchParams;
+  const ctx = await requireRole(["teacher", "student"]);
+  const { c: requestedId } = await searchParams;
 
-  const [conversations, contacts] = await Promise.all([
-    listMyConversations(ctx.userId),
-    listAllowedContacts(ctx),
+  const [chats, displayName] = await Promise.all([
+    listGroupChats(),
+    getMyDisplayName(ctx.userId),
   ]);
 
-  const messages = selectedId ? await getConversationMessages(selectedId) : [];
+  const chat = requestedId
+    ? (chats.find((item) => item.conversationId === requestedId) ?? null)
+    : null;
+
+  let selected: SelectedChat | null = null;
+  if (chat) {
+    const [messages, members, canModerate] = await Promise.all([
+      getChatMessages(chat.conversationId),
+      listChatMembers(chat.conversationId),
+      canModerateChat(ctx, chat.conversationId),
+    ]);
+    selected = { chat, messages, members, canModerate };
+  }
 
   return (
-    <div className="grid h-[calc(100vh-8rem)] grid-cols-[280px_1fr] gap-4">
-      <aside className="flex flex-col gap-4 overflow-y-auto rounded-lg border border-border p-3">
-        <NewConversationForm contacts={contacts} />
-        <ul className="space-y-1">
-          {conversations.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/mensagens?c=${c.id}`}
-                className={
-                  c.id === selectedId
-                    ? "block rounded-md bg-muted px-3 py-2 text-sm font-medium"
-                    : "block rounded-md px-3 py-2 text-sm hover:bg-muted"
-                }
-              >
-                <span className="flex items-center justify-between">
-                  {c.title}
-                  {c.unread && <span className="h-2 w-2 rounded-full bg-primary" />}
-                </span>
-              </Link>
-            </li>
-          ))}
-          {conversations.length === 0 && (
-            <li className="px-3 py-2 text-sm text-muted-foreground">
-              Nenhuma conversa ainda.
-            </li>
-          )}
-        </ul>
-      </aside>
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <header className="shrink-0">
+        <h1 className="text-2xl font-semibold tracking-tight">Mensagens</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {ctx.effectiveRole === "teacher"
+            ? "Avisos e conversa com cada uma das suas turmas."
+            : "O canal direto com o professor e os colegas da sua turma."}
+        </p>
+      </header>
 
-      <section className="rounded-lg border border-border">
-        {selectedId ? (
-          <MessageThread
-            conversationId={selectedId}
-            currentUserId={ctx.userId}
-            initialMessages={messages}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Selecione uma conversa
-          </div>
-        )}
-      </section>
+      <MessagesView
+        chats={chats}
+        selected={selected}
+        currentUserId={ctx.userId}
+        currentUserName={displayName ?? "Você"}
+        currentUserRole={ctx.effectiveRole}
+        readOnly={ctx.isViewAs}
+      />
     </div>
   );
 }

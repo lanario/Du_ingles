@@ -407,6 +407,9 @@ export type Database = {
           id: string;
           last_message_at: string | null;
           organization_id: string;
+          posting_changed_at: string | null;
+          posting_changed_by: string | null;
+          students_can_post: boolean;
           title: string | null;
           type: string;
         };
@@ -417,6 +420,9 @@ export type Database = {
           id?: string;
           last_message_at?: string | null;
           organization_id: string;
+          posting_changed_at?: string | null;
+          posting_changed_by?: string | null;
+          students_can_post?: boolean;
           title?: string | null;
           type: string;
         };
@@ -427,6 +433,9 @@ export type Database = {
           id?: string;
           last_message_at?: string | null;
           organization_id?: string;
+          posting_changed_at?: string | null;
+          posting_changed_by?: string | null;
+          students_can_post?: boolean;
           title?: string | null;
           type?: string;
         };
@@ -450,6 +459,13 @@ export type Database = {
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "conversations_posting_changed_by_fkey";
+            columns: ["posting_changed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -549,54 +565,54 @@ export type Database = {
           amount_cents: number;
           category: string;
           counterparty: string | null;
-          due_on: string;
-          notes: string | null;
-          paid_on: string | null;
-          payment_method: Database["public"]["Enums"]["finance_payment_method"] | null;
-          status: Database["public"]["Enums"]["finance_entry_status"];
           created_at: string;
           created_by: string | null;
           description: string;
+          due_on: string;
           id: string;
           kind: Database["public"]["Enums"]["finance_entry_kind"];
+          notes: string | null;
           occurred_on: string;
           organization_id: string;
+          paid_on: string | null;
+          payment_method: Database["public"]["Enums"]["finance_payment_method"] | null;
+          status: Database["public"]["Enums"]["finance_entry_status"];
           updated_at: string;
         };
         Insert: {
           amount_cents: number;
           category?: string;
           counterparty?: string | null;
-          due_on?: string;
-          notes?: string | null;
-          paid_on?: string | null;
-          payment_method?: Database["public"]["Enums"]["finance_payment_method"] | null;
-          status?: Database["public"]["Enums"]["finance_entry_status"];
           created_at?: string;
           created_by?: string | null;
           description: string;
+          due_on: string;
           id?: string;
           kind: Database["public"]["Enums"]["finance_entry_kind"];
+          notes?: string | null;
           occurred_on: string;
           organization_id: string;
+          paid_on?: string | null;
+          payment_method?: Database["public"]["Enums"]["finance_payment_method"] | null;
+          status?: Database["public"]["Enums"]["finance_entry_status"];
           updated_at?: string;
         };
         Update: {
           amount_cents?: number;
           category?: string;
           counterparty?: string | null;
-          due_on?: string;
-          notes?: string | null;
-          paid_on?: string | null;
-          payment_method?: Database["public"]["Enums"]["finance_payment_method"] | null;
-          status?: Database["public"]["Enums"]["finance_entry_status"];
           created_at?: string;
           created_by?: string | null;
           description?: string;
+          due_on?: string;
           id?: string;
           kind?: Database["public"]["Enums"]["finance_entry_kind"];
+          notes?: string | null;
           occurred_on?: string;
           organization_id?: string;
+          paid_on?: string | null;
+          payment_method?: Database["public"]["Enums"]["finance_payment_method"] | null;
+          status?: Database["public"]["Enums"]["finance_entry_status"];
           updated_at?: string;
         };
         Relationships: [
@@ -1513,6 +1529,10 @@ export type Database = {
         Args: never;
         Returns: Database["public"]["Enums"]["app_role"];
       };
+      can_post_in_conversation: {
+        Args: { p_conversation_id: string };
+        Returns: boolean;
+      };
       check_rate_limit: {
         Args: {
           p_action: string;
@@ -1524,6 +1544,10 @@ export type Database = {
       };
       custom_access_token_hook: { Args: { event: Json }; Returns: Json };
       enrolled_in_group: { Args: { p_group: string }; Returns: boolean };
+      ensure_group_conversation: {
+        Args: { p_group_id: string };
+        Returns: string;
+      };
       generate_recurring_sessions: {
         Args: { p_group_id?: string };
         Returns: number;
@@ -1531,6 +1555,24 @@ export type Database = {
       group_assignment_completion_rate: {
         Args: { p_group: string };
         Returns: number;
+      };
+      group_chat_overview: {
+        Args: never;
+        Returns: {
+          conversation_id: string;
+          group_id: string;
+          group_name: string;
+          is_active: boolean;
+          last_message_at: string;
+          last_message_body: string;
+          last_message_sender: string;
+          level: Database["public"]["Enums"]["cefr_level"];
+          member_count: number;
+          students_can_post: boolean;
+          teacher_id: string;
+          teacher_name: string;
+          unread_count: number;
+        }[];
       };
       is_admin: { Args: never; Returns: boolean };
       is_conversation_participant: {
@@ -1545,6 +1587,10 @@ export type Database = {
           organization_id: string;
           role: Database["public"]["Enums"]["app_role"];
         }[];
+      };
+      profile_role: {
+        Args: { p_id: string };
+        Returns: Database["public"]["Enums"]["app_role"];
       };
       revoke_user_sessions: { Args: { p_user_id: string }; Returns: undefined };
       student_attendance_rate: {

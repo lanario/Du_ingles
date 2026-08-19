@@ -150,7 +150,7 @@ function NavIcon({ name }: { name: IconName }) {
 }
 
 const ROW_CLASS =
-  "group relative flex h-10 w-full items-center gap-3 rounded-lg pl-2.5 pr-3 text-sm transition-colors " +
+  "group relative flex h-10 w-full items-center gap-3 rounded-2xl pl-2.5 pr-3 text-sm transition-colors " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-shell";
 
 interface AdminSidebarProps {
@@ -364,7 +364,7 @@ export function AdminSidebar({
                           ROW_CLASS,
                           active
                             ? "font-medium text-admin-shell-foreground"
-                            : "text-admin-shell-foreground/70 hover:text-admin-shell-foreground",
+                            : "text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900",
                         )}
                       >
                         {active && (
@@ -376,7 +376,7 @@ export function AdminSidebar({
                               damping: 38,
                               mass: 0.7,
                             }}
-                            className="absolute inset-0 -z-10 rounded-lg bg-admin-shell-foreground/10"
+                            className="absolute inset-0 -z-10 rounded-2xl bg-navy-900/15"
                           />
                         )}
                         <span
@@ -387,7 +387,12 @@ export function AdminSidebar({
                             active ? "scale-y-100" : "scale-y-0",
                           )}
                         />
-                        <span className={cn("flex-none", active ? "text-navy-900" : undefined)}>
+                        <span
+                          className={cn(
+                            "flex-none transition-colors",
+                            active ? "text-navy-900" : "group-hover:text-navy-900",
+                          )}
+                        >
                           <NavIcon name={item.icon} />
                         </span>
                         <span

@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { formatNumber } from "./primitives";
+import { ChartTooltip, formatNumber } from "./primitives";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -338,10 +338,10 @@ export function ChartLegend({ series }: { series: ChartSeries[] }) {
       {series.map((s) => (
         <li
           key={s.label}
-          className="flex items-center gap-1.5 text-xs text-admin-foreground/65"
+          className="group/legend flex cursor-default items-center gap-1.5 text-xs text-admin-foreground/65 transition-colors duration-300 hover:text-admin-foreground"
         >
           <span
-            className="h-2 w-2 rounded-full"
+            className="h-2 w-2 rounded-full transition-transform duration-300 ease-out group-hover/legend:scale-150"
             style={{ backgroundColor: s.color }}
             aria-hidden
           />
@@ -375,6 +375,7 @@ export function DonutChart({
   size?: number;
 }) {
   const ref = useRef<SVGSVGElement>(null);
+  const [active, setActive] = useState<string | null>(null);
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   const radius = 74;
   const circumference = 2 * Math.PI * radius;
@@ -414,6 +415,8 @@ export function DonutChart({
     return () => ctx.revert();
   }, [arcs]);
 
+  const activeSlice = active ? (slices.find((s) => s.label === active) ?? null) : null;
+
   return (
     <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6">
       <div className="relative flex-none" style={{ width: size, height: size }}>
@@ -443,41 +446,93 @@ export function DonutChart({
                 r={radius}
                 fill="none"
                 stroke={arc.color}
-                strokeWidth={20}
+                strokeWidth={active === arc.label ? 26 : 20}
                 strokeLinecap="butt"
                 strokeDasharray={`${arc.length} ${circumference}`}
                 transform={`rotate(${arc.offsetAngle} 100 100)`}
+                opacity={active && active !== arc.label ? 0.35 : 1}
+                className="cursor-default transition-[opacity,stroke-width] duration-200"
+                onPointerEnter={() => setActive(arc.label)}
+                onPointerLeave={() => setActive(null)}
               />
             ) : null,
           )}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="tabular text-2xl font-semibold text-admin-foreground">
-            {centerValue}
-          </span>
-          <span className="text-[11px] uppercase tracking-wide text-admin-foreground/50">
-            {centerLabel}
-          </span>
+        {/* O centro conta a fatia sob o ponteiro; sem hover, volta ao total. */}
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+          {activeSlice ? (
+            <>
+              <span className="tabular text-2xl font-semibold text-admin-foreground">
+                {formatNumber(activeSlice.value)}
+              </span>
+              <span className="text-[11px] uppercase tracking-wide text-admin-foreground/50">
+                {activeSlice.label}
+              </span>
+              <span className="tabular mt-0.5 text-[11px] font-medium text-gold-700">
+                {total > 0 ? formatNumber((100 * activeSlice.value) / total, 1) : "0"}% do
+                total
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="tabular text-2xl font-semibold text-admin-foreground">
+                {centerValue}
+              </span>
+              <span className="text-[11px] uppercase tracking-wide text-admin-foreground/50">
+                {centerLabel}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      <ul className="w-full flex-1 space-y-1.5">
-        {slices.map((slice) => (
-          <li key={slice.label} className="flex items-center gap-2 text-sm">
-            <span
-              className="h-2.5 w-2.5 flex-none rounded-sm"
-              style={{ backgroundColor: slice.color }}
-              aria-hidden
-            />
-            <span className="flex-1 text-admin-foreground/75">{slice.label}</span>
-            <span className="tabular font-medium text-admin-foreground">
-              {formatNumber(slice.value)}
-            </span>
-            <span className="tabular w-12 text-right text-xs text-admin-foreground/45">
-              {total > 0 ? formatNumber((100 * slice.value) / total, 0) : 0}%
-            </span>
-          </li>
-        ))}
+      <ul className="w-full flex-1 space-y-0.5" onPointerLeave={() => setActive(null)}>
+        {slices.map((slice) => {
+          const isActive = active === slice.label;
+          return (
+            <li
+              key={slice.label}
+              className={cn(
+                "-mx-2 flex cursor-default items-center gap-2 rounded-lg px-2 py-1 text-sm",
+                "transition-[background-color,opacity] duration-200",
+                isActive && "bg-navy-50/60",
+                active && !isActive && "opacity-45",
+              )}
+              onPointerEnter={() => setActive(slice.label)}
+              onFocus={() => setActive(slice.label)}
+              onBlur={() => setActive(null)}
+              tabIndex={0}
+            >
+              <span
+                className={cn(
+                  "h-2.5 w-2.5 flex-none rounded-sm transition-transform duration-200 ease-out",
+                  isActive && "scale-150",
+                )}
+                style={{ backgroundColor: slice.color }}
+                aria-hidden
+              />
+              <span
+                className={cn(
+                  "flex-1 truncate transition-colors duration-200",
+                  isActive ? "text-admin-foreground" : "text-admin-foreground/75",
+                )}
+              >
+                {slice.label}
+              </span>
+              <span className="tabular font-medium text-admin-foreground">
+                {formatNumber(slice.value)}
+              </span>
+              <span
+                className={cn(
+                  "tabular w-12 text-right text-xs transition-colors duration-200",
+                  isActive ? "text-gold-700" : "text-admin-foreground/45",
+                )}
+              >
+                {total > 0 ? formatNumber((100 * slice.value) / total, 0) : 0}%
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -490,58 +545,116 @@ export interface BarRow {
   /** Valor exibido à direita, quando diferente de `value`. */
   display?: string;
   color?: string;
+  /** Linha extra revelada quando o ponteiro está sobre a linha. */
+  detail?: string;
 }
 
-/** Ranking horizontal — a largura anima com Framer Motion ao entrar na tela. */
+/**
+ * Ranking horizontal — a largura anima com Framer Motion ao entrar na tela.
+ *
+ * No hover a linha sob o ponteiro ganha foco (as demais recuam), o valor
+ * bruto aparece ao lado do exibido e a linha de detalhe abre em altura
+ * animada (grid 0fr→1fr, sem precisar medir o conteúdo).
+ */
 export function BarList({
   rows,
   max,
   suffix = "",
+  valueLabel = "",
 }: {
   rows: BarRow[];
   max?: number;
   suffix?: string;
+  /** Sufixo do valor bruto mostrado no hover (ex.: "% de ocupação"). */
+  valueLabel?: string;
 }) {
   const reduced = useReducedMotion();
+  const [active, setActive] = useState<number | null>(null);
   const ceiling = Math.max(1, max ?? Math.max(...rows.map((r) => r.value), 1));
 
   return (
-    <ul className="space-y-3">
-      {rows.map((row, index) => (
-        <li key={row.label + index}>
-          <div className="mb-1 flex items-baseline justify-between gap-3">
-            <span className="truncate text-sm text-admin-foreground/85">
-              {row.label}
-              {row.sublabel && (
-                <span className="ml-2 text-xs text-admin-foreground/45">
-                  {row.sublabel}
-                </span>
+    <ul className="space-y-1" onPointerLeave={() => setActive(null)}>
+      {rows.map((row, index) => {
+        const isActive = active === index;
+        const dimmed = active !== null && !isActive;
+
+        return (
+          <li
+            key={row.label + index}
+            className={cn(
+              "-mx-2 rounded-lg px-2 py-1.5 transition-[background-color,opacity] duration-200",
+              isActive && "bg-navy-50/60",
+              dimmed && "opacity-45",
+            )}
+            onPointerEnter={() => setActive(index)}
+            onFocus={() => setActive(index)}
+            onBlur={() => setActive(null)}
+            tabIndex={0}
+          >
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <span className="truncate text-sm text-admin-foreground/85">
+                {row.label}
+                {row.sublabel && (
+                  <span className="ml-2 text-xs text-admin-foreground/45">
+                    {row.sublabel}
+                  </span>
+                )}
+              </span>
+              <span className="tabular flex flex-none items-baseline gap-2 text-sm font-semibold text-admin-foreground">
+                {isActive && (
+                  <span className="text-xs font-normal text-admin-foreground/55">
+                    {formatNumber(row.value, row.value % 1 === 0 ? 0 : 1)}
+                    {suffix}
+                    {valueLabel && ` ${valueLabel}`}
+                  </span>
+                )}
+                {row.display ?? `${formatNumber(row.value)}${suffix}`}
+              </span>
+            </div>
+            <div
+              className={cn(
+                "overflow-hidden rounded-full bg-admin-muted transition-[height] duration-200",
+                isActive ? "h-2.5" : "h-2",
               )}
-            </span>
-            <span className="tabular flex-none text-sm font-semibold text-admin-foreground">
-              {row.display ?? `${formatNumber(row.value)}${suffix}`}
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-admin-muted">
-            <motion.div
-              className="h-full rounded-full"
-              style={{
-                background: row.color
-                  ? row.color
-                  : `linear-gradient(90deg, ${PALETTE.navy}, ${PALETTE.navyMid})`,
-              }}
-              initial={reduced ? false : { width: 0 }}
-              whileInView={{ width: `${Math.min(100, (100 * row.value) / ceiling)}%` }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{
-                duration: 0.9,
-                delay: index * 0.06,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            />
-          </div>
-        </li>
-      ))}
+            >
+              <motion.div
+                className="h-full rounded-full"
+                style={{
+                  background: row.color
+                    ? row.color
+                    : `linear-gradient(90deg, ${PALETTE.navy}, ${PALETTE.navyMid})`,
+                }}
+                initial={reduced ? false : { width: 0 }}
+                whileInView={{ width: `${Math.min(100, (100 * row.value) / ceiling)}%` }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{
+                  duration: 0.9,
+                  delay: index * 0.06,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              />
+            </div>
+
+            {row.detail && (
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-200 ease-out",
+                  isActive ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}
+              >
+                <p
+                  className={cn(
+                    "overflow-hidden text-[11px] text-admin-foreground/55 transition-opacity duration-200",
+                    isActive ? "pt-1 opacity-100" : "opacity-0",
+                  )}
+                >
+                  {row.detail}
+                </p>
+              </div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -627,29 +740,67 @@ export function RadialGauge({
   );
 }
 
-/** Colunas compactas — carga de aulas por dia da semana. */
+/**
+ * Colunas compactas — carga de aulas por dia da semana.
+ *
+ * A coluna sob o ponteiro abre um balão com o detalhe (valor absoluto, fatia
+ * do total e comparação com o pico) e as demais recuam em opacidade, para o
+ * olho não perder qual está sendo lida.
+ */
 export function ColumnChart({
   data,
   height = 140,
+  detailNoun = "aula(s)",
 }: {
   data: { label: string; value: number }[];
   height?: number;
+  /** Substantivo usado no balão de detalhe. */
+  detailNoun?: string;
 }) {
   const reduced = useReducedMotion();
+  const [active, setActive] = useState<number | null>(null);
   const max = Math.max(1, ...data.map((d) => d.value));
+  const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div className="flex items-end gap-2" style={{ height }}>
+    <div
+      className="relative flex items-end gap-2"
+      style={{ height }}
+      onPointerLeave={() => setActive(null)}
+    >
       {data.map((item, index) => {
         const ratio = item.value / max;
+        const isActive = active === index;
+        const dimmed = active !== null && !isActive;
+
         return (
-          <div key={item.label} className="flex h-full flex-1 flex-col justify-end gap-2">
-            <span className="tabular text-center text-xs font-medium text-admin-foreground/70">
+          <div
+            key={item.label}
+            className={cn(
+              "relative flex h-full flex-1 cursor-default flex-col justify-end gap-2",
+              "transition-opacity duration-200",
+              dimmed && "opacity-40",
+            )}
+            onPointerEnter={() => setActive(index)}
+            onFocus={() => setActive(index)}
+            onBlur={() => setActive(null)}
+            tabIndex={0}
+            aria-label={`${item.label}: ${formatNumber(item.value)} ${detailNoun}`}
+          >
+            <span
+              className={cn(
+                "tabular text-center text-xs transition-colors duration-200",
+                isActive
+                  ? "font-semibold text-admin-foreground"
+                  : "font-medium text-admin-foreground/70",
+              )}
+            >
               {formatNumber(item.value)}
             </span>
             <motion.div
               className={cn(
-                "w-full rounded-t-md",
+                "w-full origin-bottom rounded-t-md transition-[filter] duration-200",
+                isActive && "brightness-110",
                 ratio >= 0.999
                   ? "bg-gradient-to-t from-gold-600 to-gold-400"
                   : "bg-gradient-to-t from-navy-800 to-navy-500",
@@ -664,12 +815,40 @@ export function ColumnChart({
                 ease: [0.22, 1, 0.36, 1],
               }}
             />
-            <span className="text-center text-xs text-admin-foreground/55">
+            <span
+              className={cn(
+                "text-center text-xs transition-colors duration-200",
+                isActive
+                  ? "font-medium text-admin-foreground"
+                  : "text-admin-foreground/55",
+              )}
+            >
               {item.label}
             </span>
           </div>
         );
       })}
+
+      {/* Balão dentro da área do gráfico: o card tem `overflow-hidden`, então
+          um balão acima das colunas seria cortado. */}
+      {active !== null && data[active] && (
+        <ChartTooltip
+          className="absolute top-0 w-max max-w-44 -translate-x-1/2 text-center"
+          style={{ left: `${((active + 0.5) / data.length) * 100}%` }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-admin-foreground/55">
+            {data[active]!.label}
+          </p>
+          <p className="tabular mt-0.5 text-sm font-semibold text-admin-foreground">
+            {formatNumber(data[active]!.value)} {detailNoun}
+          </p>
+          <p className="tabular mt-0.5 text-[11px] text-admin-foreground/55">
+            {total > 0 ? formatNumber((100 * data[active]!.value) / total, 1) : "0"}% do
+            total
+            {data[active]!.value >= max && data[active]!.value > 0 ? " · pico" : ""}
+          </p>
+        </ChartTooltip>
+      )}
     </div>
   );
 }
