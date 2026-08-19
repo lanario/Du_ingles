@@ -2,6 +2,13 @@ import "server-only";
 import { formatInTimeZone } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import type {
+  FinanceDirection,
+  FinanceKind,
+  FinanceStatus,
+  PaymentMethod,
+} from "@/schemas/finance";
+import type { Database } from "@/types/database.types";
 
 /**
  * Mesmo fuso do resto do painel. Aqui ele só existe para *rotular* os meses:
@@ -63,7 +70,7 @@ function parseMonthKey(key: string): { year: number; monthIndex: number } {
 }
 
 /** Formata uma chave `YYYY-MM` com o padrão de data pedido, em pt-BR. */
-function monthLabel(key: string, pattern: string): string {
+export function monthLabel(key: string, pattern: string): string {
   const { year, monthIndex } = parseMonthKey(key);
   return formatInTimeZone(monthAnchor(year, monthIndex), TZ, pattern, { locale: ptBR });
 }
@@ -183,4 +190,375 @@ export async function getFinanceOverview(
     hasEntries: rows.length > 0 || Boolean(firstEntry),
     windowRevenueCents: revenueSeries.reduce((sum, p) => sum + p.revenueCents, 0),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Livro-caixa: os lançamentos de um mês, um a um
+//
+// `getFinanceOverview` acima existe para o dashboard — série anual e DRE
+// agregados. Daqui para baixo é a tela de Financeiro: a *linha* de cada
+// lançamento, com vencimento, baixa e forma de pagamento, sempre recortada
+// por uma competência.
+// ---------------------------------------------------------------------------
+
+/** Data de hoje no fuso da escola (`yyyy-MM-dd`). */
+export function todayInSchoolTz(): string {
+  return formatInTimeZone(new Date(), TZ, "yyyy-MM-dd");
+}
+
+/** Competência corrente (`yyyy-MM`). */
+export function currentMonthKey(): string {
+  return formatInTimeZone(new Date(), TZ, "yyyy-MM");
+}
+
+/** `2026-08` vira `Agosto de 2026`. */
+export function monthTitle(key: string): string {
+  return capitalize(monthLabel(key, "LLLL 'de' yyyy"));
+}
+
+export interface FinanceEntry {
+  id: string;
+  kind: FinanceKind;
+  /** `in` entra dinheiro, `out` sai. Derivado de `kind`, nunca gravado. */
+  direction: FinanceDirection;
+  category: string;
+  description: string;
+  counterparty: string | null;
+  amountCents: number;
+  /** Competência (`yyyy-MM-dd`). */
+  occurredOn: string;
+  dueOn: string;
+  status: FinanceStatus;
+  paidOn: string | null;
+  paymentMethod: PaymentMethod | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface FinanceTotals {
+  /** Tudo que o mês previu, pago ou não. */
+  revenueCents: number;
+  expenseCents: number;
+  /** Previsto menos previsto: o resultado do mês se tudo for honrado. */
+  netCents: number;
+  /** Já liquidado. */
+  revenuePaidCents: number;
+  expensePaidCents: number;
+  /** Em aberto (inclui o que já venceu). */
+  revenueOpenCents: number;
+  expenseOpenCents: number;
+  /** Em aberto **e** com vencimento no passado. */
+  revenueOverdueCents: number;
+  expenseOverdueCents: number;
+  revenueCount: number;
+  expenseCount: number;
+}
+
+export interface FinanceMonth {
+  /** `yyyy-MM`. */
+  key: string;
+  /** `Agosto de 2026`. */
+  title: string;
+  /** Competência anterior e seguinte, para as setas do seletor. */
+  previousKey: string;
+  nextKey: string;
+  /** `yyyy-MM-dd` de hoje: a régua que decide o que está vencido. */
+  today: string;
+  entries: FinanceEntry[];
+  totals: FinanceTotals;
+}
+
+type EntryRow = Database["public"]["Tables"]["finance_entries"]["Row"];
+
+function mapEntry(row: EntryRow): FinanceEntry {
+  return {
+    id: row.id,
+    kind: row.kind,
+    direction: row.kind === "revenue" ? "in" : "out",
+    category: row.category,
+    description: row.description,
+    counterparty: row.counterparty,
+    amountCents: Number(row.amount_cents),
+    occurredOn: row.occurred_on,
+    dueOn: row.due_on,
+    status: row.status,
+    paidOn: row.paid_on,
+    paymentMethod: row.payment_method,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+/** Primeiro e último dia da competência, para o recorte da query. */
+export function monthBounds(key: string): { first: string; last: string } {
+  const { year, monthIndex } = parseMonthKey(key);
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  return { first: `${key}-01`, last: `${key}-${String(lastDay).padStart(2, "0")}` };
+}
+
+export function shiftMonth(key: string, delta: number): string {
+  const { year, monthIndex } = parseMonthKey(key);
+  return formatInTimeZone(monthAnchor(year, monthIndex + delta), TZ, "yyyy-MM");
+}
+
+function emptyTotals(): FinanceTotals {
+  return {
+    revenueCents: 0,
+    expenseCents: 0,
+    netCents: 0,
+    revenuePaidCents: 0,
+    expensePaidCents: 0,
+    revenueOpenCents: 0,
+    expenseOpenCents: 0,
+    revenueOverdueCents: 0,
+    expenseOverdueCents: 0,
+    revenueCount: 0,
+    expenseCount: 0,
+  };
+}
+
+/** Soma o mês numa passada só: a lista já está na memória. */
+function summarize(entries: FinanceEntry[], today: string): FinanceTotals {
+  const totals = emptyTotals();
+
+  for (const entry of entries) {
+    const incoming = entry.direction === "in";
+    const open = entry.status === "pending";
+    const overdue = open && entry.dueOn < today;
+
+    if (incoming) {
+      totals.revenueCents += entry.amountCents;
+      totals.revenueCount += 1;
+      if (open) totals.revenueOpenCents += entry.amountCents;
+      else totals.revenuePaidCents += entry.amountCents;
+      if (overdue) totals.revenueOverdueCents += entry.amountCents;
+    } else {
+      totals.expenseCents += entry.amountCents;
+      totals.expenseCount += 1;
+      if (open) totals.expenseOpenCents += entry.amountCents;
+      else totals.expensePaidCents += entry.amountCents;
+      if (overdue) totals.expenseOverdueCents += entry.amountCents;
+    }
+  }
+
+  totals.netCents = totals.revenueCents - totals.expenseCents;
+  return totals;
+}
+
+/**
+ * Lançamentos de uma competência, do vencimento mais próximo ao mais
+ * distante — a ordem em que a escola cobra e paga.
+ *
+ * Client service-role pelo mesmo contrato do resto do arquivo: a página
+ * chamadora já passou por `requireRole(["admin"])` e a query é escopada por
+ * `organization_id`.
+ */
+export async function getFinanceMonth(
+  organizationId: string,
+  monthKey: string,
+): Promise<FinanceMonth> {
+  const admin = createAdminSupabaseClient();
+  const { first, last } = monthBounds(monthKey);
+
+  const { data } = await admin
+    .from("finance_entries")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .gte("occurred_on", first)
+    .lte("occurred_on", last)
+    .order("due_on", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const entries = (data ?? []).map(mapEntry);
+  const today = todayInSchoolTz();
+
+  return {
+    key: monthKey,
+    title: monthTitle(monthKey),
+    previousKey: shiftMonth(monthKey, -1),
+    nextKey: shiftMonth(monthKey, 1),
+    today,
+    entries,
+    totals: summarize(entries, today),
+  };
+}
+
+/**
+ * Resultado dos meses anteriores, para a faixa de tendência acima da lista.
+ * São só os totais — quem olha tendência não vai abrir doze listas.
+ */
+export interface FinanceTrendPoint {
+  key: string;
+  /** `ago` — rótulo curto do eixo. */
+  label: string;
+  revenueCents: number;
+  expenseCents: number;
+  netCents: number;
+}
+
+export async function getFinanceTrend(
+  organizationId: string,
+  endKey: string,
+  months = 6,
+): Promise<FinanceTrendPoint[]> {
+  const admin = createAdminSupabaseClient();
+  const startKey = shiftMonth(endKey, -(months - 1));
+
+  const { data } = await admin
+    .from("finance_entries")
+    .select("kind, amount_cents, occurred_on")
+    .eq("organization_id", organizationId)
+    .gte("occurred_on", `${startKey}-01`)
+    .lte("occurred_on", monthBounds(endKey).last);
+
+  const buckets = new Map<string, { revenueCents: number; expenseCents: number }>();
+  for (const row of data ?? []) {
+    const key = row.occurred_on.slice(0, 7);
+    const bucket = buckets.get(key) ?? { revenueCents: 0, expenseCents: 0 };
+    const amount = Number(row.amount_cents);
+    if (row.kind === "revenue") bucket.revenueCents += amount;
+    else bucket.expenseCents += amount;
+    buckets.set(key, bucket);
+  }
+
+  return Array.from({ length: months }, (_, index) => {
+    const key = shiftMonth(startKey, index);
+    const bucket = buckets.get(key) ?? { revenueCents: 0, expenseCents: 0 };
+    return {
+      key,
+      label: monthLabel(key, "LLL"),
+      revenueCents: bucket.revenueCents,
+      expenseCents: bucket.expenseCents,
+      netCents: bucket.revenueCents - bucket.expenseCents,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Escrita
+// ---------------------------------------------------------------------------
+
+export interface FinanceEntryWrite {
+  kind: FinanceKind;
+  category: string;
+  description: string;
+  counterparty?: string | undefined;
+  amountCents: number;
+  occurredOn: string;
+  dueOn: string;
+  status: FinanceStatus;
+  paidOn?: string | undefined;
+  paymentMethod?: PaymentMethod | undefined;
+  notes?: string | undefined;
+}
+
+/** Colunas comuns a insert e update: o mapeamento mora num lugar só. */
+function toRow(input: FinanceEntryWrite) {
+  return {
+    kind: input.kind,
+    category: input.category,
+    description: input.description,
+    counterparty: input.counterparty ?? null,
+    amount_cents: input.amountCents,
+    occurred_on: input.occurredOn,
+    due_on: input.dueOn,
+    status: input.status,
+    // O check do banco exige o par: pago tem data de baixa, pendente não tem.
+    paid_on: input.status === "paid" ? (input.paidOn ?? input.dueOn) : null,
+    payment_method: input.paymentMethod ?? null,
+    notes: input.notes ?? null,
+  };
+}
+
+export async function createFinanceEntry(
+  organizationId: string,
+  createdBy: string,
+  input: FinanceEntryWrite,
+): Promise<string | null> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("finance_entries")
+    .insert({ organization_id: organizationId, created_by: createdBy, ...toRow(input) })
+    .select("id")
+    .single();
+
+  if (error || !data) return null;
+  return data.id;
+}
+
+/** O `eq("organization_id")` é o que impede um id de outra escola de ser tocado. */
+export async function updateFinanceEntry(
+  organizationId: string,
+  entryId: string,
+  input: FinanceEntryWrite,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("finance_entries")
+    .update(toRow(input))
+    .eq("id", entryId)
+    .eq("organization_id", organizationId);
+
+  return !error;
+}
+
+/**
+ * Baixa (ou estorno) de um lançamento. É a ação mais repetida da tela — dar a
+ * ela um caminho próprio evita reenviar o formulário inteiro só para dizer
+ * que o dinheiro entrou.
+ */
+export async function setFinanceEntryStatus(
+  organizationId: string,
+  entryId: string,
+  status: FinanceStatus,
+  options: { paidOn?: string; paymentMethod?: PaymentMethod | null } = {},
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const patch =
+    status === "paid"
+      ? {
+          status,
+          paid_on: options.paidOn ?? todayInSchoolTz(),
+          ...(options.paymentMethod !== undefined
+            ? { payment_method: options.paymentMethod }
+            : {}),
+        }
+      : { status, paid_on: null };
+
+  const { error } = await admin
+    .from("finance_entries")
+    .update(patch)
+    .eq("id", entryId)
+    .eq("organization_id", organizationId);
+
+  return !error;
+}
+
+export async function getFinanceEntry(
+  organizationId: string,
+  entryId: string,
+): Promise<FinanceEntry | null> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("finance_entries")
+    .select("*")
+    .eq("id", entryId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  return data ? mapEntry(data) : null;
+}
+
+export async function deleteFinanceEntry(
+  organizationId: string,
+  entryId: string,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("finance_entries")
+    .delete()
+    .eq("id", entryId)
+    .eq("organization_id", organizationId);
+
+  return !error;
 }

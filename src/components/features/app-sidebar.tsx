@@ -114,6 +114,12 @@ const NAV_SECTIONS: readonly NavSection[] = [
     label: "Conta",
     items: [
       {
+        href: "/planos",
+        label: "Meu plano",
+        icon: PlanIcon,
+        roles: ["student"],
+      },
+      {
         href: "/meus-dados",
         label: "Meus dados",
         icon: UserIcon,

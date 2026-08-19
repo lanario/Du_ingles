@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { changeUserRoleAction } from "@/actions/admin/users";
+import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { AppRole } from "@/types/domain";
 
@@ -26,16 +27,11 @@ export function ChangeRoleForm({
         <label htmlFor="role" className="text-sm font-medium">
           Papel
         </label>
-        <select
-          id="role"
-          name="role"
-          defaultValue={currentRole}
-          className="h-10 rounded-md border border-admin-border bg-admin-background px-3 text-sm"
-        >
+        <Select id="role" name="role" tone="admin" defaultValue={currentRole} className="w-40">
           <option value="student">Aluno</option>
           <option value="teacher">Professor</option>
           <option value="admin">Admin</option>
-        </select>
+        </Select>
       </div>
       <button
         type="submit"

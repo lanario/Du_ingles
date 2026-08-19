@@ -290,3 +290,20 @@ export async function getGroupTeacherId(groupId: string): Promise<string | null>
     .maybeSingle();
   return data?.teacher_id ?? null;
 }
+
+/**
+ * Arquivar/reativar uma turma. É um `update` de uma coluna só, separado de
+ * `updateGroup` de propósito: alternar do cartão não pode arrastar junto a
+ * regeração de sessões nem exigir o resto do formulário.
+ */
+export async function setGroupActive(
+  groupId: string,
+  isActive: boolean,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("groups")
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq("id", groupId);
+  return !error;
+}

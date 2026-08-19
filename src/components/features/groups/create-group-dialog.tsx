@@ -5,6 +5,7 @@ import { createGroupAction } from "@/actions/teacher/groups";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
@@ -117,11 +118,11 @@ export function CreateGroupDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="group-start">Início (opcional)</Label>
-              <Input id="group-start" name="startDate" type="date" />
+              <DateField id="group-start" name="startDate" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="group-end">Fim (opcional)</Label>
-              <Input id="group-end" name="endDate" type="date" />
+              <DateField id="group-end" name="endDate" />
             </div>
           </div>
 

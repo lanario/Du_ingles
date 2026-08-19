@@ -322,3 +322,82 @@ export function SpinnerIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3.2 2" />
+    </Icon>
+  );
+}
+
+/** Entrada de dinheiro: seta que aponta para dentro do caixa. */
+export function ArrowInIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M18.5 5.5 7.5 16.5" />
+      <path d="M15.5 16.5h-8v-8" />
+    </Icon>
+  );
+}
+
+/** Saída de dinheiro: seta que aponta para fora do caixa. */
+export function ArrowOutIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5.5 18.5 16.5 7.5" />
+      <path d="M8.5 7.5h8v8" />
+    </Icon>
+  );
+}
+
+export function WalletIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 8.5A2.5 2.5 0 0 1 6 6h11a2 2 0 0 1 2 2v1" />
+      <rect x="3.5" y="8.5" width="17" height="10.5" rx="2.5" />
+      <path d="M16.5 13.75h1.5" />
+    </Icon>
+  );
+}
+
+export function CoinIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M14.5 9.5a2.6 2.6 0 0 0-2.5-1.4c-1.5 0-2.4.8-2.4 1.9 0 2.6 5 1.3 5 4 0 1.2-1 2-2.6 2a2.7 2.7 0 0 1-2.6-1.5" />
+      <path d="M12 6.5v11" />
+    </Icon>
+  );
+}
+
+/** Calendário com marcação de vencimento. */
+export function DueDateIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" />
+      <path d="M12 12.5v3l2 1.2" />
+    </Icon>
+  );
+}
+
+/** Linha ascendente — usada no selo de resultado positivo. */
+export function TrendUpIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 16.5 9 11l3.5 3.5L20.5 6.5" />
+      <path d="M20.5 11v-4.5H16" />
+    </Icon>
+  );
+}
+
+export function TrendDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.5 9 13l3.5-3.5 8 8" />
+      <path d="M20.5 13v4.5H16" />
+    </Icon>
+  );
+}

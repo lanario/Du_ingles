@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { createCourseAction } from "@/actions/admin/courses";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { CEFR_LEVELS } from "@/types/domain";
 
@@ -26,17 +27,13 @@ export function CreateCourseForm() {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="level">Nível</Label>
-        <select
-          id="level"
-          name="level"
-          className="h-10 rounded-md border border-admin-border bg-admin-background px-3 text-sm"
-        >
+        <Select id="level" name="level" tone="admin" className="w-32">
           {CEFR_LEVELS.map((l) => (
             <option key={l} value={l}>
               {l}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="totalHours">Carga horária</Label>

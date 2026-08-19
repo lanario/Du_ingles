@@ -3,8 +3,10 @@
 import { useActionState } from "react";
 import { createAssignmentAction } from "@/actions/teacher/assignments";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import type { MyGroupItem } from "@/repositories/groups";
 
@@ -25,19 +27,13 @@ export function CreateAssignmentForm({
 
       <div className="space-y-1.5">
         <Label htmlFor="groupId">Turma</Label>
-        <select
-          id="groupId"
-          name="groupId"
-          defaultValue={defaultGroupId}
-          required
-          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-        >
+        <Select id="groupId" name="groupId" defaultValue={defaultGroupId} required>
           {groups.map((g) => (
             <option key={g.id} value={g.id}>
               {g.name} · {g.level}
             </option>
           ))}
-        </select>
+        </Select>
         <FieldError
           messages={state && !state.success ? state.error.fields?.["groupId"] : undefined}
         />
@@ -54,7 +50,7 @@ export function CreateAssignmentForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="dueAt">Prazo (opcional)</Label>
-          <Input id="dueAt" name="dueAt" type="date" />
+          <DateField id="dueAt" name="dueAt" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="maxScore">Nota máxima</Label>

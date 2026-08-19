@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { updateUserAction } from "@/actions/admin/users";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import type { UserDetail } from "@/repositories/users";
@@ -35,12 +36,7 @@ export function EditUserForm({ user }: { user: UserDetail }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="birthDate">Data de nascimento</Label>
-          <Input
-            id="birthDate"
-            name="birthDate"
-            type="date"
-            defaultValue={user.birthDate ?? ""}
-          />
+          <DateField id="birthDate" name="birthDate" defaultValue={user.birthDate ?? ""} />
         </div>
       </div>
 

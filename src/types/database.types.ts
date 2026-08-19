@@ -1,11 +1,9 @@
-/**
- * Gerado por `generate_typescript_types` (Supabase). NÃO editar manualmente —
- * regenerar após toda migration nova.
- */
 export type Json =
   string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.15";
   };
@@ -549,6 +547,13 @@ export type Database = {
       finance_entries: {
         Row: {
           amount_cents: number;
+          category: string;
+          counterparty: string | null;
+          due_on: string;
+          notes: string | null;
+          paid_on: string | null;
+          payment_method: Database["public"]["Enums"]["finance_payment_method"] | null;
+          status: Database["public"]["Enums"]["finance_entry_status"];
           created_at: string;
           created_by: string | null;
           description: string;
@@ -560,6 +565,13 @@ export type Database = {
         };
         Insert: {
           amount_cents: number;
+          category?: string;
+          counterparty?: string | null;
+          due_on?: string;
+          notes?: string | null;
+          paid_on?: string | null;
+          payment_method?: Database["public"]["Enums"]["finance_payment_method"] | null;
+          status?: Database["public"]["Enums"]["finance_entry_status"];
           created_at?: string;
           created_by?: string | null;
           description: string;
@@ -571,6 +583,13 @@ export type Database = {
         };
         Update: {
           amount_cents?: number;
+          category?: string;
+          counterparty?: string | null;
+          due_on?: string;
+          notes?: string | null;
+          paid_on?: string | null;
+          payment_method?: Database["public"]["Enums"]["finance_payment_method"] | null;
+          status?: Database["public"]["Enums"]["finance_entry_status"];
           created_at?: string;
           created_by?: string | null;
           description?: string;
@@ -1051,6 +1070,188 @@ export type Database = {
           },
         ];
       };
+      stripe_connect_accounts: {
+        Row: {
+          application_fee_percent: number;
+          business_name: string | null;
+          charge_model: Database["public"]["Enums"]["stripe_charge_model"];
+          charges_enabled: boolean;
+          connected_at: string | null;
+          country: string;
+          created_at: string;
+          default_currency: string;
+          details_submitted: boolean;
+          id: string;
+          livemode: boolean;
+          organization_id: string;
+          payouts_enabled: boolean;
+          requirements: Json;
+          stripe_account_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          application_fee_percent?: number;
+          business_name?: string | null;
+          charge_model?: Database["public"]["Enums"]["stripe_charge_model"];
+          charges_enabled?: boolean;
+          connected_at?: string | null;
+          country?: string;
+          created_at?: string;
+          default_currency?: string;
+          details_submitted?: boolean;
+          id?: string;
+          livemode?: boolean;
+          organization_id: string;
+          payouts_enabled?: boolean;
+          requirements?: Json;
+          stripe_account_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          application_fee_percent?: number;
+          business_name?: string | null;
+          charge_model?: Database["public"]["Enums"]["stripe_charge_model"];
+          charges_enabled?: boolean;
+          connected_at?: string | null;
+          country?: string;
+          created_at?: string;
+          default_currency?: string;
+          details_submitted?: boolean;
+          id?: string;
+          livemode?: boolean;
+          organization_id?: string;
+          payouts_enabled?: boolean;
+          requirements?: Json;
+          stripe_account_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_accounts_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: true;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      student_plans: {
+        Row: {
+          accent: string;
+          badge: string | null;
+          billing_interval: Database["public"]["Enums"]["plan_interval"];
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          description: string | null;
+          features: Json;
+          headline: string | null;
+          id: string;
+          is_active: boolean;
+          is_featured: boolean;
+          is_public: boolean;
+          lessons_per_month: number | null;
+          level: Database["public"]["Enums"]["cefr_level"] | null;
+          minutes_per_lesson: number | null;
+          name: string;
+          organization_id: string;
+          price_cents: number;
+          seat_limit: number | null;
+          setup_fee_cents: number;
+          sort_order: number;
+          stripe_payment_link_id: string | null;
+          stripe_payment_link_url: string | null;
+          stripe_price_id: string | null;
+          stripe_product_id: string | null;
+          sync_error: string | null;
+          sync_status: Database["public"]["Enums"]["plan_sync_status"];
+          synced_at: string | null;
+          trial_days: number;
+          updated_at: string;
+        };
+        Insert: {
+          accent?: string;
+          badge?: string | null;
+          billing_interval?: Database["public"]["Enums"]["plan_interval"];
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          description?: string | null;
+          features?: Json;
+          headline?: string | null;
+          id?: string;
+          is_active?: boolean;
+          is_featured?: boolean;
+          is_public?: boolean;
+          lessons_per_month?: number | null;
+          level?: Database["public"]["Enums"]["cefr_level"] | null;
+          minutes_per_lesson?: number | null;
+          name: string;
+          organization_id: string;
+          price_cents: number;
+          seat_limit?: number | null;
+          setup_fee_cents?: number;
+          sort_order?: number;
+          stripe_payment_link_id?: string | null;
+          stripe_payment_link_url?: string | null;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: Database["public"]["Enums"]["plan_sync_status"];
+          synced_at?: string | null;
+          trial_days?: number;
+          updated_at?: string;
+        };
+        Update: {
+          accent?: string;
+          badge?: string | null;
+          billing_interval?: Database["public"]["Enums"]["plan_interval"];
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          description?: string | null;
+          features?: Json;
+          headline?: string | null;
+          id?: string;
+          is_active?: boolean;
+          is_featured?: boolean;
+          is_public?: boolean;
+          lessons_per_month?: number | null;
+          level?: Database["public"]["Enums"]["cefr_level"] | null;
+          minutes_per_lesson?: number | null;
+          name?: string;
+          organization_id?: string;
+          price_cents?: number;
+          seat_limit?: number | null;
+          setup_fee_cents?: number;
+          sort_order?: number;
+          stripe_payment_link_id?: string | null;
+          stripe_payment_link_url?: string | null;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: Database["public"]["Enums"]["plan_sync_status"];
+          synced_at?: string | null;
+          trial_days?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_plans_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_plans_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       student_profiles: {
         Row: {
           current_level: Database["public"]["Enums"]["cefr_level"];
@@ -1097,6 +1298,91 @@ export type Database = {
             foreignKeyName: "student_profiles_profile_id_fkey";
             columns: ["profile_id"];
             isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      student_subscriptions: {
+        Row: {
+          amount_cents: number | null;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
+          created_at: string;
+          currency: string;
+          current_period_end: string | null;
+          current_period_start: string | null;
+          hosted_invoice_url: string | null;
+          id: string;
+          organization_id: string;
+          plan_id: string | null;
+          status: Database["public"]["Enums"]["subscription_status"];
+          stripe_checkout_session_id: string | null;
+          stripe_customer_id: string;
+          stripe_subscription_id: string | null;
+          student_id: string;
+          trial_end: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          amount_cents?: number | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          current_period_end?: string | null;
+          current_period_start?: string | null;
+          hosted_invoice_url?: string | null;
+          id?: string;
+          organization_id: string;
+          plan_id?: string | null;
+          status?: Database["public"]["Enums"]["subscription_status"];
+          stripe_checkout_session_id?: string | null;
+          stripe_customer_id: string;
+          stripe_subscription_id?: string | null;
+          student_id: string;
+          trial_end?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_cents?: number | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          current_period_end?: string | null;
+          current_period_start?: string | null;
+          hosted_invoice_url?: string | null;
+          id?: string;
+          organization_id?: string;
+          plan_id?: string | null;
+          status?: Database["public"]["Enums"]["subscription_status"];
+          stripe_checkout_session_id?: string | null;
+          stripe_customer_id?: string;
+          stripe_subscription_id?: string | null;
+          student_id?: string;
+          trial_end?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_subscriptions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "student_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_subscriptions_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -1195,10 +1481,10 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "user_invites_organization_id_fkey";
-            columns: ["organization_id"];
+            foreignKeyName: "user_invites_accepted_profile_id_fkey";
+            columns: ["accepted_profile_id"];
             isOneToOne: false;
-            referencedRelation: "organizations";
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {
@@ -1209,10 +1495,10 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "user_invites_accepted_profile_id_fkey";
-            columns: ["accepted_profile_id"];
+            foreignKeyName: "user_invites_organization_id_fkey";
+            columns: ["organization_id"];
             isOneToOne: false;
-            referencedRelation: "profiles";
+            referencedRelation: "organizations";
             referencedColumns: ["id"];
           },
         ];
@@ -1222,9 +1508,9 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      auth_org: { Args: Record<PropertyKey, never>; Returns: string };
+      auth_org: { Args: never; Returns: string };
       auth_role: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: Database["public"]["Enums"]["app_role"];
       };
       check_rate_limit: {
@@ -1246,13 +1532,13 @@ export type Database = {
         Args: { p_group: string };
         Returns: number;
       };
-      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_admin: { Args: never; Returns: boolean };
       is_conversation_participant: {
         Args: { p_conversation_id: string };
         Returns: boolean;
       };
       own_profile_immutable_fields: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           deleted_at: string;
           is_active: boolean;
@@ -1274,7 +1560,22 @@ export type Database = {
       cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
       enrollment_status: "active" | "paused" | "completed" | "cancelled";
       finance_entry_kind: "revenue" | "professional_cost" | "operating_expense";
+      finance_entry_status: "pending" | "paid";
+      finance_payment_method:
+        "pix" | "boleto" | "credit_card" | "debit_card" | "cash" | "transfer" | "other";
+      plan_interval: "month" | "quarter" | "semester" | "year" | "one_time";
+      plan_sync_status: "draft" | "synced" | "error";
       session_status: "scheduled" | "in_progress" | "completed" | "cancelled";
+      stripe_charge_model: "destination" | "direct";
+      subscription_status:
+        | "incomplete"
+        | "incomplete_expired"
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "unpaid"
+        | "paused";
       user_invite_status: "pending" | "accepted" | "revoked";
     };
     CompositeTypes: {
@@ -1282,6 +1583,119 @@ export type Database = {
     };
   };
 };
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
 
 export const Constants = {
   public: {
@@ -1292,7 +1706,30 @@ export const Constants = {
       cefr_level: ["A1", "A2", "B1", "B2", "C1", "C2"],
       enrollment_status: ["active", "paused", "completed", "cancelled"],
       finance_entry_kind: ["revenue", "professional_cost", "operating_expense"],
+      finance_entry_status: ["pending", "paid"],
+      finance_payment_method: [
+        "pix",
+        "boleto",
+        "credit_card",
+        "debit_card",
+        "cash",
+        "transfer",
+        "other",
+      ],
+      plan_interval: ["month", "quarter", "semester", "year", "one_time"],
+      plan_sync_status: ["draft", "synced", "error"],
       session_status: ["scheduled", "in_progress", "completed", "cancelled"],
+      stripe_charge_model: ["destination", "direct"],
+      subscription_status: [
+        "incomplete",
+        "incomplete_expired",
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "unpaid",
+        "paused",
+      ],
       user_invite_status: ["pending", "accepted", "revoked"],
     },
   },

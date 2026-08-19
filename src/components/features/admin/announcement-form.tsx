@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createAnnouncementAction } from "@/actions/admin/announcements";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { GroupListItem } from "@/repositories/groups";
 
@@ -20,32 +21,28 @@ export function AnnouncementForm({ groups }: { groups: GroupListItem[] }) {
 
       <div className="space-y-1.5">
         <Label htmlFor="scope">Enviar para</Label>
-        <select
+        <Select
           id="scope"
           name="scope"
+          tone="admin"
           value={scope}
-          onChange={(e) => setScope(e.target.value as "school" | "group")}
-          className="h-10 w-full rounded-md border border-admin-border bg-admin-background px-3 text-sm"
+          onChange={(next) => setScope(next as "school" | "group")}
         >
           <option value="school">Toda a escola</option>
           <option value="group">Uma turma</option>
-        </select>
+        </Select>
       </div>
 
       {scope === "group" && (
         <div className="space-y-1.5">
           <Label htmlFor="groupId">Turma</Label>
-          <select
-            id="groupId"
-            name="groupId"
-            className="h-10 w-full rounded-md border border-admin-border bg-admin-background px-3 text-sm"
-          >
+          <Select id="groupId" name="groupId" tone="admin">
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 

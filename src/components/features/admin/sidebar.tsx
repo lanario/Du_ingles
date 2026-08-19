@@ -36,11 +36,9 @@ const NAV_SECTIONS = [
   {
     label: "Operação",
     items: [
-      { href: "/admin/agenda", label: "Agenda", icon: "calendar" },
       { href: "/admin/financeiro", label: "Financeiro", icon: "coin" },
       { href: "/admin/relatorios", label: "Relatórios", icon: "chart" },
       { href: "/admin/mensagens", label: "Mensagens", icon: "chat" },
-      { href: "/admin/ver-como", label: "Ver como", icon: "eye" },
       { href: "/admin/auditoria", label: "Auditoria", icon: "shield" },
     ],
   },
@@ -92,12 +90,6 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5.2A8 8 0 1 1 21 12Z" />
     </>
   ),
-  eye: (
-    <>
-      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="2.8" />
-    </>
-  ),
   shield: (
     <>
       <path d="M12 3l7.5 3v5.5c0 4.4-3.1 8.2-7.5 9.5-4.4-1.3-7.5-5.1-7.5-9.5V6Z" />
@@ -122,12 +114,6 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <rect x="5" y="4.5" width="14" height="17" rx="2" />
       <path d="M9 3.5h6a1 1 0 0 1 1 1v1.5H8V4.5a1 1 0 0 1 1-1Z" />
       <path d="M8.5 12h7M8.5 16h5" />
-    </>
-  ),
-  calendar: (
-    <>
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M8 3v4M16 3v4M3 10h18" />
     </>
   ),
   coin: (

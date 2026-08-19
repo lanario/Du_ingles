@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { startSessionAction } from "@/actions/teacher/live-session";
+import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { LessonPlanListItem } from "@/repositories/lesson-plans";
 
@@ -23,19 +24,14 @@ export function StartSessionForm({
         <label htmlFor="planId" className="text-sm font-medium">
           Plano de aula (opcional)
         </label>
-        <select
-          id="planId"
-          value={planId}
-          onChange={(e) => setPlanId(e.target.value)}
-          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-        >
+        <Select id="planId" value={planId} onChange={setPlanId}>
           <option value="">Começar em branco</option>
           {lessonPlans.map((p) => (
             <option key={p.id} value={p.id}>
               {p.title}
             </option>
           ))}
-        </select>
+        </Select>
         <p className="text-xs text-muted-foreground">
           O conteúdo do plano é copiado para esta sessão — editar aqui não altera o plano
           original.

@@ -14,6 +14,7 @@ import { useActionState, useState } from "react";
 import { acceptInviteAction } from "@/actions/auth/accept-invite";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { PasswordMatch, PasswordStrength } from "@/components/ui/password-strength";
@@ -94,12 +95,12 @@ export function AcceptInviteForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="birthDate">Data de nascimento</Label>
-          <Input
+          <DateField
             id="birthDate"
             name="birthDate"
-            type="date"
-            autoComplete="bday"
             required
+            max={new Date().toISOString().slice(0, 10)}
+            invalid={Boolean(fields?.["birthDate"])}
           />
           <FieldError messages={fields?.["birthDate"]} />
         </div>

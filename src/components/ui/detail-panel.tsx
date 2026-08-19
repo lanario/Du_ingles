@@ -180,7 +180,12 @@ export function DetailButton({
   tone = "default",
 }: DetailButtonProps) {
   const className = cn(
-    "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors",
+    // A faixa é `flex-wrap`, então o mínimo é o que decide o arranjo: com
+    // espaço, os botões crescem por igual lado a lado; sem espaço, o que não
+    // couber desce inteiro para a linha seguinte. Sem esse mínimo, três ações
+    // num painel estreito espremem cada botão até o rótulo quebrar em duas
+    // linhas — foi o que acontecia no detalhe de turma.
+    "inline-flex min-w-[7.25rem] flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors",
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
     "disabled:cursor-not-allowed disabled:opacity-40",
     tone === "danger"
@@ -198,16 +203,16 @@ export function DetailButton({
         rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
         className={className}
       >
-        <Icon className="h-4 w-4" />
-        {label}
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 truncate">{label}</span>
       </a>
     );
   }
 
   return (
     <button type="button" onClick={onClick} disabled={disabled} className={className}>
-      <Icon className="h-4 w-4" />
-      {label}
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="min-w-0 truncate">{label}</span>
     </button>
   );
 }

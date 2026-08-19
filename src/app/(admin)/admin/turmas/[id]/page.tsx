@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { getGroupById } from "@/repositories/groups";
+import { listCourses } from "@/repositories/courses";
 import { listGroupEnrollments } from "@/repositories/enrollments";
 import { listGroupSessions } from "@/repositories/class-sessions";
 import { listUsers } from "@/repositories/users";
+import { GroupHeader } from "@/components/features/admin/groups/group-header";
 import { EnrollStudentForm } from "@/components/features/admin/groups/enroll-student-form";
+import { GroupSessions } from "@/components/features/admin/groups/group-sessions";
+import { SectionTitle } from "@/components/features/admin/dashboard/primitives";
 
 export const metadata: Metadata = { title: "Turma" };
-
-const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,69 +24,36 @@ export default async function TurmaDetailPage({ params }: PageProps) {
   const group = await getGroupById(id);
   if (!group) notFound();
 
-  const [enrollments, sessions, students] = await Promise.all([
+  const [enrollments, sessions, students, courses, teachers] = await Promise.all([
     listGroupEnrollments(id),
     listGroupSessions(id),
     listUsers(ctx.organizationId, { role: "student" }),
+    listCourses(),
+    listUsers(ctx.organizationId, { role: "teacher" }),
   ]);
 
+  const activeCount = enrollments.filter((item) => item.status === "active").length;
+
   return (
-    <div className="max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">{group.name}</h1>
-        <p className="mt-1 text-sm text-admin-foreground/70">
-          {group.teacherName} · {group.level} ·{" "}
-          {group.courseName ?? "sem curso vinculado"}
-        </p>
-        <p className="mt-1 text-sm text-admin-foreground/60">
-          {group.schedule
-            .map((s) => `${WEEKDAYS[s.weekday]} ${s.start}–${s.end}`)
-            .join(" · ")}
-        </p>
+    <div className="max-w-5xl space-y-8 pb-10">
+      <GroupHeader group={group} courses={courses} teachers={teachers} />
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+        <section>
+          <SectionTitle hint={`${activeCount}/${group.maxStudents}`}>Matrículas</SectionTitle>
+          <EnrollStudentForm
+            groupId={group.id}
+            enrollments={enrollments}
+            students={students}
+            seatsLeft={Math.max(0, group.maxStudents - activeCount)}
+          />
+        </section>
+
+        <section>
+          <SectionTitle hint={`${sessions.length} no total`}>Sessões</SectionTitle>
+          <GroupSessions sessions={sessions} />
+        </section>
       </div>
-
-      <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-admin-foreground/60">
-          Matrículas ({enrollments.filter((e) => e.status === "active").length}/
-          {group.maxStudents})
-        </h2>
-        <EnrollStudentForm
-          groupId={group.id}
-          enrollments={enrollments}
-          students={students}
-        />
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-admin-foreground/60">
-          Próximas sessões ({sessions.length})
-        </h2>
-        {sessions.length === 0 ? (
-          <p className="text-sm text-admin-foreground/60">
-            Nenhuma sessão gerada ainda — confira se a turma tem horários definidos.
-          </p>
-        ) : (
-          <ul className="divide-y divide-admin-border rounded-lg border border-admin-border">
-            {sessions.slice(0, 8).map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between px-4 py-3 text-sm"
-              >
-                <span>
-                  {new Date(s.scheduledAt).toLocaleString("pt-BR", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-                <span className="text-admin-foreground/60">{s.status}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

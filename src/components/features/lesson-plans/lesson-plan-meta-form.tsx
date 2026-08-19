@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { updateLessonPlanMetaAction } from "@/actions/teacher/lesson-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import { CEFR_LEVELS } from "@/types/domain";
 import type { LessonPlanDetail } from "@/repositories/lesson-plans";
@@ -43,19 +44,13 @@ export function LessonPlanMetaForm({ plan }: { plan: LessonPlanDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="level">Nível</Label>
-          <select
-            id="level"
-            name="level"
-            defaultValue={plan.level}
-            disabled={!plan.isOwn}
-            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-          >
+          <Select id="level" name="level" defaultValue={plan.level} disabled={!plan.isOwn}>
             {CEFR_LEVELS.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="durationMinutes">Duração (min)</Label>

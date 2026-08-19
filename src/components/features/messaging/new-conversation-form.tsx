@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { startConversationAction } from "@/actions/messaging/conversations";
+import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { Contact } from "@/repositories/conversations";
 
@@ -19,20 +20,13 @@ export function NewConversationForm({ contacts }: { contacts: Contact[] }) {
       {state && !state.success && (
         <FormBanner tone="error">{state.error.message}</FormBanner>
       )}
-      <select
-        name="contactId"
-        defaultValue=""
-        className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
-      >
-        <option value="" disabled>
-          Nova conversa com…
-        </option>
+      <Select name="contactId" defaultValue="" placeholder="Nova conversa com…" className="h-9">
         {contacts.map((c) => (
           <option key={c.id} value={c.id}>
             {c.fullName}
           </option>
         ))}
-      </select>
+      </Select>
       <button
         type="submit"
         disabled={isPending}

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { createLessonPlanAction } from "@/actions/teacher/lesson-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { CEFR_LEVELS } from "@/types/domain";
 
@@ -32,17 +33,13 @@ export function CreateLessonPlanForm() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="level">Nível</Label>
-          <select
-            id="level"
-            name="level"
-            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-          >
+          <Select id="level" name="level">
             {CEFR_LEVELS.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="durationMinutes">Duração (min)</Label>

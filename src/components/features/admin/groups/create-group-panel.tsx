@@ -18,7 +18,9 @@ import { useActionState, useState } from "react";
 import { createGroupAction } from "@/actions/admin/groups";
 import { SidePanel } from "@/components/ui/side-panel";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { ScheduleBuilder } from "@/components/features/admin/groups/schedule-builder";
 import { CalendarIcon, GraduationIcon, SpinnerIcon } from "@/components/ui/icons";
@@ -99,23 +101,20 @@ export function CreateGroupPanel({
               <Label htmlFor="group-teacherId" className="text-admin-foreground">
                 Professor <span className="text-gold-600">*</span>
               </Label>
-              <select
+              <Select
                 id="group-teacherId"
                 name="teacherId"
+                tone="admin"
                 required
                 disabled={noTeachers}
                 defaultValue=""
-                className="h-10 w-full rounded-md border border-admin-border bg-admin-background px-3 text-sm text-admin-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-50"
               >
-                <option value="" disabled>
-                  Selecione…
-                </option>
                 {teachers.map((teacher) => (
                   <option key={teacher.id} value={teacher.id}>
                     {teacher.fullName}
                   </option>
                 ))}
-              </select>
+              </Select>
               <FieldError messages={fields?.["teacherId"]} />
             </div>
 
@@ -123,19 +122,14 @@ export function CreateGroupPanel({
               <Label htmlFor="group-courseId" className="text-admin-foreground">
                 Curso
               </Label>
-              <select
-                id="group-courseId"
-                name="courseId"
-                defaultValue=""
-                className="h-10 w-full rounded-md border border-admin-border bg-admin-background px-3 text-sm text-admin-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
-              >
+              <Select id="group-courseId" name="courseId" tone="admin" defaultValue="">
                 <option value="">Nenhum</option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               <p className="text-xs text-admin-foreground/55">Opcional — pode vincular depois.</p>
             </div>
           </div>
@@ -189,23 +183,13 @@ export function CreateGroupPanel({
               <Label htmlFor="group-startDate" className="text-admin-foreground">
                 Início
               </Label>
-              <Input
-                id="group-startDate"
-                name="startDate"
-                type="date"
-                className="border-admin-border bg-admin-background focus-visible:ring-gold-500"
-              />
+              <DateField id="group-startDate" name="startDate" tone="admin" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="group-endDate" className="text-admin-foreground">
                 Fim
               </Label>
-              <Input
-                id="group-endDate"
-                name="endDate"
-                type="date"
-                className="border-admin-border bg-admin-background focus-visible:ring-gold-500"
-              />
+              <DateField id="group-endDate" name="endDate" tone="admin" />
             </div>
           </div>
 

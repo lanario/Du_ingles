@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Select } from "@/components/ui/select";
+import { TimeField } from "@/components/ui/time-field";
 import { cn } from "@/lib/utils";
 import type { ScheduleEntry } from "@/schemas/groups";
 
@@ -18,10 +20,6 @@ export function ScheduleBuilder({
   /** Pré-carrega a grade ao editar uma turma existente. */
   initial?: ScheduleEntry[];
 }) {
-  const field =
-    tone === "admin"
-      ? "border-admin-border bg-admin-background"
-      : "border-border bg-background";
   const mutedText = tone === "admin" ? "text-admin-foreground/60" : "text-muted-foreground";
   const accentText = tone === "admin" ? "text-admin-accent" : "text-gold-600";
   const [entries, setEntries] = useState<ScheduleEntry[]>(
@@ -37,29 +35,28 @@ export function ScheduleBuilder({
       <input type="hidden" name="schedule" value={JSON.stringify(entries)} />
       {entries.map((entry, i) => (
         <div key={i} className="flex items-center gap-2">
-          <select
-            value={entry.weekday}
-            onChange={(e) => update(i, { weekday: Number(e.target.value) })}
-            className={cn("h-10 rounded-md border px-2 text-sm", field)}
+          <Select
+            tone={tone}
+            value={String(entry.weekday)}
+            onChange={(next) => update(i, { weekday: Number(next) })}
+            className="w-36"
           >
             {WEEKDAYS.map((day, idx) => (
               <option key={idx} value={idx}>
                 {day}
               </option>
             ))}
-          </select>
-          <input
-            type="time"
+          </Select>
+          <TimeField
+            tone={tone}
             value={entry.start}
-            onChange={(e) => update(i, { start: e.target.value })}
-            className={cn("h-10 rounded-md border px-2 text-sm", field)}
+            onChange={(next) => update(i, { start: next })}
           />
           <span className={mutedText}>até</span>
-          <input
-            type="time"
+          <TimeField
+            tone={tone}
             value={entry.end}
-            onChange={(e) => update(i, { end: e.target.value })}
-            className={cn("h-10 rounded-md border px-2 text-sm", field)}
+            onChange={(next) => update(i, { end: next })}
           />
           {entries.length > 1 && (
             <button
