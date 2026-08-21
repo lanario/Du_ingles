@@ -1,41 +1,106 @@
-import { ScrollReveal } from "@/components/motion/scroll-reveal-dynamic";
+"use client";
 
-const LEVELS = [
+// Client component: os ícones de cada nível são componentes React e não
+// atravessam a fronteira server → client como props.
+import { ScrollReveal } from "@/components/motion/scroll-reveal-dynamic";
+import {
+  RadialOrbitalTimeline,
+  type OrbitalItem,
+} from "@/components/ui/radial-orbital-timeline";
+import {
+  GraduationIcon,
+  GroupsIcon,
+  MegaphoneIcon,
+  MessageIcon,
+  ProgressIcon,
+  UserIcon,
+} from "@/components/ui/icons";
+
+/**
+ * Seis níveis em órbita ao redor de um núcleo. A órbita gira sozinha; o
+ * clique em um nível para a rotação, traz o nó para a frente e abre o card
+ * com o detalhe e os níveis vizinhos. `tone` anda pela escala azul marinho
+ * da marca e fecha em dourado no C2: o mesmo acento usado nos CTAs para
+ * marcar "o topo" — aqui, o nível mais alto.
+ */
+const LEVELS: OrbitalItem[] = [
   {
-    level: "A1",
+    id: 1,
+    code: "A1",
     title: "Iniciante",
-    description: "Frases simples do dia a dia e apresentação pessoal.",
+    category: "Fundamentos",
+    meta: "~80h",
+    content: "Frases simples do dia a dia e apresentação pessoal.",
+    icon: UserIcon,
+    relatedIds: [2],
+    energy: 20,
+    tone: "var(--navy-300)",
   },
   {
-    level: "A2",
+    id: 2,
+    code: "A2",
     title: "Básico",
-    description: "Conversas curtas sobre rotina, trabalho e viagens.",
+    category: "Fundamentos",
+    meta: "~180h",
+    content: "Conversas curtas sobre rotina, trabalho e viagens.",
+    icon: MessageIcon,
+    relatedIds: [1, 3],
+    energy: 35,
+    tone: "var(--navy-500)",
   },
   {
-    level: "B1",
+    id: 3,
+    code: "B1",
     title: "Intermediário",
-    description: "Argumenta opiniões e lida com situações inesperadas.",
+    category: "Independente",
+    meta: "~350h",
+    content: "Argumenta opiniões e lida com situações inesperadas.",
+    icon: GroupsIcon,
+    relatedIds: [2, 4],
+    energy: 55,
+    tone: "var(--navy-600)",
   },
   {
-    level: "B2",
+    id: 4,
+    code: "B2",
     title: "Intermediário superior",
-    description: "Discute temas complexos com fluência razoável.",
+    category: "Independente",
+    meta: "~550h",
+    content: "Discute temas complexos com fluência razoável.",
+    icon: MegaphoneIcon,
+    relatedIds: [3, 5],
+    energy: 70,
+    tone: "var(--navy-700)",
   },
   {
-    level: "C1",
+    id: 5,
+    code: "C1",
     title: "Avançado",
-    description: "Comunicação fluente em contextos acadêmicos e profissionais.",
+    category: "Proficiente",
+    meta: "~800h",
+    content: "Comunicação fluente em contextos acadêmicos e profissionais.",
+    icon: ProgressIcon,
+    relatedIds: [4, 6],
+    energy: 88,
+    tone: "var(--navy-900)",
   },
   {
-    level: "C2",
+    id: 6,
+    code: "C2",
     title: "Proficiente",
-    description: "Domínio próximo ao de um falante nativo.",
+    category: "Domínio",
+    meta: "~1.000h",
+    content: "Domínio próximo ao de um falante nativo.",
+    icon: GraduationIcon,
+    relatedIds: [5],
+    energy: 100,
+    tone: "var(--gold-600)",
   },
 ];
 
 export function CefrLevels() {
   return (
-    <section className="border-b border-border">
+    <section id="niveis">
       <div className="mx-auto max-w-6xl px-4 py-20">
         <div className="max-w-2xl">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -43,17 +108,15 @@ export function CefrLevels() {
           </h2>
           <p className="mt-3 text-muted-foreground">
             Seguimos o Quadro Europeu Comum de Referência (CEFR) — o mesmo padrão usado em
-            certificações internacionais.
+            certificações internacionais. Clique em um nível para ver o detalhe.
           </p>
         </div>
-        <ScrollReveal className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {LEVELS.map((item) => (
-            <div key={item.level} className="rounded-lg border border-border p-5">
-              <span className="text-2xl font-bold text-primary">{item.level}</span>
-              <h3 className="mt-1 font-semibold">{item.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-            </div>
-          ))}
+
+        <ScrollReveal className="mt-10">
+          <RadialOrbitalTimeline
+            items={LEVELS}
+            className="mx-auto h-[520px] w-full max-w-[42rem] sm:h-[600px]"
+          />
         </ScrollReveal>
       </div>
     </section>

@@ -301,67 +301,94 @@ function ShowcaseCard({
     <motion.article
       data-plan-card
       layout
-      whileHover={reduceMotion || dimmed ? undefined : { y: -6 }}
+      whileHover={reduceMotion || dimmed ? undefined : { y: -4 }}
       transition={{ type: "spring", stiffness: 320, damping: 30 }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-background p-6 transition-opacity duration-300",
+        "group relative flex flex-col overflow-hidden rounded-2xl p-6 transition-opacity duration-300",
         dimmed && "opacity-55 hover:opacity-100",
       )}
       style={{
+        background: plan.isFeatured
+          ? "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-800) 100%)"
+          : "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 100%)",
         boxShadow: plan.isFeatured
-          ? `0 0 0 2px ${tone}, 0 24px 50px -34px ${tone}`
-          : "inset 0 0 0 1px var(--border), 0 10px 30px -24px rgba(11,26,51,0.4)",
+          ? `inset 0 0 0 1px color-mix(in srgb, ${tone} 28%, transparent), 0 24px 60px -16px rgba(5,15,34,0.7)`
+          : "inset 0 0 0 1px color-mix(in srgb, var(--navy-600) 32%, transparent), 0 16px 40px -20px rgba(5,15,34,0.5)",
       }}
     >
-      {/* Brilho diagonal que atravessa o cartão em destaque no hover. */}
+      {/* Linha de brilho sutil no topo do card em destaque */}
       {plan.isFeatured && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-x-0 -top-px h-px"
           style={{
-            background: `radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, ${tone} 18%, transparent), transparent 68%)`,
+            background: `linear-gradient(90deg, transparent, ${tone}, transparent)`,
           }}
         />
       )}
 
+      {/* Badge */}
       <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-lg font-semibold text-foreground">{plan.name}</h2>
-          {plan.headline && (
-            <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
-              {plan.headline}
-            </p>
-          )}
-        </div>
+        <span
+          className="mb-3 inline-flex w-fit items-center rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
+          style={{
+            color: plan.isFeatured ? "var(--gold-400)" : "var(--navy-300)",
+            border: `1px solid ${
+              plan.isFeatured
+                ? `color-mix(in srgb, ${tone} 32%, transparent)`
+                : "color-mix(in srgb, var(--navy-500) 28%, transparent)"
+            }`,
+            background: plan.isFeatured
+              ? `color-mix(in srgb, ${tone} 8%, transparent)`
+              : "color-mix(in srgb, var(--navy-600) 12%, transparent)",
+          }}
+        >
+          {INTERVAL_LABEL[plan.billingInterval]}
+        </span>
 
         {plan.badge && (
           <span
             style={{
-              color: tone,
-              backgroundColor: `color-mix(in srgb, ${tone} 12%, #ffffff)`,
-              boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${tone} 34%, transparent)`,
+              color: plan.isFeatured ? "var(--navy-950)" : tone,
+              backgroundColor: plan.isFeatured
+                ? tone
+                : `color-mix(in srgb, ${tone} 16%, transparent)`,
             }}
-            className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide"
+            className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
           >
             {plan.badge}
           </span>
         )}
       </div>
 
+      {/* Nome e descrição */}
+      <div className="relative">
+        <h2 className="truncate text-xl font-bold text-white">{plan.name}</h2>
+        {plan.headline && (
+          <p className="mt-1.5 text-[13px] leading-snug" style={{ color: "var(--navy-300)" }}>
+            {plan.headline}
+          </p>
+        )}
+      </div>
+
+      {/* Preço */}
       <div className="relative mt-5">
-        <p className="flex items-baseline gap-1 leading-none text-foreground">
-          <span className="text-base font-medium text-muted-foreground">{symbol}</span>
-          <span className="text-[40px] font-semibold tabular tracking-tight">{whole}</span>
-          <span className="text-lg font-semibold tabular text-muted-foreground">
+        <p className="flex items-baseline gap-1 leading-none">
+          <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
+            {symbol}
+          </span>
+          <span className="text-[44px] font-bold tabular tracking-tight text-white">
+            {whole}
+          </span>
+          <span className="text-lg font-semibold tabular" style={{ color: "var(--navy-300)" }}>
             ,{fraction}
           </span>
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
             {INTERVAL_SUFFIX[plan.billingInterval]}
           </span>
         </p>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
-          <span>{INTERVAL_LABEL[plan.billingInterval]}</span>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]" style={{ color: "var(--navy-300)" }}>
           {monthly !== null && <span>≈ {formatMoney(monthly, plan.currency)}/mês</span>}
           {plan.trialDays > 0 && (
             <span className="font-medium text-[color:var(--success)]">
@@ -371,37 +398,46 @@ function ShowcaseCard({
         </div>
 
         {plan.setupFeeCents > 0 && (
-          <p className="mt-1 text-[12px] text-muted-foreground">
+          <p className="mt-1 text-[12px]" style={{ color: "var(--navy-300)" }}>
             + {formatMoney(plan.setupFeeCents, plan.currency)} de matrícula, uma única vez
           </p>
         )}
       </div>
 
+      {/* Separador */}
+      <div
+        className="my-5 h-px w-full"
+        style={{
+          background: plan.isFeatured
+            ? `color-mix(in srgb, ${tone} 18%, transparent)`
+            : "color-mix(in srgb, var(--navy-600) 28%, transparent)",
+        }}
+      />
+
+      {/* Features */}
       {plan.features.length > 0 && (
-        <ul className="relative mt-5 space-y-2.5">
+        <ul className="relative flex-1 space-y-3">
           {plan.features.map((feature) => (
             <li
               key={feature}
-              className="flex items-start gap-2.5 text-[13px] leading-snug text-foreground/75"
+              className="flex items-start gap-2.5 text-[13px] leading-snug"
             >
-              <span
+              <CheckIcon
                 aria-hidden
+                className="mt-0.5 h-4 w-4 shrink-0"
+                strokeWidth={2.4}
                 style={{
-                  color: tone,
-                  backgroundColor: `color-mix(in srgb, ${tone} 12%, #ffffff)`,
+                  color: plan.isFeatured ? "var(--gold-500)" : "var(--gold-400)",
                 }}
-                className="mt-px grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full"
-              >
-                <CheckIcon className="h-2.5 w-2.5" strokeWidth={2.8} />
-              </span>
-              <span className="min-w-0">{feature}</span>
+              />
+              <span className="min-w-0 font-medium text-white/80">{feature}</span>
             </li>
           ))}
         </ul>
       )}
 
       {plan.description && (
-        <p className="relative mt-4 text-[12px] leading-relaxed text-muted-foreground">
+        <p className="relative mt-4 text-[12px] leading-relaxed" style={{ color: "var(--navy-300)" }}>
           {plan.description}
         </p>
       )}
@@ -419,21 +455,35 @@ function ShowcaseCard({
           disabled={disabled || current || soldOut}
           title={readOnly ? "Modo somente leitura — nada é cobrado aqui." : undefined}
           className={cn(
-            "inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all",
+            "inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed",
-            current
-              ? "bg-muted text-muted-foreground"
-              : soldOut
-                ? "bg-muted text-muted-foreground/60"
-                : plan.isFeatured
-                  ? "text-white hover:opacity-90 disabled:opacity-50"
-                  : "border border-border text-foreground hover:bg-muted disabled:opacity-50",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            current && "!opacity-60",
           )}
           style={
-            plan.isFeatured && !current && !soldOut
-              ? { background: `linear-gradient(100deg, var(--navy-800), ${tone})` }
-              : undefined
+            current
+              ? {
+                  background: "color-mix(in srgb, var(--navy-600) 40%, transparent)",
+                  color: "var(--navy-300)",
+                  border: "1px solid color-mix(in srgb, var(--navy-500) 28%, transparent)",
+                }
+              : soldOut
+                ? {
+                    background: "color-mix(in srgb, var(--navy-600) 20%, transparent)",
+                    color: "var(--navy-300)",
+                    border: "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
+                  }
+                : plan.isFeatured
+                  ? {
+                      background: tone,
+                      color: "var(--navy-950)",
+                      border: `1px solid ${tone}`,
+                    }
+                  : {
+                      background: "color-mix(in srgb, var(--navy-600) 40%, transparent)",
+                      color: "white",
+                      border: "1px solid color-mix(in srgb, var(--navy-500) 40%, transparent)",
+                    }
           }
         >
           {pending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
@@ -448,7 +498,7 @@ function ShowcaseCard({
                   : "Assinar este plano"}
         </button>
 
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        <p className="mt-2 text-center text-[11px]" style={{ color: "var(--navy-300)" }}>
           Pagamento seguro via Stripe · cancele quando quiser
         </p>
       </div>

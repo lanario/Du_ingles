@@ -21,6 +21,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  experimental: {
+    /**
+     * Rede de segurança para o autosave de uma aula cujo upload de imagem
+     * falhou: o documento carrega o `data:` URL da imagem até o próximo
+     * envio bem-sucedido, e 1 MB (o padrão) derrubaria a gravação.
+     */
+    serverActions: { bodySizeLimit: "8mb" },
+  },
   async headers() {
     return [
       {

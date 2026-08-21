@@ -21,7 +21,7 @@ const TESTIMONIALS = [
 
 export function Testimonials() {
   return (
-    <section className="border-b border-border bg-muted/30">
+    <section>
       <div className="mx-auto max-w-6xl px-4 py-20">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           O que dizem nossos alunos

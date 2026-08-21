@@ -151,6 +151,208 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * Botão de "letras que sobem" (nav de marketing). A camada `__face` cobre o
+ * botão no repouso — navy sólido, igual aos demais botões primários — e desce
+ * no hover revelando o fundo dourado com as letras entrando uma a uma. O
+ * atraso de cada letra vem de `--i`, definido no JSX, para não depender de uma
+ * lista fixa de `nth-child`.
+ */
+.btn-letters {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid var(--navy-800);
+  background: var(--gold-500);
+  color: var(--navy-950);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  padding: 0.55rem 1.5rem;
+  text-transform: uppercase;
+}
+
+.btn-letters:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.btn-letters__face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  transition: transform 0.2s cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+.btn-letters:hover .btn-letters__face,
+.btn-letters:focus-visible .btn-letters__face {
+  transform: translateY(100%);
+}
+
+.btn-letters__letters {
+  display: inline-flex;
+}
+
+.btn-letters__letters span {
+  opacity: 0;
+  transform: translateY(-15px);
+  transition:
+    transform 0.2s cubic-bezier(0.87, 0, 0.13, 1),
+    opacity 0.2s;
+}
+
+.btn-letters__letters span:nth-child(2n) {
+  transform: translateY(15px);
+}
+
+.btn-letters:hover .btn-letters__letters span,
+.btn-letters:focus-visible .btn-letters__letters span {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: calc(var(--i, 0) * 0.05s);
+}
+
+/*
+ * CTA principal do hero: precisa saltar do branco à primeira vista, então
+ * nasce sólido em azul marinho (`--navy-800`) com texto branco. No hover o
+ * dourado `--gold-500` se preenche a partir do centro e o texto vira navy —
+ * a inversão de cor é o que sinaliza "clique aqui", não um simples realce.
+ */
+.btn-cta-fill {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid var(--navy-800);
+  border-radius: 34px;
+  background-color: var(--navy-800);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(10, 31, 68, 0.25);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-cta-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 50px;
+  height: 50px;
+  border-radius: inherit;
+  scale: 0;
+  z-index: -1;
+  background-color: var(--gold-500);
+  transition: scale 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-cta-fill:hover::before,
+.btn-cta-fill:focus-visible::before {
+  scale: 12;
+}
+
+.btn-cta-fill:hover,
+.btn-cta-fill:focus-visible {
+  /* O texto só troca para navy depois que o dourado já cobriu o fundo —
+     sem o atraso ele passaria ~0,2s navy sobre navy, ilegível. */
+  transition:
+    color 0.25s cubic-bezier(0.23, 1, 0.32, 1) 0.15s,
+    border-color 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    scale 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  color: var(--navy-950);
+  border-color: var(--gold-500);
+  scale: 1.05;
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.4);
+}
+
+.btn-cta-fill:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.btn-cta-fill:active {
+  scale: 1;
+}
+
+/*
+ * Botão "voltar ao topo". Em repouso é um disco navy com halo dourado — o
+ * mesmo par de cores dos CTAs da landing; no hover ele se alonga em pílula
+ * dourada, a seta sobe para fora do disco e o rótulo entra por baixo. O
+ * rótulo vem de `::before` justamente para o botão não reservar a largura do
+ * texto enquanto está fechado.
+ */
+.btn-to-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--navy-800);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold-500) 32%, transparent);
+  transition-duration: 0.3s;
+}
+
+.btn-to-top__icon {
+  width: 14px;
+  transition-duration: 0.3s;
+}
+
+.btn-to-top:hover,
+.btn-to-top:focus-visible {
+  width: 170px;
+  border-radius: 50px;
+  background-color: var(--gold-500);
+  color: var(--navy-950);
+}
+
+.btn-to-top:hover .btn-to-top__icon,
+.btn-to-top:focus-visible .btn-to-top__icon {
+  transform: translateY(-200%);
+}
+
+.btn-to-top::before {
+  position: absolute;
+  bottom: -20px;
+  content: "Voltar ao topo";
+  font-size: 0;
+}
+
+.btn-to-top:hover::before,
+.btn-to-top:focus-visible::before {
+  bottom: unset;
+  font-size: 13px;
+  transition-duration: 0.3s;
+}
+
+.btn-to-top:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-to-top,
+  .btn-to-top__icon,
+  .btn-to-top::before {
+    transition-duration: 0s;
+  }
+}
+
 /* Números de métrica não devem "dançar" enquanto o count-up roda. */
 .tabular {
   font-variant-numeric: tabular-nums;
@@ -192,6 +394,33 @@ body {
   60%,
   100% {
     transform: translateX(100%);
+  }
+}
+
+/*
+ * Maquete do painel no hero: fica inclinada em 3D e se alinha ao passar o
+ * mouse. É CSS puro (nada de framer-motion na landing) e vive aqui, e não em
+ * utilitários arbitrários, porque `transform` no Tailwind v4 é composto a
+ * partir de `--tw-*` — um `[transform:...]` solto acaba sobrescrito.
+ */
+.tilt-3d {
+  transform: rotateX(9deg) rotateY(-16deg) rotateZ(2deg) scale(0.94);
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.group:hover .tilt-3d,
+.tilt-3d:hover {
+  transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+}
+
+/* Sem mouse (toque) não existe hover para desfazer a inclinação — ali a
+   maquete já nasce alinhada. */
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .tilt-3d,
+  .group:hover .tilt-3d {
+    transform: none;
+    transition: none;
   }
 }
 
@@ -287,5 +516,341 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Folha do planejador de aulas. O projeto não usa o plugin de tipografia do
+ * Tailwind, então o documento tem seu próprio conjunto de regras — e ele
+ * precisa mesmo ser próprio: a aula é projetada para a turma, o que pede
+ * medidas maiores do que as de um texto de interface.
+ */
+.lesson-paper {
+  max-height: min(72vh, 900px);
+}
+
+/*
+ * Folha que ocupa a janela (ateliê e sala de aula). Ela não tem altura
+ * própria: é o resto do cartão depois da régua e do rodapé (`flex: 1`), e
+ * quem define o total é o contêiner da tela, em `dvh`. Uma altura fixa aqui
+ * dependeria de adivinhar quantas linhas a régua ocupa — e ela quebra em
+ * duas linhas assim que a janela estreita.
+ */
+.lesson-paper-fill {
+  flex: 1 1 auto;
+  min-height: 320px;
+  max-height: 70dvh;
+}
+
+@media (min-width: 1024px) {
+  .lesson-paper-fill {
+    max-height: none;
+  }
+}
+
+.lesson-sheet {
+  color: var(--foreground);
+  font-size: 16px;
+  line-height: 1.75;
+  /*
+   * Medida do texto: cresce com a tela até um teto confortável de leitura.
+   * `min(100%, …)` garante que a folha nunca estoure a coluna — em telas
+   * largas ela usa o espaço, em telas estreitas ela encolhe junto.
+   */
+  max-width: min(100%, 46rem);
+  margin: 0 auto;
+  min-height: 420px;
+}
+
+@media (min-width: 1024px) {
+  .lesson-sheet {
+    max-width: min(100%, 58rem);
+  }
+}
+
+@media (min-width: 1536px) {
+  .lesson-sheet {
+    max-width: min(100%, 70rem);
+  }
+}
+
+.lesson-sheet-presenting {
+  font-size: 20px;
+  line-height: 1.8;
+  max-width: min(100%, 62rem);
+}
+
+.lesson-sheet > * + * {
+  margin-top: 0.85em;
+}
+
+.lesson-sheet h1 {
+  font-size: 2em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--navy-900);
+  margin-top: 1.1em;
+}
+
+.lesson-sheet h2 {
+  font-size: 1.45em;
+  font-weight: 650;
+  color: var(--navy-800);
+  margin-top: 1.2em;
+}
+
+.lesson-sheet h3 {
+  font-size: 1.15em;
+  font-weight: 650;
+  color: var(--navy-800);
+  margin-top: 1.1em;
+}
+
+.lesson-sheet a {
+  color: var(--navy-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.lesson-sheet strong {
+  font-weight: 650;
+}
+
+.lesson-sheet ul,
+.lesson-sheet ol {
+  padding-left: 1.4em;
+}
+
+.lesson-sheet ul {
+  list-style: disc;
+}
+
+.lesson-sheet ol {
+  list-style: decimal;
+}
+
+.lesson-sheet li::marker {
+  color: var(--gold-600);
+}
+
+.lesson-sheet li + li {
+  margin-top: 0.25em;
+}
+
+.lesson-sheet ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+
+.lesson-sheet ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+}
+
+.lesson-sheet ul[data-type="taskList"] input[type="checkbox"] {
+  margin-top: 0.45em;
+  accent-color: var(--gold-500);
+}
+
+.lesson-sheet blockquote {
+  border-left: 3px solid var(--gold-400);
+  background: var(--gold-50);
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.6em 1em;
+  color: var(--navy-800);
+}
+
+.lesson-sheet code {
+  background: var(--muted);
+  border-radius: 0.35rem;
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.9em;
+}
+
+.lesson-sheet pre {
+  background: var(--navy-950);
+  color: #eaf0fa;
+  border-radius: 0.75rem;
+  padding: 1em 1.2em;
+  overflow-x: auto;
+}
+
+.lesson-sheet pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.lesson-sheet hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.6em 0;
+}
+
+.lesson-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 0.6rem;
+}
+
+.lesson-sheet th,
+.lesson-sheet td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.7em;
+  vertical-align: top;
+  position: relative;
+}
+
+.lesson-sheet th {
+  background: var(--navy-50);
+  font-weight: 650;
+  text-align: left;
+}
+
+.lesson-sheet .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--gold-500) 16%, transparent);
+  pointer-events: none;
+}
+
+.lesson-sheet .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--gold-500);
+}
+
+/* Placeholder do Tiptap: só no primeiro parágrafo do documento vazio. */
+.lesson-sheet p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.lesson-sheet .ProseMirror-selectednode {
+  outline: none;
+}
+
+/* Papel do modo apresentação: a folha ocupa a tela toda, sem cromo em volta. */
+.lesson-stage .lesson-paper,
+.lesson-stage .lesson-paper-fill {
+  height: auto;
+  max-height: none;
+}
+
+/*
+ * Cards com holofote (planos). O ponteiro é a única fonte de luz da seção:
+ * `--glow-x`/`--glow-y` são escritos uma única vez em `:root` e, como todos
+ * os gradientes usam `background-attachment: fixed`, os coordenadas valem
+ * para a viewport inteira — a luz atravessa a fileira de cards em vez de
+ * acender cada um isoladamente. Sem ponteiro (toque) ela fica no centro da
+ * tela e os cards passam por baixo dela conforme a página rola.
+ *
+ * A borda dourada é desenhada por `::before`/`::after` mascarados apenas na
+ * faixa da borda; `[data-glow-bloom]` é só o halo desfocado que vaza para
+ * fora do card.
+ */
+:root {
+  --glow-x: 50vw;
+  --glow-y: 45vh;
+}
+
+[data-glow-card] {
+  --glow-border-size: calc(var(--glow-border, 2) * 1px);
+  --glow-spot-size: calc(var(--glow-size, 260) * 1px);
+  position: relative;
+  border-radius: calc(var(--glow-radius, 16) * 1px);
+  border: var(--glow-border-size) solid var(--glow-idle, transparent);
+  background-color: var(--glow-surface, var(--background));
+  background-image: radial-gradient(
+    var(--glow-spot-size) var(--glow-spot-size) at var(--glow-x) var(--glow-y),
+    color-mix(in srgb, var(--glow-spot) var(--glow-wash, 12%), transparent),
+    transparent
+  );
+  background-size: calc(100% + (2 * var(--glow-border-size)))
+    calc(100% + (2 * var(--glow-border-size)));
+  background-position: 50% 50%;
+  background-attachment: fixed;
+  box-shadow: var(--shadow-card);
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+}
+
+[data-glow-card]:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/*
+ * Sem `mask-composite` a máscara não recorta a faixa da borda e o gradiente
+ * cobriria o card inteiro — nesse caso é melhor ficar só com a borda sólida
+ * de repouso do que exibir o efeito quebrado.
+ */
+@supports (mask-composite: intersect) {
+  [data-glow-card]::before,
+  [data-glow-card]::after,
+  [data-glow-bloom]::before {
+    pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: calc(var(--glow-border-size) * -1);
+    border: var(--glow-border-size) solid transparent;
+    border-radius: calc(var(--glow-radius, 16) * 1px);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-size: calc(100% + (2 * var(--glow-border-size)))
+      calc(100% + (2 * var(--glow-border-size)));
+    mask:
+      linear-gradient(transparent, transparent),
+      linear-gradient(white, white);
+    mask-clip: padding-box, border-box;
+    mask-composite: intersect;
+  }
+
+  /* Feixe principal: o dourado que corre pela borda acompanhando o ponteiro. */
+  [data-glow-card]::before,
+  [data-glow-bloom]::before {
+    background-image: radial-gradient(
+      calc(var(--glow-spot-size) * 0.75) calc(var(--glow-spot-size) * 0.75) at
+        var(--glow-x) var(--glow-y),
+      var(--glow-spot),
+      transparent 100%
+    );
+  }
+
+  /* Núcleo quente, bem menor, que dá o ponto de brilho dentro do feixe. */
+  [data-glow-card]::after {
+    background-image: radial-gradient(
+      calc(var(--glow-spot-size) * 0.4) calc(var(--glow-spot-size) * 0.4) at
+        var(--glow-x) var(--glow-y),
+      var(--glow-core),
+      transparent 100%
+    );
+  }
+
+  [data-glow-bloom] {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--glow-outer, 0.55);
+    border-radius: calc(var(--glow-radius, 16) * 1px);
+    filter: blur(calc(var(--glow-border-size) * 6));
+    will-change: filter;
+  }
+
+  [data-glow-bloom]::before {
+    inset: -8px;
+    border-width: 8px;
   }
 }

@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
+import { ShaderBackground } from "@/components/ui/shader-background";
 import { Hero } from "@/components/features/marketing/hero";
-import { Stats } from "@/components/features/marketing/stats";
 import { Methodology } from "@/components/features/marketing/methodology";
-import { HowItWorks } from "@/components/features/marketing/how-it-works";
 import { Teachers } from "@/components/features/marketing/teachers";
 import { CefrLevels } from "@/components/features/marketing/cefr-levels";
-import { Testimonials } from "@/components/features/marketing/testimonials";
 import { Pricing } from "@/components/features/marketing/pricing";
 import { Faq } from "@/components/features/marketing/faq";
-import { ContactSection } from "@/components/features/marketing/contact-section";
 import { env } from "@/lib/env";
 
 // Página estática com revalidação periódica só para a lista de professores
@@ -54,16 +51,13 @@ export default function MarketingHomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <ShaderBackground />
       <Hero />
-      <Stats />
       <Methodology />
-      <HowItWorks />
       <Teachers />
       <CefrLevels />
-      <Testimonials />
       <Pricing />
       <Faq />
-      <ContactSection />
     </>
   );
 }

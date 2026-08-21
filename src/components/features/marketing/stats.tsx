@@ -9,7 +9,7 @@ const STATS = [
 
 export function Stats() {
   return (
-    <section className="border-b border-border">
+    <section>
       <ScrollReveal className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-4 py-14 md:grid-cols-4">
         {STATS.map((stat) => (
           <div key={stat.label} className="text-center">

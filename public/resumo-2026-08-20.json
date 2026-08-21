@@ -1,0 +1,14 @@
+{
+  "data": "2026-08-20",
+  "resumo": {
+    "os_em_aberto": 0,
+    "devolucoes_hoje": 0,
+    "os_criadas_hoje": 0,
+    "unidades_na_rua": 0,
+    "materiais_esgotados": 0
+  },
+  "gerado_em": "2026-08-20T17:03:01.902103+00:00",
+  "ordens_servico": [],
+  "balanco_materiais": [],
+  "uso_interno_aberto": []
+}

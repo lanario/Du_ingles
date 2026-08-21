@@ -332,6 +332,7 @@ function Sidebar({
     >
       <motion.div
         ref={panelRef}
+        data-sidebar-panel
         initial={false}
         animate={{ width: expanded ? PANEL_WIDTH : RAIL_WIDTH }}
         transition={

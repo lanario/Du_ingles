@@ -36,6 +36,7 @@ const NAV_SECTIONS = [
   {
     label: "Operação",
     items: [
+      { href: "/admin/planejador", label: "Planejador de aulas", icon: "lesson" },
       { href: "/admin/financeiro", label: "Financeiro", icon: "coin" },
       { href: "/admin/relatorios", label: "Relatórios", icon: "chart" },
       { href: "/admin/mensagens", label: "Mensagens", icon: "chat" },
@@ -120,6 +121,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v10M9.3 9.6c0-1.4 1.3-2.3 2.7-2.3s2.7.9 2.7 2.1c0 3-5.4 1.6-5.4 4.5 0 1.3 1.3 2.3 2.7 2.3s2.7-.9 2.7-2.3" />
+    </>
+  ),
+  lesson: (
+    <>
+      <path d="M5 4.5h8.5L19 10v9.5a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 19.5v-13A1.5 1.5 0 0 1 5.5 5Z" />
+      <path d="M13 4.5V10h5.5" />
+      <path d="m10.2 17.4-2.6.6.6-2.6 4.6-4.6a1.3 1.3 0 0 1 1.9 1.9Z" />
     </>
   ),
   gear: (
@@ -272,6 +280,7 @@ export function AdminSidebar({
     >
       <motion.div
         ref={panelRef}
+        data-sidebar-panel
         initial={false}
         animate={{ width: expanded ? PANEL_WIDTH : RAIL_WIDTH }}
         transition={
