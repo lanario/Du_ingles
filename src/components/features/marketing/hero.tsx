@@ -22,7 +22,7 @@ export function Hero() {
             pensado para você falar com confiança, não só para passar em prova.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#contato" className="btn-cta-fill h-12 px-6 text-base uppercase tracking-wide">
+            <a href="#faq" className="btn-cta-fill h-12 px-6 text-base uppercase tracking-wide">
               Comece a falar agora: agende sua aula grátis
             </a>
           </div>
