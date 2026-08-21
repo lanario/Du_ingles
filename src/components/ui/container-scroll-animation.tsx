@@ -37,11 +37,21 @@ export function ContainerScroll({
     return () => query.removeEventListener("change", sync);
   }, []);
 
-  const { scrollYProgress } = useScroll({ target: containerRef });
+  // A seção é bem mais alta que a viewport (a lista inteira mora dentro do
+  // tablet), então o offset padrão ("start start" -> "end end") só chegaria
+  // a 1 no fim da seção e a moldura ficaria inclinada o tempo todo. Amarramos
+  // o progresso à *entrada* da seção: 0 quando o topo dela encosta na base da
+  // viewport, 1 quando esse topo alcança o topo da viewport.
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "start start"],
+  });
 
   const scaleDimensions = isMobile ? [0.7, 0.9] : [1.05, 1];
-  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions);
+  // A rotação termina antes do fim do trecho, então o tablet já está reto
+  // enquanto o conteúdo é lido.
+  const rotate = useTransform(scrollYProgress, [0, 0.8], [20, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.8], scaleDimensions);
   const translate = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
   return (
