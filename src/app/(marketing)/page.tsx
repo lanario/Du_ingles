@@ -8,11 +8,11 @@ import { Pricing } from "@/components/features/marketing/pricing";
 import { Faq } from "@/components/features/marketing/faq";
 import { env } from "@/lib/env";
 
-// Página estática com revalidação periódica só para a lista de professores
-// (§7.3) — o client público em listPublicTeachers() não lê cookies, então
-// não força a rota a virar dinâmica.
-export const dynamic = "force-static";
-export const revalidate = 3600;
+// A rota é renderizada por request (`force-dynamic` no layout raiz) porque o
+// CSP com nonce exige isso — ver o comentário em `src/app/layout.tsx`. O que
+// era `revalidate = 3600` aqui virou cache de dados dentro de
+// `listPublicTeachers()`, então a lista de professores continua sendo lida do
+// Supabase no máximo uma vez por hora (§7.3).
 
 export const metadata: Metadata = {
   title: { absolute: "Du Inglês — Aulas de inglês ao vivo, do A1 ao C2" },

@@ -26,6 +26,18 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/**
+ * O CSP do middleware usa `nonce` + `strict-dynamic`, e o nonce é sorteado a
+ * cada request. Uma página pré-renderizada tem o HTML congelado no build, sem
+ * nonce nenhum nas tags `<script>` — o header chega com um nonce novo, o
+ * `strict-dynamic` anula o `'self'`, e o browser bloqueia *todo* o JS da
+ * página. Nonce por request só funciona com render por request: renderização
+ * dinâmica aqui é requisito do CSP, não escolha de performance. O custo de
+ * dados fica coberto pelo cache na camada de repositório (ver
+ * `listPublicTeachers`).
+ */
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html

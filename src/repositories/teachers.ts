@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
 export interface PublicTeacher {
@@ -8,8 +9,21 @@ export interface PublicTeacher {
   specialties: string[];
 }
 
-/** Só professores com `is_public = true` — RLS cobre isso (migration 0005). */
-export async function listPublicTeachers(): Promise<PublicTeacher[]> {
+/**
+ * Só professores com `is_public = true` — RLS cobre isso (migration 0005).
+ *
+ * A landing é renderizada por request (exigência do CSP com nonce, ver
+ * `src/app/layout.tsx`), então o cache que antes vinha do `revalidate` da rota
+ * mora aqui: a query real acontece no máximo uma vez por hora, o resto das
+ * visitas lê do cache de dados.
+ */
+export const listPublicTeachers = unstable_cache(
+  fetchPublicTeachers,
+  ["public-teachers"],
+  { revalidate: 3600, tags: ["public-teachers"] },
+);
+
+async function fetchPublicTeachers(): Promise<PublicTeacher[]> {
   const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("teacher_profiles")
