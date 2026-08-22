@@ -24,8 +24,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div
       data-admin-theme
-      className="fixed inset-0 flex overflow-hidden bg-admin-background text-admin-foreground"
+      className="fixed inset-0 flex flex-col overflow-hidden bg-admin-background text-admin-foreground md:flex-row"
     >
+      {/* No mobile a `AdminSidebar` renderiza um cabeçalho no fluxo (a gaveta
+          é `fixed`), então esta coluna precisa ser `flex-col` até `md` —
+          senão a barra vira uma coluna de 100vh ao lado do conteúdo. */}
       <AdminSidebar
         organizationLabel="Painel administrativo"
         userId={ctx.userId}
@@ -35,16 +38,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       />
 
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center gap-4 px-6 pt-4 text-admin-foreground">
-          <span className="pointer-events-auto hidden text-sm font-semibold tracking-tight sm:inline md:hidden">
-            Du Inglês <span className="text-accent">· Admin</span>
-          </span>
+        {/* A chave "ver como" só flutua a partir de `md`; abaixo disso ela
+            vive no cabeçalho mobile, em versão `collapsed`. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 hidden items-center gap-4 px-6 pt-4 text-admin-foreground md:flex">
           <div className="pointer-events-auto ml-auto rounded-full border border-admin-accent p-0.5">
             <RoleSwitch active="admin" awayLabel="Aluno" awayRole="student" />
           </div>
         </div>
 
-        <main className="bg-admin-canvas min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pb-6 pt-20">{children}</main>
+        <main
+          data-scroll-root
+          className="bg-admin-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-5 md:px-6 md:pb-6 md:pt-20"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

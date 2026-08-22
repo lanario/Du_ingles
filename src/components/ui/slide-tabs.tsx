@@ -56,6 +56,8 @@ export interface SlideTabsProps {
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   tone?: SlideTabsTone;
+  /** Ocupa toda a largura do container, com as abas dividindo o espaço em partes iguais. */
+  fullWidth?: boolean;
   className?: string;
   /** Rótulo acessível do `<nav>` (links) ou do `tablist` (abas). */
   label?: string;
@@ -188,6 +190,7 @@ export function SlideTabs({
   defaultValue,
   onValueChange,
   tone = "app",
+  fullWidth = false,
   className,
   label = "Navegação",
 }: SlideTabsProps) {
@@ -250,7 +253,11 @@ export function SlideTabs({
       role={isNav ? undefined : "tablist"}
       aria-label={isNav ? undefined : label}
       onMouseLeave={() => setHovered(null)}
-      className={cn("relative flex items-center gap-1 rounded-full p-1", styles.shell)}
+      className={cn(
+        "relative flex items-center gap-1 rounded-full p-1",
+        fullWidth && "w-full",
+        styles.shell,
+      )}
     >
       {cursor ? (
         <li
@@ -280,6 +287,7 @@ export function SlideTabs({
         );
         const textClass = cn(
           tabClass,
+          fullWidth && "w-full justify-center",
           isCursor ? styles.activeText : styles.idleText,
           item.disabled && "opacity-50",
         );
@@ -291,7 +299,7 @@ export function SlideTabs({
               if (node) tabRefs.current.set(key, node);
               else tabRefs.current.delete(key);
             }}
-            className="relative z-10"
+            className={cn("relative z-10", fullWidth && "flex-1")}
             onMouseEnter={() => {
               if (!item.disabled) setHovered(key);
             }}

@@ -3,55 +3,72 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { requestPasswordResetAction } from "@/actions/auth/request-password-reset";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FieldError, FormBanner } from "@/components/ui/form-message";
+import { AuthField } from "@/components/features/auth/auth-field";
+import { MailIcon } from "@/components/ui/icons";
+import { FormBanner } from "@/components/ui/form-message";
 
-export function RequestResetForm() {
+export interface RequestResetFormProps {
+  /**
+   * Quando informado, "Voltar para o login" troca o conteúdo da face no lugar
+   * (uso dentro do `AuthSwitch`) em vez de navegar para `/login`.
+   */
+  onBack?: () => void;
+}
+
+export function RequestResetForm({ onBack }: RequestResetFormProps = {}) {
   const [state, formAction, isPending] = useActionState(requestPasswordResetAction, null);
+
+  const backClass =
+    "block w-full text-center text-sm text-muted-foreground hover:text-primary hover:underline";
+  const back = onBack ? (
+    <button type="button" onClick={onBack} className={backClass}>
+      Voltar para o login
+    </button>
+  ) : (
+    <Link href="/login" className={backClass}>
+      Voltar para o login
+    </Link>
+  );
 
   if (state?.success) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 text-left">
         <FormBanner tone="success">
           Se esse e-mail estiver cadastrado, você receberá um link para redefinir a senha
           em instantes.
         </FormBanner>
-        <Link
-          href="/login"
-          className="block text-center text-sm text-muted-foreground hover:underline"
-        >
-          Voltar para o login
-        </Link>
+        {back}
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form action={formAction} className="space-y-3 text-left" noValidate>
       {state && !state.success && !state.error.fields && (
         <FormBanner tone="error">{state.error.message}</FormBanner>
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="email">E-mail</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
-        <FieldError
-          messages={state && !state.success ? state.error.fields?.["email"] : undefined}
-        />
-      </div>
+      <AuthField
+        id="reset-email"
+        name="email"
+        label="E-mail"
+        type="email"
+        autoComplete="email"
+        placeholder="E-mail"
+        required
+        icon={<MailIcon className="size-5" />}
+        errors={state && !state.success ? state.error.fields?.["email"] : undefined}
+      />
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "Enviando…" : "Enviar link de recuperação"}
-      </Button>
-
-      <Link
-        href="/login"
-        className="block text-center text-sm text-muted-foreground hover:underline"
+      <button
+        type="submit"
+        disabled={isPending}
+        className="btn-cta-fill h-12 w-full text-sm uppercase tracking-wide disabled:pointer-events-none disabled:opacity-60"
       >
-        Voltar para o login
-      </Link>
+        {isPending ? "Enviando…" : "Enviar link"}
+      </button>
+
+      {back}
     </form>
   );
 }

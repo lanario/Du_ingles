@@ -131,7 +131,7 @@ export function LessonStudio({ plan, sessions, groups, teachers }: LessonStudioP
     <div ref={shellRef} className="mx-auto w-full max-w-[1800px] pb-10">
       <div
         data-studio-enter
-        className="sticky top-0 z-30 -mx-6 mb-6 border-b border-admin-border/70 bg-admin-background/85 px-6 py-3 backdrop-blur-md"
+        className="sticky top-0 z-30 -mx-4 mb-6 border-b border-admin-border/70 bg-admin-background/85 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6"
       >
         <div className="flex flex-wrap items-center gap-3">
           <Link

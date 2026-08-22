@@ -47,7 +47,7 @@ export function GroupsFilterRail({
 
   return (
     <div className="mb-5 space-y-2">
-      <div className="-mx-6 overflow-x-auto px-6 pb-1">
+      <div className="-mx-4 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6">
         <div className="flex w-max items-center gap-2">
           <button
             type="button"
@@ -107,7 +107,7 @@ export function GroupsFilterRail({
       </div>
 
       {levels.length > 1 && (
-        <div className="-mx-6 overflow-x-auto px-6 pb-1">
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6">
           <div className="flex w-max items-center gap-1.5">
             <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-admin-foreground/40">
               <GraduationIcon className="h-3.5 w-3.5" />

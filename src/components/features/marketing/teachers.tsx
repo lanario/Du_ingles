@@ -6,23 +6,23 @@ export async function Teachers() {
 
   return (
     <section id="professores">
-      <div className="mx-auto max-w-6xl px-4 py-20">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Professores</h2>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
+        <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground sm:text-base">
           Um time formado e experiente, dedicado a acompanhar sua evolução de perto.
         </p>
 
         {teachers.length === 0 ? (
-          <p className="mt-12 rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+          <p className="mt-8 rounded-2xl border border-dashed border-border p-6 text-center text-[15px] text-muted-foreground sm:mt-12 sm:p-8 sm:text-base">
             Os perfis dos nossos professores estão a caminho — em breve você conhece o
             time por aqui.
           </p>
         ) : (
-          <ScrollReveal className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ScrollReveal className="mt-8 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {teachers.map((teacher) => (
               <div
                 key={teacher.id}
-                className="rounded-lg border border-border bg-background p-6"
+                className="rounded-2xl border border-border bg-background/80 p-5 backdrop-blur-sm sm:rounded-lg sm:p-6"
               >
                 <div className="mb-4 h-16 w-16 rounded-full bg-primary/15" />
                 <h3 className="font-semibold">{teacher.fullName}</h3>

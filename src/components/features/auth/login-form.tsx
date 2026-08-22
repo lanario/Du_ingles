@@ -3,75 +3,73 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction } from "@/actions/auth/login";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FieldError, FormBanner } from "@/components/ui/form-message";
+import { AuthField } from "@/components/features/auth/auth-field";
+import { LockIcon, MailIcon } from "@/components/ui/icons";
+import { FormBanner } from "@/components/ui/form-message";
 
-export function LoginForm() {
+export interface LoginFormProps {
+  /**
+   * Quando informado, "Esqueceu a senha?" troca o conteúdo da face no lugar
+   * (uso dentro do `AuthSwitch`) em vez de navegar para `/recuperar-senha`.
+   */
+  onForgotPassword?: () => void;
+}
+
+export function LoginForm({ onForgotPassword }: LoginFormProps = {}) {
   const [state, formAction, isPending] = useActionState(loginAction, null);
 
+  const fields = state && !state.success ? state.error.fields : undefined;
+  const forgotClass = "text-sm text-muted-foreground hover:text-primary hover:underline";
+
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form action={formAction} className="space-y-3 text-left" noValidate>
       {state && !state.success && !state.error.fields && (
         <FormBanner tone="error">{state.error.message}</FormBanner>
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="email">E-mail</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          aria-invalid={
-            state && !state.success ? Boolean(state.error.fields?.["email"]) : undefined
-          }
-          aria-describedby="email-error"
-        />
-        <div id="email-error">
-          <FieldError
-            messages={state && !state.success ? state.error.fields?.["email"] : undefined}
-          />
-        </div>
-      </div>
+      <AuthField
+        id="email"
+        name="email"
+        label="E-mail"
+        type="email"
+        autoComplete="email"
+        placeholder="E-mail"
+        required
+        icon={<MailIcon className="size-5" />}
+        errors={fields?.["email"]}
+      />
 
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="password">Senha</Label>
-          <Link
-            href="/recuperar-senha"
-            className="text-sm text-muted-foreground hover:underline"
-          >
+      <AuthField
+        id="password"
+        name="password"
+        label="Senha"
+        type="password"
+        autoComplete="current-password"
+        placeholder="Senha"
+        required
+        icon={<LockIcon className="size-5" />}
+        errors={fields?.["password"]}
+      />
+
+      <button
+        type="submit"
+        disabled={isPending}
+        className="btn-cta-fill h-12 w-full text-sm uppercase tracking-wide disabled:pointer-events-none disabled:opacity-60"
+      >
+        {isPending ? "Entrando…" : "Entrar"}
+      </button>
+
+      <div className="text-center">
+        {onForgotPassword ? (
+          <button type="button" onClick={onForgotPassword} className={forgotClass}>
+            Esqueceu a senha?
+          </button>
+        ) : (
+          <Link href="/recuperar-senha" className={forgotClass}>
             Esqueceu a senha?
           </Link>
-        </div>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          aria-invalid={
-            state && !state.success
-              ? Boolean(state.error.fields?.["password"])
-              : undefined
-          }
-          aria-describedby="password-error"
-        />
-        <div id="password-error">
-          <FieldError
-            messages={
-              state && !state.success ? state.error.fields?.["password"] : undefined
-            }
-          />
-        </div>
+        )}
       </div>
-
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "Entrando…" : "Entrar"}
-      </Button>
     </form>
   );
 }

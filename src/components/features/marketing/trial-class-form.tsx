@@ -108,7 +108,9 @@ function Field({
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
     className: cn(
-      "w-full bg-transparent text-[15px] text-white caret-gold-400 outline-none",
+      // 16px é o piso do campo: abaixo disso o Safari do iOS dá zoom ao focar
+      // e a página fica deslocada até o usuário pinçar de volta.
+      "w-full bg-transparent text-base text-white caret-gold-400 outline-none",
       multiline ? "min-h-24 resize-none pb-3 pt-8" : "h-14 pt-5",
     ),
   };
@@ -144,7 +146,7 @@ function Field({
           animate={reduceMotion ? {} : { y: raised ? -11 : 0, scale: raised ? 0.8 : 1 }}
           transition={{ duration: 0.22, ease: EASE }}
           className={cn(
-            "pointer-events-none absolute left-11 origin-left text-[15px] transition-colors duration-300",
+            "pointer-events-none absolute left-11 origin-left text-base transition-colors duration-300",
             multiline ? "top-6" : "top-1/2 -translate-y-1/2",
             error ? "text-red-300" : focused ? "text-gold-300" : "text-white/55",
           )}
@@ -233,7 +235,7 @@ function AgeChoice({
           error ? "border-destructive/70" : "border-white/15",
         )}
       >
-        <p id={groupId} className="text-[15px] font-medium text-white">
+        <p id={groupId} className="text-base font-medium text-white">
           Você tem 18 anos ou mais?
         </p>
         <p className="mt-1 text-xs text-white/45">
@@ -251,8 +253,8 @@ function AgeChoice({
                 aria-checked={active}
                 onClick={() => onChange(option)}
                 className={cn(
-                  "relative isolate flex h-12 items-center justify-center rounded-xl",
-                  "text-sm font-semibold transition-colors duration-200",
+                  "relative isolate flex min-h-12 items-center justify-center rounded-xl px-2 text-center",
+                  "text-[13px] font-semibold leading-tight transition-colors duration-200 sm:text-sm",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400",
                   "focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950",
                   active ? "text-navy-950" : "text-white/70 hover:text-white",
@@ -503,7 +505,7 @@ export function TrialClassForm() {
     <div
       ref={cardRef}
       className={cn(
-        "relative overflow-hidden rounded-[28px] p-6 sm:p-8",
+        "relative overflow-hidden rounded-3xl p-5 sm:rounded-[28px] sm:p-8",
         "bg-[linear-gradient(160deg,var(--navy-900)_0%,var(--navy-950)_55%,#03091a_100%)]",
         "shadow-[0_30px_80px_-30px_rgba(5,15,34,0.75)] ring-1 ring-white/10",
       )}
@@ -637,8 +639,8 @@ export function TrialClassForm() {
                   whileTap={reduceMotion || isPending ? undefined : { scale: 0.985 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
                   className={cn(
-                    "relative flex h-14 w-full items-center justify-center gap-2.5",
-                    "overflow-hidden rounded-2xl text-[15px] font-semibold tracking-wide",
+                    "relative flex min-h-14 w-full items-center justify-center gap-2.5 px-4 text-center",
+                    "overflow-hidden rounded-2xl text-base font-semibold tracking-wide",
                     "transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-70",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400",
                     "focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950",

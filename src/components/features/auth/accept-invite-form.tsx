@@ -87,9 +87,7 @@ export function AcceptInviteForm({
           required
         />
         <FieldError messages={fields?.["email"]} />
-        <p className="text-xs text-muted-foreground">
-          Será o seu login na plataforma.
-        </p>
+        <p className="text-xs text-muted-foreground">Será o seu login na plataforma.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

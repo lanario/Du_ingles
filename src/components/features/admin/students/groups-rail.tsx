@@ -78,7 +78,7 @@ export function GroupsRail({
   }
 
   return (
-    <div className="mb-5 -mx-6 overflow-x-auto px-6 pb-1">
+    <div className="mb-5 -mx-4 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6">
       <div className="flex w-max items-center gap-2">
         <button
           type="button"

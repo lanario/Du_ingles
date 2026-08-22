@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { IncomeStatement, RevenuePoint } from "@/repositories/finance";
-import { formatNumber } from "./primitives";
+import { formatNumber, useMeasuredWidth } from "./primitives";
 import { niceCeil, prefersReducedMotion, smoothPath } from "./charts";
 
 if (typeof window !== "undefined") {
@@ -114,7 +114,7 @@ function MoneyCountUp({
 /*                            Receita mês a mês                              */
 /* ------------------------------------------------------------------------ */
 
-const CHART_WIDTH = 760;
+const CHART_FALLBACK_WIDTH = 760;
 const PAD = { left: 62, right: 18, top: 20, bottom: 30 };
 
 /**
@@ -132,31 +132,40 @@ export function RevenueAreaChart({
   const uid = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
   const [active, setActive] = useState<number | null>(null);
+  const [wrapRef, chartWidth] = useMeasuredWidth(CHART_FALLBACK_WIDTH);
+
+  // Num card estreito o eixo Y em reais não cabe nos 62px de gutter, e a
+  // altura de 260 vira um retângulo quase quadrado — os dois encolhem junto
+  // com a viewport. `pad` precisa ser estável entre renders: ele entra nas
+  // dependências do `geometry`, que por sua vez re-cria os tweens do GSAP.
+  const compact = chartWidth < 520;
+  const pad = useMemo(() => (compact ? { ...PAD, left: 44, bottom: 26 } : PAD), [compact]);
+  const chartHeight = compact ? Math.min(height, 200) : height;
 
   const geometry = useMemo(() => {
-    const innerW = CHART_WIDTH - PAD.left - PAD.right;
-    const innerH = height - PAD.top - PAD.bottom;
+    const innerW = chartWidth - pad.left - pad.right;
+    const innerH = chartHeight - pad.top - pad.bottom;
     // A régua é calculada em reais para o "arredondar bonito" cair em
     // 3/6/9/12 e não em múltiplos de centavo.
     const maxCents =
       niceCeil(Math.max(1, ...points.map((p) => p.revenueCents / 100))) * 100;
     const stepX = points.length > 1 ? innerW / (points.length - 1) : 0;
-    const x = (index: number) => PAD.left + index * stepX;
-    const y = (cents: number) => PAD.top + innerH * (1 - cents / maxCents);
+    const x = (index: number) => pad.left + index * stepX;
+    const y = (cents: number) => pad.top + innerH * (1 - cents / maxCents);
 
     const coords = points.map((point, index) => ({
       x: x(index),
       y: y(point.revenueCents),
     }));
     const line = smoothPath(coords);
-    const baseline = PAD.top + innerH;
+    const baseline = pad.top + innerH;
     const area =
       coords.length > 0
         ? `${line} L${coords[coords.length - 1]!.x},${baseline} L${coords[0]!.x},${baseline} Z`
         : "";
 
     return { innerH, maxCents, x, y, line, area, baseline, coords };
-  }, [points, height]);
+  }, [points, chartWidth, chartHeight, pad]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -207,11 +216,14 @@ export function RevenueAreaChart({
     const svg = svgRef.current;
     if (!svg || points.length === 0) return;
     const rect = svg.getBoundingClientRect();
-    const scale = rect.width / CHART_WIDTH;
+    // O `viewBox` agora nasce da largura medida, então a escala é 1 — mas o
+    // cálculo continua tolerante a diferenças (zoom do navegador, `transform`
+    // de ancestral) em vez de assumir paridade.
+    const scale = rect.width / chartWidth;
     const localX = (event.clientX - rect.left) / scale;
-    const innerW = CHART_WIDTH - PAD.left - PAD.right;
+    const innerW = chartWidth - pad.left - pad.right;
     const step = points.length > 1 ? innerW / (points.length - 1) : innerW;
-    const index = Math.round((localX - PAD.left) / step);
+    const index = Math.round((localX - pad.left) / step);
     setActive(Math.min(points.length - 1, Math.max(0, index)));
   }
 
@@ -222,10 +234,10 @@ export function RevenueAreaChart({
   const activePoint = active !== null ? points[active] : null;
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative">
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${CHART_WIDTH} ${height}`}
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         className="w-full touch-none"
         role="img"
         aria-label={`Receita mensal de ${points[0]?.label ?? ""} a ${points[last]?.label ?? ""}`}
@@ -245,12 +257,12 @@ export function RevenueAreaChart({
         </defs>
 
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const y = PAD.top + geometry.innerH * ratio;
+          const y = pad.top + geometry.innerH * ratio;
           return (
             <g key={ratio}>
               <line
-                x1={PAD.left}
-                x2={CHART_WIDTH - PAD.right}
+                x1={pad.left}
+                x2={chartWidth - pad.right}
                 y1={y}
                 y2={y}
                 stroke={MONEY.grid}
@@ -258,7 +270,7 @@ export function RevenueAreaChart({
                 strokeDasharray={ratio === 1 ? "0" : "3 5"}
               />
               <text
-                x={PAD.left - 12}
+                x={pad.left - 12}
                 y={y + 4}
                 textAnchor="end"
                 fontSize="11"
@@ -307,7 +319,7 @@ export function RevenueAreaChart({
             <line
               x1={geometry.x(active)}
               x2={geometry.x(active)}
-              y1={PAD.top}
+              y1={pad.top}
               y2={geometry.baseline}
               stroke={MONEY.revenue}
               strokeWidth={1}
@@ -329,7 +341,7 @@ export function RevenueAreaChart({
             <text
               key={point.key}
               x={geometry.x(index)}
-              y={height - 8}
+              y={chartHeight - 8}
               textAnchor={index === 0 ? "start" : index === last ? "end" : "middle"}
               fontSize="11"
               fill={index === active ? MONEY.ink : MONEY.muted}
@@ -344,7 +356,7 @@ export function RevenueAreaChart({
       {activePoint && (
         <div
           className="pointer-events-none absolute top-2 z-10 min-w-32 -translate-x-1/2 rounded-lg border border-admin-border bg-white/95 px-3 py-2 text-center shadow-lg backdrop-blur"
-          style={{ left: `${((geometry.x(active!) / CHART_WIDTH) * 100).toFixed(2)}%` }}
+          style={{ left: `${((geometry.x(active!) / chartWidth) * 100).toFixed(2)}%` }}
         >
           <p className="text-[11px] font-semibold uppercase tracking-wide text-admin-foreground/55">
             {activePoint.label}

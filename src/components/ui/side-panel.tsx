@@ -82,7 +82,13 @@ export function SidePanel({ open, onClose, title, subtitle, children, wide = fal
               </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
+            {/* `overscroll-contain` impede que o toque, ao chegar no fim do
+                painel, continue rolando a pagina atras dele — no mobile o
+                painel ocupa a tela inteira e esse encadeamento parece bug.
+                O padding inferior reserva a barra de gestos do iOS. */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+              {children}
+            </div>
           </motion.aside>
         </>
       )}

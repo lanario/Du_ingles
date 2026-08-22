@@ -29,7 +29,7 @@ export function LiveClassCta() {
   return (
     <a
       href="#faq"
-      className="group/cta mt-4 block rounded-2xl border border-border bg-background p-4 shadow-[0_24px_50px_-24px_rgba(10,31,68,0.55)] transition hover:border-gold-400 md:absolute md:-bottom-8 md:-left-10 md:mt-0 md:w-[19rem]"
+      className="group/cta mt-4 block rounded-2xl border border-border bg-background p-4 shadow-[0_24px_50px_-24px_rgba(10,31,68,0.55)] transition active:border-gold-400 hover:border-gold-400 md:absolute md:-bottom-8 md:-left-10 md:mt-0 md:w-[19rem]"
     >
       <div className="flex items-start gap-3">
         <span className="relative flex-none rounded-full ring-2 ring-gold-400 ring-offset-2 ring-offset-background">
@@ -59,14 +59,14 @@ export function LiveClassCta() {
               Live
             </span>
           </div>
-          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground sm:text-[11px]">
             {TEACHER.level} · {TEACHER.topic}
             <span className="font-medium text-gold-700"> (acontecendo agora!)</span>
           </p>
         </div>
       </div>
 
-      <p className="mt-3 border-t border-border pt-3 text-[11px] font-medium text-navy-800">
+      <p className="mt-3 border-t border-border pt-3 text-[13px] font-medium text-navy-800 sm:text-[11px]">
         Quero uma aula assim: agendar minha aula grátis
         <span className="ml-1 inline-block transition-transform group-hover/cta:translate-x-0.5">
           →

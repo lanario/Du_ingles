@@ -144,11 +144,36 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  /*
+   * O Safari do iOS aumenta o corpo de texto sozinho quando o celular gira
+   * para paisagem; a escala tipográfica da landing já é responsiva e não
+   * precisa desse "ajuste".
+   */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Retângulo cinza que o Android pinta em cima de todo link/botão tocado. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Trilho de rolagem horizontal sem barra visível (carrossel de planos). A
+ * barra rouba altura útil do cartão e, no celular, ninguém a usa — o gesto
+ * já é o próprio controle.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /*
@@ -291,7 +316,41 @@ body {
  * rótulo vem de `::before` justamente para o botão não reservar a largura do
  * texto enquanto está fechado.
  */
+/*
+ * Quem ocupa a base da janela no celular: a barra de CTA (`z-30`), o disco de
+ * voltar ao topo (`z-40`) e a faixa de cookies (`z-50`). As duas variáveis
+ * abaixo mantêm os três empilhados em vez de sobrepostos — cada peça declara
+ * sua altura aqui, e não em classes espalhadas pelos componentes.
+ */
+:root {
+  --mobile-cta-height: 4.75rem;
+  --cookie-notice-height: 8.5rem;
+  --btn-to-top-bottom: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --btn-to-top-bottom: calc(var(--mobile-cta-height) + 0.75rem);
+  }
+}
+
+.has-cookie-notice {
+  --btn-to-top-bottom: calc(var(--cookie-notice-height) + 0.75rem);
+}
+
+@media (min-width: 640px) {
+  .has-cookie-notice {
+    --cookie-notice-height: 5.5rem;
+  }
+}
+
+/* Enquanto o aviso de cookies está na tela ele fala pelo rodapé sozinho. */
+.has-cookie-notice .mobile-cta-bar {
+  display: none;
+}
+
 .btn-to-top {
+  bottom: var(--btn-to-top-bottom);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -811,9 +870,7 @@ body {
     background-position: 50% 50%;
     background-size: calc(100% + (2 * var(--glow-border-size)))
       calc(100% + (2 * var(--glow-border-size)));
-    mask:
-      linear-gradient(transparent, transparent),
-      linear-gradient(white, white);
+    mask: linear-gradient(transparent, transparent), linear-gradient(white, white);
     mask-clip: padding-box, border-box;
     mask-composite: intersect;
   }
@@ -832,8 +889,8 @@ body {
   /* Núcleo quente, bem menor, que dá o ponto de brilho dentro do feixe. */
   [data-glow-card]::after {
     background-image: radial-gradient(
-      calc(var(--glow-spot-size) * 0.4) calc(var(--glow-spot-size) * 0.4) at
-        var(--glow-x) var(--glow-y),
+      calc(var(--glow-spot-size) * 0.4) calc(var(--glow-spot-size) * 0.4) at var(--glow-x)
+        var(--glow-y),
       var(--glow-core),
       transparent 100%
     );
@@ -852,5 +909,278 @@ body {
   [data-glow-bloom]::before {
     inset: -8px;
     border-width: 8px;
+  }
+}
+
+/* Entrada do painel ativo do `AuthSwitch` (login ↔ recuperar senha). */
+@keyframes auth-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Tela de acesso: o card de duas faces (entrar ↔ cadastrar).
+ *
+ * O painel navy não é uma coluna — é um círculo de 2000px ancorado fora do
+ * card, e a *borda* dele é o que desenha a curva entre as duas faces. Trocar
+ * de face translada o círculo pelo card: uma transformação só, sem reflow,
+ * que leva a curva junto e descobre a face de baixo. Um clip-path animado
+ * daria a mesma silhueta, mas não a sensação de uma peça atravessando.
+ *
+ * Os tempos são encadeados de propósito: o círculo sai primeiro (1,4s), o
+ * formulário só desliza depois de 0,6s e o convite do painel entra por
+ * último — cada coisa aparece quando o navy já passou por cima dela.
+ *
+ * Abaixo de `lg` não há largura para duas faces: o card empilha o formulário
+ * com uma faixa navy embaixo, que é onde o convite para a outra face mora.
+ */
+.auth-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--background);
+  box-shadow: 0 24px 60px rgba(5, 15, 34, 0.28);
+}
+
+.auth-card-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.auth-card-prompt-heading {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* Pílula de campo: ícone à esquerda, sem borda, o foco acende o trilho. */
+.auth-field {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: center;
+  height: 3.25rem;
+  border-radius: 9999px;
+  background: var(--muted);
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.auth-field:focus-within {
+  background: var(--navy-50);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.auth-field[data-invalid="true"] {
+  box-shadow: 0 0 0 2px var(--destructive);
+}
+
+.auth-field > svg {
+  justify-self: center;
+  color: var(--muted-foreground);
+}
+
+.auth-field input {
+  width: 100%;
+  padding-right: 1.25rem;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+
+.auth-field input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Convite para a outra face: pílula vazada sobre o navy. */
+.auth-card-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 1.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s,
+    transform 0.3s;
+}
+
+.auth-card-cta:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--gold-500);
+  color: var(--gold-300);
+  transform: translateY(-2px);
+}
+
+.auth-card-cta:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+}
+
+/* ---- Empilhado: uma face por vez, convite na faixa de baixo ---- */
+@media (max-width: 63.999rem) {
+  .auth-card-forms {
+    order: 1;
+    padding: 1.75rem 1.5rem 2rem;
+  }
+
+  .auth-card-panels {
+    order: 2;
+  }
+
+  .auth-card-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.75rem 1.5rem;
+    text-align: center;
+    background: linear-gradient(-45deg, var(--navy-900) 0%, var(--navy-800) 100%);
+    color: var(--app-shell-foreground);
+  }
+
+  /* Só o convite da face oposta à que está aberta. */
+  .auth-card[data-mode="entrar"] .auth-card-panel--left,
+  .auth-card[data-mode="cadastrar"] .auth-card-panel--right {
+    display: flex;
+  }
+}
+
+/* ---- Duas faces: o círculo navy atravessa o card ---- */
+@media (min-width: 64rem) {
+  .auth-card {
+    display: block;
+    height: 560px;
+  }
+
+  .auth-card::before {
+    content: "";
+    position: absolute;
+    z-index: 6;
+    top: -10%;
+    right: 48%;
+    height: 2000px;
+    width: 2000px;
+    transform: translateY(-50%);
+    border-radius: 50%;
+    background: linear-gradient(-45deg, var(--navy-900) 0%, var(--navy-800) 100%);
+    transition:
+      transform 1.4s ease-in-out,
+      right 1.4s ease-in-out;
+  }
+
+  .auth-card[data-mode="cadastrar"]::before {
+    transform: translate(100%, -50%);
+    right: 52%;
+  }
+
+  .auth-card-forms {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+  }
+
+  /* Trilho da face branca: viaja entre a metade direita e a esquerda. */
+  .auth-card-slots {
+    position: absolute;
+    top: 50%;
+    left: 75%;
+    z-index: 5;
+    width: 50%;
+    padding: 0 3.25rem;
+    transform: translate(-50%, -50%);
+    transition: left 1s 0.6s ease-in-out;
+  }
+
+  .auth-card[data-mode="cadastrar"] .auth-card-slots {
+    left: 25%;
+  }
+
+  .auth-card-panels {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .auth-card-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 11%;
+    text-align: center;
+    background: none;
+    color: var(--app-shell-foreground);
+  }
+
+  .auth-card-panel--right {
+    pointer-events: none;
+  }
+
+  .auth-card[data-mode="cadastrar"] .auth-card-panel--left {
+    pointer-events: none;
+  }
+
+  .auth-card[data-mode="cadastrar"] .auth-card-panel--right {
+    pointer-events: auto;
+  }
+
+  /*
+   * O convite não some: ele sai do card junto com o navy e volta do outro
+   * lado. 800px é folga suficiente para sumir atrás da face branca em
+   * qualquer largura que o card assuma.
+   */
+  .auth-card-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.9s ease-in-out 0.5s;
+  }
+
+  .auth-card-panel--right .auth-card-prompt {
+    transform: translateX(800px);
+  }
+
+  .auth-card[data-mode="cadastrar"] .auth-card-panel--left .auth-card-prompt {
+    transform: translateX(-800px);
+  }
+
+  .auth-card[data-mode="cadastrar"] .auth-card-panel--right .auth-card-prompt {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card::before,
+  .auth-card-slots,
+  .auth-card-prompt {
+    transition-duration: 0.01ms;
+    transition-delay: 0s;
   }
 }

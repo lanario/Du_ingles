@@ -5,12 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth/logout";
 import { NotificationBell } from "@/components/features/notification-bell";
+import { RoleSwitch } from "@/components/features/admin/role-switch";
 import type { NotificationItem } from "@/repositories/notifications";
-import { LogoutIcon } from "@/components/ui/icons";
+import { CloseIcon, LogoutIcon, MenuIcon } from "@/components/ui/icons";
 
 const RAIL_WIDTH = 64;
 const PANEL_WIDTH = 252;
@@ -169,12 +170,71 @@ interface AdminSidebarProps {
   initialUnreadCount: number;
 }
 
+// `/admin` casaria com tudo por prefixo; a raiz precisa de match exato.
+function isActivePath(pathname: string, href: string) {
+  return href === "/admin"
+    ? pathname === href
+    : pathname === href || pathname.startsWith(href + "/");
+}
+
+/* `NAV_SECTIONS` é `as const`, então cada seção tem um tipo de tupla próprio e
+   o `flatMap` sem anotação vira uma união inútil de tuplas. */
+type NavItem = { href: string; label: string; icon: IconName };
+
+const ALL_ITEMS: NavItem[] = NAV_SECTIONS.flatMap<NavItem>(
+  (section) => section.items as readonly NavItem[],
+)
+  // Do mais específico para o mais genérico: `/admin/turmas` tem que ganhar
+  // de `/admin` na hora de rotular o cabeçalho mobile.
+  .sort((a, b) => b.href.length - a.href.length);
+
+function itemAtivo(pathname: string) {
+  return ALL_ITEMS.find((item) => isActivePath(pathname, item.href));
+}
+
+/** Emblema "Du" do chrome admin, em duas variantes (compacta/completa). */
+function Brand({ compact }: { compact?: boolean }) {
+  return (
+    <span className="flex items-center gap-3">
+      <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-white p-1.5">
+        <Image
+          src="/logo_amarela.svg"
+          alt="Du Inglês"
+          width={36}
+          height={36}
+          className="h-full w-full object-contain"
+          priority
+        />
+      </span>
+      {!compact && (
+        <span className="whitespace-nowrap text-sm font-semibold tracking-tight">
+          Du Inglês
+        </span>
+      )}
+    </span>
+  );
+}
+
 /**
- * Rail navy/dourado do admin — mesmo mecanismo hover-expand do sidebar do
- * aluno/professor (`AppSidebar`), só que na paleta `admin-shell-*` para que a
- * leitura de "outro contexto" continue imediata mesmo com o formato irmão.
+ * Navegação do painel administrativo. Duas peças com o mesmo mapa de rotas,
+ * cada uma para um tamanho de tela — mesmo par usado na área do
+ * aluno/professor (`AppSidebar`), aqui na paleta `admin-shell-*`:
+ *
+ * - `AdminRail` (>= md): rail de 64px que expande no hover/foco.
+ * - `AdminNavMobile` (< md): barra superior fina + gaveta lateral por toque.
+ *   Sem ela o admin simplesmente não tinha navegação no celular — o rail é
+ *   `hidden md:block` e nada o substituía.
  */
-export function AdminSidebar({
+export function AdminSidebar(props: AdminSidebarProps) {
+  return (
+    <>
+      <AdminNavMobile {...props} />
+      <AdminRail {...props} />
+    </>
+  );
+}
+
+function AdminRail({
   organizationLabel,
   userId,
   email,
@@ -269,9 +329,7 @@ export function AdminSidebar({
     gsap.to(glow, { opacity: 0, duration: 0.25, ease: "power2.in" });
   }, [reduceMotion]);
 
-  // `/admin` casaria com tudo por prefixo; a raiz precisa de match exato.
-  const isActive = (href: string) =>
-    href === "/admin" ? pathname === href : pathname.startsWith(href);
+  const isActive = (href: string) => isActivePath(pathname, href);
 
   return (
     <aside
@@ -462,5 +520,201 @@ export function AdminSidebar({
         </div>
       </motion.div>
     </aside>
+  );
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+const DRAWER_CLASS = "w-[min(18rem,84vw)]";
+
+/* Alvo de toque de 44px (min-h-11) em cada linha — no rail de desktop as
+   linhas têm 40px, que é confortável de clicar mas apertado de tocar. */
+const MOBILE_ROW_CLASS =
+  "group relative flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 text-[15px] font-medium transition-colors " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-shell";
+
+function AdminNavMobile({
+  organizationLabel,
+  userId,
+  email,
+  initialNotifications,
+  initialUnreadCount,
+}: AdminSidebarProps) {
+  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const [routeAtOpen, setRouteAtOpen] = useState(pathname);
+  const atual = itemAtivo(pathname);
+  const [loggingOut, startLogout] = useTransition();
+
+  // Navegar fecha a gaveta durante a renderização (não em efeito), assim ela
+  // já sai fechada no mesmo passo em que a rota muda — inclui o botão
+  // "voltar" do navegador, que não passa pelo onClick do link.
+  if (open && routeAtOpen !== pathname) {
+    setOpen(false);
+  }
+
+  function abrir() {
+    setRouteAtOpen(pathname);
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  return (
+    <>
+      <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-admin-shell-border bg-admin-shell/95 px-2 pt-[env(safe-area-inset-top,0px)] text-admin-shell-foreground backdrop-blur md:hidden">
+        <button
+          type="button"
+          onClick={abrir}
+          aria-label="Abrir navegação"
+          aria-expanded={open}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-admin-shell-foreground/70 transition-colors hover:bg-admin-shell-foreground/10 hover:text-admin-shell-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900"
+        >
+          <MenuIcon className="h-6 w-6" />
+        </button>
+
+        <Brand compact />
+
+        {atual && (
+          <span className="ml-0.5 min-w-0 truncate text-sm font-semibold">
+            {atual.label}
+          </span>
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
+          <RoleSwitch active="admin" awayLabel="Aluno" awayRole="student" collapsed />
+          <NotificationBell
+            userId={userId}
+            initialNotifications={initialNotifications}
+            initialUnreadCount={initialUnreadCount}
+            theme="admin"
+          />
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {open && (
+          <div className="fixed inset-0 z-[70] md:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setOpen(false)}
+              className="absolute inset-0 bg-navy-950/40 backdrop-blur-[2px]"
+            />
+            <motion.nav
+              aria-label="Navegação administrativa"
+              role="dialog"
+              aria-modal="true"
+              initial={reduceMotion ? { opacity: 0 } : { x: "-100%" }}
+              animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { x: "-100%" }}
+              transition={{ type: "spring", stiffness: 420, damping: 40 }}
+              className={cn(
+                "absolute inset-y-0 left-0 flex flex-col border-r border-admin-shell-border bg-admin-shell text-admin-shell-foreground shadow-2xl",
+                DRAWER_CLASS,
+              )}
+            >
+              <div className="shrink-0 border-b border-admin-shell-border px-3 pt-[env(safe-area-inset-top,0px)]">
+                <div className="flex h-14 items-center justify-between gap-2">
+                  <span className="flex min-w-0 flex-col">
+                    <Brand />
+                    <span className="truncate pl-12 text-[10px] uppercase tracking-[0.14em] text-admin-shell-foreground/70">
+                      {organizationLabel}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    aria-label="Fechar navegação"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-admin-shell-foreground/70 transition-colors hover:bg-admin-shell-foreground/10 hover:text-admin-shell-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900"
+                  >
+                    <CloseIcon className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-2">
+                {NAV_SECTIONS.map((section, index) => (
+                  <div key={section.label}>
+                    {index > 0 && <div className="my-1.5 h-px bg-admin-shell-border" />}
+                    <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-admin-shell-foreground/50">
+                      {section.label}
+                    </p>
+                    <div className="space-y-0.5">
+                      {section.items.map((item) => {
+                        const active = isActivePath(pathname, item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            aria-current={active ? "page" : undefined}
+                            className={cn(
+                              MOBILE_ROW_CLASS,
+                              active
+                                ? "bg-navy-900/15 text-admin-shell-foreground"
+                                : "text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900 active:bg-navy-900/15",
+                            )}
+                          >
+                            {active && (
+                              <span
+                                aria-hidden
+                                className="absolute -left-2 bottom-1.5 top-1.5 w-[3px] rounded-r-full bg-navy-900"
+                              />
+                            )}
+                            <span
+                              className={cn(
+                                "flex-none",
+                                active
+                                  ? "text-navy-900"
+                                  : "text-admin-shell-foreground/60",
+                              )}
+                            >
+                              <NavIcon name={item.icon} />
+                            </span>
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="shrink-0 border-t border-admin-shell-border px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
+                <p className="truncate px-3 py-1.5 text-xs text-admin-shell-foreground/60">
+                  {email}
+                </p>
+                <button
+                  type="button"
+                  disabled={loggingOut}
+                  onClick={() =>
+                    startLogout(async () => {
+                      await logoutAction();
+                    })
+                  }
+                  className={cn(
+                    MOBILE_ROW_CLASS,
+                    "text-admin-shell-foreground/70 active:text-red-700 disabled:opacity-60",
+                  )}
+                >
+                  <LogoutIcon className="h-5 w-5 flex-none" aria-hidden />
+                  {loggingOut ? "Saindo…" : "Sair"}
+                </button>
+              </div>
+            </motion.nav>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

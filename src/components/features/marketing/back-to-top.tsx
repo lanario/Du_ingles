@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
  * de uma tela de rolagem — antes disso não há o que desfazer, e o disco
  * competiria com o CTA do hero. Fica em `z-40` de propósito: se a faixa de
  * cookies (z-50) estiver na tela, ela tem prioridade sobre o botão.
+ *
+ * A distância até a base é calculada no CSS (`--btn-to-top-bottom`), porque
+ * no celular ela depende de quem mais está no rodapé: a barra de CTA e a
+ * faixa de cookies empurram o disco para cima em vez de ficar por baixo dele.
  */
 export function BackToTop() {
   const [visible, setVisible] = useState(false);
@@ -29,7 +33,7 @@ export function BackToTop() {
       onClick={scrollToTop}
       aria-label="Voltar ao topo"
       tabIndex={visible ? 0 : -1}
-      className={`btn-to-top fixed bottom-6 right-6 z-40 ${
+      className={`btn-to-top fixed right-4 z-40 sm:right-6 ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >

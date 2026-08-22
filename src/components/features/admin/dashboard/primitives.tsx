@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
@@ -32,6 +32,41 @@ function prefersReducedMotion(): boolean {
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
+}
+
+/**
+ * Largura real do container, para usar como largura do `viewBox`.
+ *
+ * Um `viewBox` fixo (760) com `class="w-full"` escala o desenho inteiro pelo
+ * fator `larguraDoCard / 760` — inclusive o texto. Num card de 340px isso
+ * derruba os rótulos de 11px para ~5px, ilegíveis. Medindo o container e
+ * desenhando nessa largura, a escala é sempre 1: eixo e rótulos saem no
+ * tamanho em que foram especificados, em qualquer viewport.
+ *
+ * O fallback de 760 é o que sai no HTML do servidor (e no primeiro frame,
+ * antes da medição) — a mesma proporção de antes, então não há salto visual
+ * no desktop.
+ */
+export function useMeasuredWidth(fallback = 760) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(fallback);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const next = entry?.contentRect.width ?? 0;
+      // Arredonda para evitar re-render a cada fração de pixel durante a
+      // mola de largura da sidebar.
+      if (next > 0) setWidth(Math.round(next));
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, width] as const;
 }
 
 interface CountUpProps {
@@ -119,7 +154,9 @@ export function ScrollProgressBar() {
   }, []);
 
   return (
-    <div className="pointer-events-none sticky top-0 z-20 -mx-6 -mt-6 mb-6 h-0.5 bg-admin-border/60">
+    /* As margens negativas sangram a barra até a borda do <main>, então
+       precisam espelhar o padding dele — que é menor no mobile. */
+    <div className="pointer-events-none sticky top-0 z-20 -mx-4 -mt-5 mb-6 h-0.5 bg-admin-border/60 md:-mx-6 md:-mt-6">
       <div
         ref={ref}
         className="h-full origin-left scale-x-0 bg-gradient-to-r from-navy-800 via-navy-600 to-gold-500"
@@ -264,8 +301,11 @@ export function CardHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-none items-start justify-between gap-4 border-b border-admin-border/70 px-5 py-4">
-      <div>
+    /* `flex-wrap` + `min-w-0`: numa tela estreita a ação (valor acumulado,
+       link "ver turmas") cai para baixo do título em vez de espremê-lo até
+       o texto quebrar letra a letra. */
+    <div className="flex flex-none flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b border-admin-border/70 px-4 py-4 sm:px-5">
+      <div className="min-w-0 flex-1">
         <h2 className="text-sm font-semibold text-admin-foreground">{title}</h2>
         {subtitle && (
           <p className="mt-0.5 text-xs text-admin-foreground/55">{subtitle}</p>

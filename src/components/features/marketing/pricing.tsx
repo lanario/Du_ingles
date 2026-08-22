@@ -57,18 +57,26 @@ const PLANS = [
 export function Pricing() {
   return (
     <section id="planos">
-      <div className="mx-auto max-w-6xl px-4 py-20">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Planos</h2>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Todos os planos incluem as mesmas aulas ao vivo — o que muda é o
-          compromisso e o preço da hora.
+        <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground sm:text-base">
+          Todos os planos incluem as mesmas aulas ao vivo — o que muda é o compromisso e o
+          preço da hora.
+        </p>
+        <p className="mt-4 text-xs text-muted-foreground lg:hidden" aria-hidden>
+          Deslize para ver os três planos →
         </p>
 
-        <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-3">
+        {/* Três cartões empilhados somam ~2.100px de rolagem no celular, e o
+            terceiro nunca é visto. Vira um carrossel com `snap` e uma fresta
+            do próximo cartão: as margens negativas sangram o trilho até a
+            borda da tela para que o `px-4` continue alinhando o primeiro
+            cartão com o título. A partir de `lg` é a grade de sempre. */}
+        <div className="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-4 pb-4 sm:mt-10 lg:mx-0 lg:mt-12 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0">
           {PLANS.map((plan) => (
             <article
               key={plan.name}
-              className="pricing-card group relative flex flex-col overflow-hidden rounded-2xl p-6 transition-all duration-300"
+              className="pricing-card group relative flex w-[85%] max-w-sm shrink-0 snap-center flex-col overflow-hidden rounded-2xl p-6 transition-all duration-300 sm:w-[62%] lg:w-auto lg:max-w-none"
               style={{
                 background: plan.highlight
                   ? "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-800) 100%)"
@@ -94,9 +102,7 @@ export function Pricing() {
               <span
                 className="mb-4 inline-flex w-fit items-center rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
                 style={{
-                  color: plan.highlight
-                    ? "var(--gold-400)"
-                    : "var(--navy-300)",
+                  color: plan.highlight ? "var(--gold-400)" : "var(--navy-300)",
                   border: `1px solid ${
                     plan.highlight
                       ? "color-mix(in srgb, var(--gold-500) 32%, transparent)"
@@ -114,7 +120,10 @@ export function Pricing() {
               <h3 className="text-xl font-bold text-white">{plan.name}</h3>
 
               {/* Descrição */}
-              <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "var(--navy-300)" }}>
+              <p
+                className="mt-1.5 text-sm leading-relaxed"
+                style={{ color: "var(--navy-300)" }}
+              >
                 {plan.description}
               </p>
 
@@ -155,9 +164,7 @@ export function Pricing() {
                       className="mt-0.5 h-4 w-4 shrink-0"
                       strokeWidth={2.4}
                       style={{
-                        color: plan.highlight
-                          ? "var(--gold-500)"
-                          : "var(--gold-400)",
+                        color: plan.highlight ? "var(--gold-500)" : "var(--gold-400)",
                       }}
                     />
                     <span className="font-medium text-white/80">{f}</span>
@@ -167,8 +174,8 @@ export function Pricing() {
 
               {/* CTA */}
               <a
-                href="#contato"
-                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200"
+                href="#faq"
+                className="mt-6 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200"
                 style={{
                   background: plan.highlight
                     ? "var(--gold-500)"

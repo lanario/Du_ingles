@@ -19,7 +19,10 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { formatNumber } from "@/components/features/admin/dashboard/primitives";
+import {
+  formatNumber,
+  useMeasuredWidth,
+} from "@/components/features/admin/dashboard/primitives";
 import {
   niceCeil,
   prefersReducedMotion,
@@ -102,8 +105,9 @@ export function MoneyValue({
 /*                        Receitas × despesas por mês                        */
 /* ------------------------------------------------------------------------ */
 
-const W = 760;
-const PAD = { left: 64, right: 20, top: 18, bottom: 34 };
+const FALLBACK_W = 760;
+const WIDE_PAD = { left: 64, right: 20, top: 18, bottom: 34 };
+const COMPACT_PAD = { left: 46, right: 12, top: 16, bottom: 28 };
 
 /**
  * As duas colunas lado a lado — receita de um lado, despesa (professores
@@ -125,10 +129,18 @@ export function RevenueExpenseChart({
   const lineRef = useRef<SVGPathElement>(null);
   const [active, setActive] = useState<number | null>(null);
   const reduced = useReducedMotion();
+  const [wrapRef, W] = useMeasuredWidth(FALLBACK_W);
+
+  // Faixa estreita: o eixo em reais nao cabe nos 64px de gutter e a altura
+  // cheia deixaria as barras finas demais. `PAD` precisa ser estavel entre
+  // renders — entra nas dependencias de `geo`.
+  const compact = W < 520;
+  const PAD = useMemo(() => (compact ? COMPACT_PAD : WIDE_PAD), [compact]);
+  const chartHeight = compact ? Math.min(height, 220) : height;
 
   const geo = useMemo(() => {
     const innerW = W - PAD.left - PAD.right;
-    const innerH = height - PAD.top - PAD.bottom;
+    const innerH = chartHeight - PAD.top - PAD.bottom;
 
     const maxCents = Math.max(
       1,
@@ -174,7 +186,7 @@ export function RevenueExpenseChart({
         y: PAD.top + innerH * (1 - ratio),
       })),
     };
-  }, [points, height]);
+  }, [points, W, chartHeight, PAD]);
 
   useEffect(() => {
     const path = lineRef.current;
@@ -198,6 +210,7 @@ export function RevenueExpenseChart({
     };
   }, [geo.linePath]);
 
+  const stride = Math.max(1, Math.ceil(points.length / (compact ? 4 : 12)));
   const activeIndex = active;
   const activePoint = activeIndex != null ? points[activeIndex] : null;
   const previousPoint =
@@ -210,11 +223,11 @@ export function RevenueExpenseChart({
       : null;
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative">
       <svg
-        viewBox={`0 0 ${W} ${height}`}
+        viewBox={`0 0 ${W} ${chartHeight}`}
         className="w-full"
-        style={{ height }}
+        style={{ height: chartHeight }}
         role="img"
         aria-label="Receitas e despesas por mês"
         onMouseLeave={() => setActive(null)}
@@ -358,16 +371,20 @@ export function RevenueExpenseChart({
                 }}
               />
 
-              <text
-                x={cx}
-                y={height - 12}
-                textAnchor="middle"
-                fontSize={10}
-                fill={isActive ? MONEY.ink : MONEY.muted}
-                fontWeight={isActive ? 600 : 400}
-              >
-                {point.label}
-              </text>
+              {/* Numa faixa estreita os rotulos de todos os meses colidem;
+                  mostra um a cada "stride", mais o mes sob o cursor. */}
+              {(index % stride === 0 || isActive) && (
+                <text
+                  x={cx}
+                  y={chartHeight - 12}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fill={isActive ? MONEY.ink : MONEY.muted}
+                  fontWeight={isActive ? 600 : 400}
+                >
+                  {point.label}
+                </text>
+              )}
             </g>
           );
         })}

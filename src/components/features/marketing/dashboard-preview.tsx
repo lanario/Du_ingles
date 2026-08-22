@@ -5,6 +5,12 @@
  * não custar nada ao LCP da home. O efeito 3D é CSS puro (`group-hover`):
  * inclinado em repouso, alinhado quando o mouse entra. Nada de framer-motion
  * aqui; a landing não precisa carregar runtime de animação só por um tilt.
+ *
+ * No celular a maquete não é uma redução da versão desktop: o par
+ * "agenda | frequência" desempilha (lado a lado em 183px não sobra largura
+ * para nenhum dos dois), a agenda mostra duas aulas em vez de três e os
+ * tamanhos de fonte sobem um degrau. Abaixo de 11px o texto vira textura, e
+ * uma maquete ilegível não prova nada.
  */
 
 const SESSIONS = [
@@ -14,6 +20,8 @@ const SESSIONS = [
     title: "Speaking: Job Interviews",
     group: "Turma B2 · Noite",
     time: "19:00",
+    /** A terceira aula só entra quando há altura sobrando (>= sm). */
+    compact: true,
   },
   {
     day: "Qua",
@@ -21,6 +29,7 @@ const SESSIONS = [
     title: "Grammar: Past Perfect",
     group: "Turma B2 · Noite",
     time: "19:00",
+    compact: true,
   },
   {
     day: "Sex",
@@ -28,6 +37,7 @@ const SESSIONS = [
     title: "Listening: Podcasts",
     group: "Conversação",
     time: "20:00",
+    compact: false,
   },
 ] as const;
 
@@ -39,13 +49,11 @@ const ATTENDANCE = [
 export function DashboardPreview() {
   return (
     <div className="group select-none [perspective:1600px]" aria-hidden>
-      <div
-        className="tilt-3d origin-center rounded-2xl border border-border bg-background p-4 shadow-[0_40px_80px_-40px_rgba(10,31,68,0.55)]"
-      >
+      <div className="tilt-3d origin-center rounded-2xl border border-border bg-background p-3 shadow-[0_40px_80px_-40px_rgba(10,31,68,0.55)] sm:p-4">
         {/* Cabeçalho */}
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-gold-600">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-600 sm:text-[9px]">
               Área do aluno
             </p>
             <p className="mt-0.5 text-base font-semibold tracking-tight text-navy-900">
@@ -61,15 +69,15 @@ export function DashboardPreview() {
         </div>
 
         {/* Destaque: próxima aula */}
-        <div className="relative mt-3 overflow-hidden rounded-xl bg-navy-900 p-4 text-white">
+        <div className="relative mt-3 overflow-hidden rounded-xl bg-navy-900 p-3.5 text-white sm:p-4">
           <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-gold-600 via-gold-400 to-gold-600" />
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-gold-300">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-300 sm:text-[9px] sm:tracking-[0.16em]">
                   Próxima aula
                 </p>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-success">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-success sm:text-[8px]">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   Ao vivo
                 </span>
@@ -77,7 +85,7 @@ export function DashboardPreview() {
               <p className="mt-1.5 truncate text-sm font-semibold">
                 Speaking: Job Interviews
               </p>
-              <p className="mt-0.5 truncate text-[11px] text-white/65">
+              <p className="mt-0.5 truncate text-xs text-white/65 sm:text-[11px]">
                 Turma B2 · Noite · 60 min
               </p>
             </div>
@@ -88,8 +96,10 @@ export function DashboardPreview() {
           </div>
         </div>
 
-        {/* KPIs */}
-        <div className="mt-3 grid grid-cols-4 gap-2">
+        {/* KPIs — dois por linha quando a coluna é estreita (celular, e de
+            novo em `md`, onde o hero vira duas colunas), quatro quando sobra
+            largura. Com quatro colunas em ~310px, "Frequência" já vaza. */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">
           <Stat label="Aulas" value="48" />
           <Stat label="Tarefas" value="2" tone="gold" />
           <Stat label="Frequência" value="92%" />
@@ -97,14 +107,19 @@ export function DashboardPreview() {
         </div>
 
         {/* Agenda da semana + frequência */}
-        <div className="mt-3 grid grid-cols-5 gap-2">
-          <div className="col-span-3 rounded-xl border border-border">
-            <p className="border-b border-border px-3 py-2 text-[11px] font-semibold text-navy-900">
+        <div className="mt-3 grid gap-2 sm:grid-cols-5 md:grid-cols-1 lg:grid-cols-5">
+          <div className="rounded-xl border border-border sm:col-span-3">
+            <p className="border-b border-border px-3 py-2 text-xs font-semibold text-navy-900 sm:text-[11px]">
               Próximas aulas
             </p>
             <ul className="divide-y divide-border">
               {SESSIONS.map((session) => (
-                <li key={session.date} className="flex items-center gap-2.5 px-3 py-2">
+                <li
+                  key={session.date}
+                  className={`items-center gap-2.5 px-3 py-2 ${
+                    session.compact ? "flex" : "hidden sm:flex"
+                  }`}
+                >
                   <div className="flex h-8 w-8 flex-none flex-col items-center justify-center rounded-lg border border-border bg-muted leading-none">
                     <span className="text-[8px] uppercase text-muted-foreground">
                       {session.day}
@@ -114,14 +129,14 @@ export function DashboardPreview() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-medium text-foreground">
+                    <p className="truncate text-xs font-medium text-foreground sm:text-[11px]">
                       {session.title}
                     </p>
-                    <p className="truncate text-[10px] text-muted-foreground">
+                    <p className="truncate text-[11px] text-muted-foreground sm:text-[10px]">
                       {session.group}
                     </p>
                   </div>
-                  <span className="tabular flex-none text-[11px] font-medium text-navy-800">
+                  <span className="tabular flex-none text-xs font-medium text-navy-800 sm:text-[11px]">
                     {session.time}
                   </span>
                 </li>
@@ -129,22 +144,24 @@ export function DashboardPreview() {
             </ul>
           </div>
 
-          <div className="col-span-2 rounded-xl border border-border">
-            <p className="border-b border-border px-3 py-2 text-[11px] font-semibold text-navy-900">
+          <div className="rounded-xl border border-border sm:col-span-2">
+            <p className="border-b border-border px-3 py-2 text-xs font-semibold text-navy-900 sm:text-[11px]">
               Sua frequência
             </p>
-            <div className="space-y-3 px-3 py-3">
-              <div className="flex justify-center">
+            {/* Medidor e barras lado a lado enquanto o cartão é largo (celular
+                em coluna única); empilhados quando ele vira 2/5 da grade. */}
+            <div className="flex items-center gap-4 px-3 py-3 sm:block sm:space-y-3 md:flex md:space-y-0 lg:block lg:space-y-3">
+              <div className="flex flex-none justify-center">
                 <Gauge value={92} />
               </div>
-              <ul className="space-y-2">
+              <ul className="min-w-0 flex-1 space-y-2">
                 {ATTENDANCE.map((group) => (
                   <li key={group.name}>
                     <div className="mb-1 flex items-baseline justify-between gap-2">
-                      <span className="truncate text-[10px] text-foreground/85">
+                      <span className="truncate text-[11px] text-foreground/85 sm:text-[10px]">
                         {group.name}
                       </span>
-                      <span className="tabular text-[10px] font-semibold text-navy-900">
+                      <span className="tabular text-[11px] font-semibold text-navy-900 sm:text-[10px]">
                         {group.rate}%
                       </span>
                     </div>
@@ -176,7 +193,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-xl border border-border bg-background p-2.5">
-      <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+      <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[8px]">
         {label}
       </p>
       <p

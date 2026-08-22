@@ -107,10 +107,12 @@ export function KpiCard({
         )}
 
         {/* Contexto extra só quando o admin pede atenção ao card. O truque de
-            grid 0fr→1fr anima altura sem precisar medir o conteúdo. */}
+            grid 0fr→1fr anima altura sem precisar medir o conteúdo.
+            Em touch não existe hover: abaixo de `md` o texto fica sempre
+            aberto, senão essa informação seria simplesmente inalcançável. */}
         {changePercent !== undefined && hint && (
-          <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]">
-            <p className="overflow-hidden text-xs text-admin-foreground/50 opacity-0 transition-opacity duration-300 group-hover:pt-1.5 group-hover:opacity-100">
+          <div className="grid grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out md:grid-rows-[0fr] md:group-hover:grid-rows-[1fr]">
+            <p className="overflow-hidden pt-1.5 text-xs text-admin-foreground/50 transition-opacity duration-300 md:pt-0 md:opacity-0 md:group-hover:pt-1.5 md:group-hover:opacity-100">
               {hint}
             </p>
           </div>

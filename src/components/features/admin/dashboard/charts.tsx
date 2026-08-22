@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ChartTooltip, formatNumber } from "./primitives";
+import { ChartTooltip, formatNumber, useMeasuredWidth } from "./primitives";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -85,7 +85,7 @@ interface AreaChartProps {
   valueSuffix?: string;
 }
 
-const CHART_WIDTH = 760;
+const CHART_FALLBACK_WIDTH = 760;
 const PAD = { left: 40, right: 16, top: 18, bottom: 30 };
 
 /**
@@ -102,16 +102,24 @@ export function AreaChart({
   const gradientId = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
   const [active, setActive] = useState<number | null>(null);
+  const [wrapRef, chartWidth] = useMeasuredWidth(CHART_FALLBACK_WIDTH);
+
+  // Card estreito: menos gutter e menos altura, senão a área util do grafico
+  // some entre os eixos. `pad` precisa ser estavel entre renders (entra nas
+  // deps de `geometry`, que recria os tweens do GSAP).
+  const compact = chartWidth < 520;
+  const pad = useMemo(() => (compact ? { ...PAD, left: 32, bottom: 26 } : PAD), [compact]);
+  const chartHeight = compact ? Math.min(height, 210) : height;
 
   const geometry = useMemo(() => {
-    const innerW = CHART_WIDTH - PAD.left - PAD.right;
-    const innerH = height - PAD.top - PAD.bottom;
+    const innerW = chartWidth - pad.left - pad.right;
+    const innerH = chartHeight - pad.top - pad.bottom;
     const max = niceCeil(
       Math.max(1, ...data.flatMap((point) => point.values.map((v) => v || 0))),
     );
     const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
-    const x = (index: number) => PAD.left + index * stepX;
-    const y = (value: number) => PAD.top + innerH * (1 - value / max);
+    const x = (index: number) => pad.left + index * stepX;
+    const y = (value: number) => pad.top + innerH * (1 - value / max);
 
     const lines = series.map((_, seriesIndex) => {
       const points = data.map((point, index) => ({
@@ -119,12 +127,12 @@ export function AreaChart({
         y: y(point.values[seriesIndex] ?? 0),
       }));
       const line = smoothPath(points);
-      const area = `${line} L${x(data.length - 1)},${PAD.top + innerH} L${x(0)},${PAD.top + innerH} Z`;
+      const area = `${line} L${x(data.length - 1)},${pad.top + innerH} L${x(0)},${pad.top + innerH} Z`;
       return { points, line, area };
     });
 
-    return { innerH, max, x, y, lines, baseline: PAD.top + innerH };
-  }, [data, series, height]);
+    return { innerH, max, x, y, lines, baseline: pad.top + innerH };
+  }, [data, series, chartWidth, chartHeight, pad]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -167,22 +175,27 @@ export function AreaChart({
     const svg = svgRef.current;
     if (!svg || data.length === 0) return;
     const rect = svg.getBoundingClientRect();
-    const scale = rect.width / CHART_WIDTH;
+    const scale = rect.width / chartWidth;
     const localX = (event.clientX - rect.left) / scale;
-    const innerW = CHART_WIDTH - PAD.left - PAD.right;
+    const innerW = chartWidth - pad.left - pad.right;
     const step = data.length > 1 ? innerW / (data.length - 1) : innerW;
-    const index = Math.round((localX - PAD.left) / step);
+    const index = Math.round((localX - pad.left) / step);
     setActive(Math.min(data.length - 1, Math.max(0, index)));
   }
 
   const gridLines = [0, 0.25, 0.5, 0.75, 1];
   const activePoint = active !== null ? data[active] : null;
 
+  // Cabem ~7 rótulos numa faixa larga e ~4 numa estreita; acima disso eles se
+  // sobrepõem. O ponto sob o crosshair aparece independente do salto.
+  const stride = Math.max(1, Math.ceil(data.length / (compact ? 4 : 7)));
+  const lastIndex = data.length - 1;
+
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative">
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${CHART_WIDTH} ${height}`}
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         className="w-full touch-none"
         role="img"
         aria-label={`Série mensal: ${series.map((s) => s.label).join(", ")}`}
@@ -206,13 +219,13 @@ export function AreaChart({
         </defs>
 
         {gridLines.map((ratio) => {
-          const y = PAD.top + geometry.innerH * ratio;
+          const y = pad.top + geometry.innerH * ratio;
           const value = geometry.max * (1 - ratio);
           return (
             <g key={ratio}>
               <line
-                x1={PAD.left}
-                x2={CHART_WIDTH - PAD.right}
+                x1={pad.left}
+                x2={chartWidth - pad.right}
                 y1={y}
                 y2={y}
                 stroke={PALETTE.grid}
@@ -220,7 +233,7 @@ export function AreaChart({
                 strokeDasharray={ratio === 1 ? "0" : "3 5"}
               />
               <text
-                x={PAD.left - 10}
+                x={pad.left - 10}
                 y={y + 4}
                 textAnchor="end"
                 fontSize="11"
@@ -261,7 +274,7 @@ export function AreaChart({
             <line
               x1={geometry.x(active)}
               x2={geometry.x(active)}
-              y1={PAD.top}
+              y1={pad.top}
               y2={geometry.baseline}
               stroke={PALETTE.gold}
               strokeWidth={1}
@@ -281,26 +294,30 @@ export function AreaChart({
           </g>
         )}
 
-        {data.map((point, index) => (
-          <text
-            key={point.label + index}
-            x={geometry.x(index)}
-            y={height - 8}
-            textAnchor="middle"
-            fontSize="11"
-            fill={active === index ? PALETTE.ink : PALETTE.muted}
-            fontWeight={active === index ? 600 : 400}
-          >
-            {point.label}
-          </text>
-        ))}
+        {data.map((point, index) =>
+          index % stride === 0 || index === active ? (
+            <text
+              key={point.label + index}
+              x={geometry.x(index)}
+              y={chartHeight - 8}
+              textAnchor={
+                index === 0 ? "start" : index === lastIndex ? "end" : "middle"
+              }
+              fontSize="11"
+              fill={active === index ? PALETTE.ink : PALETTE.muted}
+              fontWeight={active === index ? 600 : 400}
+            >
+              {point.label}
+            </text>
+          ) : null,
+        )}
       </svg>
 
       {activePoint && (
         <div
           className="pointer-events-none absolute top-2 z-10 min-w-36 -translate-x-1/2 rounded-lg border border-admin-border bg-white/95 px-3 py-2 shadow-lg backdrop-blur"
           style={{
-            left: `${((geometry.x(active!) / CHART_WIDTH) * 100).toFixed(2)}%`,
+            left: `${((geometry.x(active!) / chartWidth) * 100).toFixed(2)}%`,
           }}
         >
           <p className="text-[11px] font-semibold uppercase tracking-wide text-admin-foreground/60">

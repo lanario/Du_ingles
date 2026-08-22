@@ -471,8 +471,8 @@ export function AdminDashboardView({
                                 </span>
                                 {/* Derivadas que não cabem em coluna própria,
                                     reveladas quando a linha está sob o mouse. */}
-                                <span className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out group-hover/row:grid-rows-[1fr]">
-                                  <span className="tabular block overflow-hidden text-[11px] text-admin-foreground/55 opacity-0 transition-opacity duration-200 group-hover/row:opacity-100">
+                                <span className="grid grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-out md:grid-rows-[0fr] md:group-hover/row:grid-rows-[1fr]">
+                                  <span className="tabular block overflow-hidden text-[11px] text-admin-foreground/55 transition-opacity duration-200 md:opacity-0 md:group-hover/row:opacity-100">
                                     {formatNumber(
                                       teacher.groups > 0
                                         ? teacher.students / teacher.groups
@@ -611,8 +611,8 @@ export function AdminDashboardView({
 
                         {/* Detalhe do hover: a frequência do aluno contra o
                             corte de 75%, marcado por um tique na régua. */}
-                        <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out group-hover/row:grid-rows-[1fr]">
-                          <div className="overflow-hidden opacity-0 transition-opacity duration-200 group-hover/row:pt-2.5 group-hover/row:opacity-100">
+                        <div className="grid grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-out md:grid-rows-[0fr] md:group-hover/row:grid-rows-[1fr]">
+                          <div className="overflow-hidden pt-2.5 transition-opacity duration-200 md:pt-0 md:opacity-0 md:group-hover/row:pt-2.5 md:group-hover/row:opacity-100">
                             <div className="relative h-1.5 rounded-full bg-admin-muted">
                               <div
                                 className={cn(
@@ -667,7 +667,11 @@ function MiniStat({
   tone?: "neutral" | "gold";
 }) {
   return (
-    <div className="group/stat relative border-b border-admin-border/70 px-5 py-4 transition-colors duration-300 last:border-b-0 hover:bg-navy-50/50 sm:border-b-0">
+    /* No mobile a faixa vira uma grade 2×3: a régua horizontal cai só na
+       última linha (os dois últimos itens, não apenas o último) e a coluna
+       da esquerda ganha um fio vertical. A partir de `sm` o `divide-x` do
+       Card assume e nenhuma dessas bordas é necessária. */
+    <div className="group/stat relative border-b border-r border-admin-border/70 px-4 py-4 transition-colors duration-300 [&:nth-child(even)]:border-r-0 [&:nth-last-child(-n+2)]:border-b-0 hover:bg-navy-50/50 sm:border-b-0 sm:border-r-0 sm:px-5">
       <span
         className="absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-navy-700 to-gold-500 transition-transform duration-300 ease-out group-hover/stat:scale-x-100"
         aria-hidden

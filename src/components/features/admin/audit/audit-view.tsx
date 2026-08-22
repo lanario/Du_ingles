@@ -193,7 +193,7 @@ export function AuditView({ logs, limit }: AuditViewProps) {
         ref={barRef}
         data-stuck="false"
         className={cn(
-          "sticky top-16 z-30 -mx-6 mb-5 flex flex-wrap items-center gap-2 border-b border-transparent px-6 py-3",
+          "sticky top-0 z-30 -mx-4 mb-5 md:top-16 md:-mx-6 flex flex-wrap items-center gap-2 border-b border-transparent px-4 py-3 md:px-6",
           "bg-[color-mix(in_srgb,var(--admin-background)_88%,transparent)] backdrop-blur-md transition-[border-color,box-shadow] duration-300",
           "data-[stuck=true]:border-admin-border data-[stuck=true]:shadow-[0_18px_30px_-28px_rgba(11,26,51,0.35)]",
         )}
