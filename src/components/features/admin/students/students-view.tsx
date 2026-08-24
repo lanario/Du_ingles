@@ -20,6 +20,10 @@ import { getUserByIdAction } from "@/actions/admin/users-detail";
 import { moveStudentToGroupAction } from "@/actions/admin/students";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import {
+  EnrollmentConflictDialog,
+  type EnrollmentConflict,
+} from "@/components/features/groups/enrollment-conflict-dialog";
+import {
   CloseIcon,
   GridIcon,
   PlusIcon,
@@ -42,6 +46,13 @@ import { studentMatches, type GroupFilter, type StatusFilter, type Student } fro
 interface StudentsViewProps {
   students: Student[];
   groups: GroupListItem[];
+}
+
+/** Transferência aguardando a confirmação do aviso de "um aluno, uma turma". */
+interface PendingMove {
+  studentId: string;
+  groupId: string;
+  conflict: EnrollmentConflict;
 }
 
 const STATUS_TABS: { id: StatusFilter; label: string }[] = [
@@ -70,6 +81,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
   const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
 
   const [moveTarget, setMoveTarget] = useState<Student | null>(null);
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -182,26 +194,46 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
     }
   }
 
-  /** Solta um aluno numa turma arrastando o cartão até a barra. */
+  async function move(studentId: string, groupId: string | null) {
+    setError(null);
+    setBusy(studentId);
+    try {
+      const result = await moveStudentToGroupAction(studentId, groupId);
+      if (!result.success) setError(result.error.message);
+      else router.refresh();
+    } finally {
+      setBusy(null);
+      setPendingMove(null);
+    }
+  }
+
+  /**
+   * Solta um aluno numa turma arrastando o cartão até a barra. Se ele já
+   * estiver em outra turma, o arrasto não move sozinho: um aluno pertence a
+   * uma turma só, então a transferência (e o fim da matrícula anterior) passa
+   * pelo aviso — arrastar é fácil demais para ser irreversível.
+   */
   async function dropOnGroup(studentId: string, groupId: string | null) {
     const student = students.find((item) => item.id === studentId);
     if (!student) return;
     const currentGroupId = student.enrollment?.groupId ?? null;
     if (currentGroupId === groupId) return;
 
-    setError(null);
-    setBusy(studentId);
-    try {
-      const result = await moveStudentToGroupAction(
+    if (currentGroupId && groupId) {
+      setError(null);
+      setPendingMove({
         studentId,
-        student.enrollment?.enrollmentId ?? null,
         groupId,
-      );
-      if (!result.success) setError(result.error.message);
-      else router.refresh();
-    } finally {
-      setBusy(null);
+        conflict: {
+          studentName: student.fullName,
+          fromGroupName: groups.find((g) => g.id === currentGroupId)?.name ?? "outra turma",
+          toGroupName: groups.find((g) => g.id === groupId)?.name ?? "esta turma",
+        },
+      });
+      return;
     }
+
+    await move(studentId, groupId);
   }
 
   const noStudentsAtAll = students.length === 0;
@@ -471,6 +503,15 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
       />
 
       <MoveToGroup open={moveTarget !== null} student={moveTarget} groups={groups} onClose={() => setMoveTarget(null)} />
+
+      <EnrollmentConflictDialog
+        conflict={pendingMove?.conflict ?? null}
+        busy={busy !== null}
+        onConfirm={() => {
+          if (pendingMove) void move(pendingMove.studentId, pendingMove.groupId);
+        }}
+        onCancel={() => setPendingMove(null)}
+      />
     </div>
   );
 }

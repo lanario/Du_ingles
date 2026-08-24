@@ -7,6 +7,7 @@ import {
   listGroupsByTeacher,
 } from "@/repositories/groups";
 import {
+  listActiveEnrollmentRefs,
   listEnrollmentsForGroups,
   listStudentEnrollments,
 } from "@/repositories/enrollments";
@@ -28,11 +29,12 @@ export default async function TurmasPage() {
   // A pré-visualização é uma lente sobre a UI de terceiros; o admin nunca
   // perde a própria capacidade de gerir.
   if (ctx.realRole === "admin") {
-    const [groups, courses, teachers, students] = await Promise.all([
+    const [groups, courses, teachers, students, activeByStudent] = await Promise.all([
       listAllGroups(),
       listCourses(),
       listUsers(ctx.organizationId, { role: "teacher" }),
       listUsers(ctx.organizationId, { role: "student" }),
+      listActiveEnrollmentRefs(ctx.organizationId),
     ]);
     const rosters = await listEnrollmentsForGroups(groups.map((group) => group.id));
 
@@ -41,6 +43,7 @@ export default async function TurmasPage() {
         groups={groups}
         rosters={rosters}
         students={students}
+        activeByStudent={activeByStudent}
         courses={courses}
         teachers={teachers}
       />
@@ -48,10 +51,11 @@ export default async function TurmasPage() {
   }
 
   if (ctx.effectiveRole === "teacher") {
-    const [groups, courses, students] = await Promise.all([
+    const [groups, courses, students, activeByStudent] = await Promise.all([
       listGroupsByTeacher(ctx.userId),
       listCourses(),
       listUsers(ctx.organizationId, { role: "student" }),
+      listActiveEnrollmentRefs(ctx.organizationId),
     ]);
     const rosters = await listEnrollmentsForGroups(groups.map((group) => group.id));
 
@@ -60,6 +64,7 @@ export default async function TurmasPage() {
         groups={groups}
         rosters={rosters}
         students={students}
+        activeByStudent={activeByStudent}
         courses={courses}
       />
     );

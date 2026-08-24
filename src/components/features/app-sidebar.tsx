@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-  type ComponentType,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
@@ -16,17 +9,17 @@ import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/domain";
-import { logoutAction } from "@/actions/auth/logout";
+import { UserMenu } from "@/components/features/account/user-menu";
 import { RoleSwitch } from "@/components/features/admin/role-switch";
 import { NotificationBell } from "@/components/features/notification-bell";
 import type { NotificationItem } from "@/repositories/notifications";
+import type { MyProfile } from "@/repositories/users";
 import {
   CloseIcon,
   GroupsIcon,
   HomeIcon,
   type IconProps,
   LibraryIcon,
-  LogoutIcon,
   MenuIcon,
   MessageIcon,
   PlanIcon,
@@ -186,6 +179,11 @@ interface SidebarProps {
   role: AppRole;
   userId: string;
   email: string;
+  fullName: string;
+  /** Foto de perfil já pronta para o `src` (`/api/avatars/...`) ou `null`. */
+  avatarUrl: string | null;
+  /** Dados editáveis do modal de perfil (telefone, nascimento etc). */
+  profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
   /** Admin navegando dentro da área de professor/aluno: mostra o botão de
@@ -224,6 +222,9 @@ function Sidebar({
   role,
   userId,
   email,
+  fullName,
+  avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
 }: SidebarProps) {
@@ -233,12 +234,6 @@ function Sidebar({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const expanded = hovered || focused;
-
-  // Chamadas diretas (não `<form action>`) porque essas duas ações navegam
-  // para fora da área logada — disparar via `startTransition` deixa o clique
-  // reagir imediatamente (estado de pending) mesmo com o rail no meio de uma
-  // animação de largura.
-  const [loggingOut, startLogout] = useTransition();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
@@ -464,35 +459,18 @@ function Sidebar({
               label="Notificações"
             />
 
-            <div
-              className={cn(
-                "overflow-hidden transition-all duration-200",
-                expanded ? "mt-1 max-h-10 opacity-100" : "max-h-0 opacity-0",
-              )}
-            >
-              <p className="truncate px-2.5 py-1.5 text-xs text-app-shell-foreground/60">
-                {email}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              disabled={loggingOut}
-              onClick={() =>
-                startLogout(async () => {
-                  await logoutAction();
-                })
-              }
-              className={cn(
-                ROW_CLASS,
-                "text-app-shell-foreground/70 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60",
-              )}
-            >
-              <LogoutIcon className="h-[18px] w-[18px] flex-none" />
-              <span data-nav-label style={{ opacity: 0 }} className="whitespace-nowrap">
-                {loggingOut ? "Saindo…" : "Sair"}
-              </span>
-            </button>
+            <UserMenu
+              userId={userId}
+              name={fullName}
+              email={email}
+              role={role}
+              avatarUrl={avatarUrl}
+              profile={profile}
+              theme="app"
+              securityHref="/seguranca"
+              compact
+              className="mt-1"
+            />
           </div>
         </div>
       </motion.div>
@@ -512,6 +490,9 @@ function NavMobile({
   role,
   userId,
   email,
+  fullName,
+  avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
   showAdminSwitch,
@@ -522,7 +503,6 @@ function NavMobile({
   const [routeAtOpen, setRouteAtOpen] = useState(pathname);
   const atual = itemAtivo(pathname);
   const sections = sectionsFor(role);
-  const [loggingOut, startLogout] = useTransition();
 
   // Navegar fecha a gaveta durante a renderização (não em efeito), assim ela
   // já sai fechada no mesmo passo em que a rota muda — inclui o botão
@@ -668,25 +648,16 @@ function NavMobile({
               </div>
 
               <div className="shrink-0 border-t border-app-shell-border px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
-                <p className="truncate px-3 py-1.5 text-xs text-app-shell-foreground/60">
-                  {email}
-                </p>
-                <button
-                  type="button"
-                  disabled={loggingOut}
-                  onClick={() =>
-                    startLogout(async () => {
-                      await logoutAction();
-                    })
-                  }
-                  className={cn(
-                    MOBILE_ROW_CLASS,
-                    "text-app-shell-foreground/70 active:text-red-300 disabled:opacity-60",
-                  )}
-                >
-                  <LogoutIcon className="h-5 w-5 flex-none" aria-hidden />
-                  {loggingOut ? "Saindo…" : "Sair"}
-                </button>
+                <UserMenu
+                  userId={userId}
+                  name={fullName}
+                  email={email}
+                  role={role}
+                  avatarUrl={avatarUrl}
+                  profile={profile}
+                  theme="app"
+                  securityHref="/seguranca"
+                />
               </div>
             </motion.nav>
           </div>

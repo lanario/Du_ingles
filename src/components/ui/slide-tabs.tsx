@@ -38,6 +38,11 @@ export interface SlideTabItem {
   /** Identificador para uso controlado. Default: `href` ou o próprio label. */
   value?: string;
   icon?: ReactNode;
+  /**
+   * Contador ao lado do rótulo (ex.: quantas turmas têm chat). Herda a cor da
+   * aba, então funciona tanto sob o cursor quanto fora dele.
+   */
+  badge?: ReactNode;
   disabled?: boolean;
 }
 
@@ -283,6 +288,14 @@ export function SlideTabs({
           <>
             {item.icon}
             <span>{item.label}</span>
+            {item.badge !== undefined && item.badge !== null ? (
+              <span
+                aria-hidden
+                className="tabular rounded-full bg-current/15 px-1.5 py-px text-[0.6875rem] leading-4 tracking-normal"
+              >
+                {item.badge}
+              </span>
+            ) : null}
           </>
         );
         const textClass = cn(

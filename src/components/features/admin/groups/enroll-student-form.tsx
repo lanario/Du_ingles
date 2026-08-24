@@ -8,34 +8,49 @@
  * O botão de remover confirma no próprio lugar — remover matrícula é a única
  * ação destrutiva desta tela, e um diálogo inteiro para isso seria mais
  * cerimônia do que a ação merece.
+ *
+ * Matricular alguém que já tem turma, ao contrário, passa por diálogo: é uma
+ * transferência disfarçada de matrícula, e o aviso ("um aluno, uma turma") é o
+ * que separa a transferência intencional do engano.
  */
 
-import { useActionState, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { enrollStudentAction, unenrollStudentAction } from "@/actions/admin/groups";
+import {
+  EnrollmentConflictDialog,
+  type EnrollmentConflict,
+} from "@/components/features/groups/enrollment-conflict-dialog";
 import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import { PlusIcon, SpinnerIcon, TrashIcon, UserIcon } from "@/components/ui/icons";
 import { UserAvatar } from "@/components/features/admin/users/users-visuals";
 import { CopyButton } from "./groups-visuals";
 import { cn } from "@/lib/utils";
-import type { EnrollmentListItem } from "@/repositories/enrollments";
+import type { ActiveEnrollmentRef, EnrollmentListItem } from "@/repositories/enrollments";
 import type { UserListItem } from "@/repositories/users";
 
 export function EnrollStudentForm({
   groupId,
+  groupName,
   enrollments,
   students,
+  activeByStudent,
   seatsLeft,
 }: {
   groupId: string;
+  groupName: string;
   enrollments: EnrollmentListItem[];
   students: UserListItem[];
+  /** Turma atual de cada aluno da escola — a fonte do aviso de conflito. */
+  activeByStudent: Record<string, ActiveEnrollmentRef>;
   /** Vagas restantes — zero trava o seletor em vez de deixar o erro vir do servidor. */
   seatsLeft: number;
 }) {
-  const action = enrollStudentAction.bind(null, groupId);
-  const [state, formAction, isPending] = useActionState(action, null);
+  const [selected, setSelected] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<EnrollmentConflict | null>(null);
+  const [isPending, startEnroll] = useTransition();
   const [removing, startRemove] = useTransition();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
@@ -45,11 +60,43 @@ export function EnrollStudentForm({
   const available = students.filter((student) => !enrolledIds.has(student.id));
   const full = seatsLeft <= 0;
 
+  function enroll(studentId: string, transfer: boolean) {
+    startEnroll(async () => {
+      const result = await enrollStudentAction(groupId, studentId, { transfer });
+      if (!result.success) {
+        setError(result.error.message);
+        setConflict(null);
+        return;
+      }
+      setError(null);
+      setConflict(null);
+      setSelected("");
+    });
+  }
+
+  function submit() {
+    if (!selected) return;
+    setError(null);
+
+    const current = activeByStudent[selected];
+    if (current && current.groupId !== groupId) {
+      const student = students.find((item) => item.id === selected);
+      setConflict({
+        studentName: student?.fullName ?? "Este aluno",
+        fromGroupName: current.groupName,
+        toGroupName: groupName,
+      });
+      return;
+    }
+
+    enroll(selected, false);
+  }
+
   return (
     <div className="space-y-4">
-      {state && !state.success && <FormBanner tone="error">{state.error.message}</FormBanner>}
+      {error && <FormBanner tone="error">{error}</FormBanner>}
 
-      <form action={formAction} className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           <label
             htmlFor="studentId"
@@ -59,10 +106,10 @@ export function EnrollStudentForm({
           </label>
           <Select
             id="studentId"
-            name="studentId"
             tone="admin"
             disabled={full || available.length === 0}
-            defaultValue=""
+            value={selected}
+            onChange={setSelected}
             className="min-w-56"
             placeholder={
               full
@@ -72,17 +119,22 @@ export function EnrollStudentForm({
                   : "Selecione…"
             }
           >
-            {available.map((student) => (
-              <option key={student.id} value={student.id}>
-                {student.fullName}
-              </option>
-            ))}
+            {available.map((student) => {
+              const current = activeByStudent[student.id];
+              return (
+                <option key={student.id} value={student.id}>
+                  {student.fullName}
+                  {current && current.groupId !== groupId ? ` · em ${current.groupName}` : ""}
+                </option>
+              );
+            })}
           </Select>
         </div>
 
         <button
-          type="submit"
-          disabled={isPending || full || available.length === 0}
+          type="button"
+          onClick={submit}
+          disabled={isPending || full || available.length === 0 || !selected}
           className={cn(
             "inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-4 text-sm font-semibold text-admin-foreground",
             "shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95",
@@ -101,7 +153,14 @@ export function EnrollStudentForm({
             </>
           )}
         </button>
-      </form>
+      </div>
+
+      <EnrollmentConflictDialog
+        conflict={conflict}
+        busy={isPending}
+        onConfirm={() => enroll(selected, true)}
+        onCancel={() => setConflict(null)}
+      />
 
       {active.length === 0 ? (
         <p className="rounded-xl border border-dashed border-admin-border px-4 py-10 text-center text-sm text-admin-foreground/50">

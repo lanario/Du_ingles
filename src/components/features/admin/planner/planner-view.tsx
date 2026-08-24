@@ -23,6 +23,7 @@ import {
   deletePlannerPlanAction,
   duplicatePlannerPlanAction,
 } from "@/actions/admin/lesson-planner";
+import { deletePlannerAssignmentAction } from "@/actions/admin/assignments";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useListProgress } from "@/components/motion/list-motion";
 import { SlideTabs } from "@/components/ui/slide-tabs";
@@ -33,9 +34,11 @@ import {
   PlusIcon,
   SearchIcon,
   SpinnerIcon,
+  TaskIcon,
   TrashIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { AssignmentPanel } from "./assignment-panel";
 import { PlanFormPanel } from "./plan-form-panel";
 import { SchedulePanel } from "./schedule-panel";
 import {
@@ -52,9 +55,10 @@ import type {
   PlannerPlan,
   PlannerSession,
 } from "@/repositories/lesson-planner";
+import type { PlannerAssignmentListItem } from "@/repositories/assignments";
 import type { UserListItem } from "@/repositories/users";
 
-type Tab = "atelie" | "agenda";
+type Tab = "atelie" | "agenda" | "tarefas";
 type AgendaFilter = "proximas" | "hoje" | "aovivo" | "concluidas";
 
 const AGENDA_FILTERS: { value: AgendaFilter; label: string }[] = [
@@ -69,6 +73,7 @@ export interface PlannerViewProps {
   sessions: PlannerSession[];
   groups: PlannerGroupOption[];
   teachers: UserListItem[];
+  assignments: PlannerAssignmentListItem[];
   /** `?nova` na URL abre o painel de criação já na primeira pintura. */
   openCreate?: boolean;
 }
@@ -78,6 +83,7 @@ export function PlannerView({
   sessions,
   groups,
   teachers,
+  assignments,
   openCreate = false,
 }: PlannerViewProps) {
   const router = useRouter();
@@ -91,6 +97,7 @@ export function PlannerView({
   const [editing, setEditing] = useState<PlannerPlan | undefined>(undefined);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedulePlanId, setSchedulePlanId] = useState<string | undefined>(undefined);
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -164,6 +171,14 @@ export function PlannerView({
     });
   }, [sessions, agendaFilter, today]);
 
+  const visibleAssignments = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return assignments;
+    return assignments.filter((item) =>
+      [item.title, item.groupName].join(" ").toLowerCase().includes(term),
+    );
+  }, [assignments, search]);
+
   const groupedSessions = useMemo(() => {
     const map = new Map<string, PlannerSession[]>();
     for (const session of visibleSessions) {
@@ -213,6 +228,14 @@ export function PlannerView({
           </div>
 
           <div data-enter className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAssignmentOpen(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-admin-border bg-admin-surface px-4 text-sm font-medium text-admin-foreground/80 transition-colors hover:bg-admin-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+            >
+              <TaskIcon className="h-4 w-4" />
+              Nova tarefa
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -270,21 +293,11 @@ export function PlannerView({
           items={[
             { label: "Ateliê", value: "atelie" },
             { label: "Agenda", value: "agenda" },
+            { label: "Tarefas", value: "tarefas" },
           ]}
         />
 
-        {tab === "atelie" ? (
-          <label className="relative flex h-10 w-full max-w-xs items-center">
-            <SearchIcon className="pointer-events-none absolute left-3 h-4 w-4 text-admin-foreground/40" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar aula, nível, autor…"
-              aria-label="Buscar aula"
-              className="h-10 w-full rounded-xl border border-admin-border bg-admin-surface pl-9 pr-3 text-sm text-admin-foreground placeholder:text-admin-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
-            />
-          </label>
-        ) : (
+        {tab === "agenda" ? (
           <div className="flex flex-wrap gap-1.5">
             {AGENDA_FILTERS.map((filter) => (
               <button
@@ -303,6 +316,19 @@ export function PlannerView({
               </button>
             ))}
           </div>
+        ) : (
+          <label className="relative flex h-10 w-full max-w-xs items-center">
+            <SearchIcon className="pointer-events-none absolute left-3 h-4 w-4 text-admin-foreground/40" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={
+                tab === "atelie" ? "Buscar aula, nível, autor…" : "Buscar tarefa, turma…"
+              }
+              aria-label={tab === "atelie" ? "Buscar aula" : "Buscar tarefa"}
+              className="h-10 w-full rounded-xl border border-admin-border bg-admin-surface pl-9 pr-3 text-sm text-admin-foreground placeholder:text-admin-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+            />
+          </label>
         )}
       </div>
 
@@ -399,7 +425,7 @@ export function PlannerView({
                 </motion.div>
               )}
             </motion.div>
-          ) : (
+          ) : tab === "agenda" ? (
             <motion.div
               key="agenda"
               ref={listRef}
@@ -465,6 +491,61 @@ export function PlannerView({
                 ))
               )}
             </motion.div>
+          ) : (
+            <motion.div
+              key="tarefas"
+              ref={listRef}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: reduceMotion ? 0 : 0.24 }}
+              className="space-y-2.5"
+            >
+              {visibleAssignments.length === 0 ? (
+                <EmptyBoard
+                  title={search ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa enviada ainda"}
+                  body={
+                    search
+                      ? "Tente outro termo — busca por título ou turma."
+                      : "Crie um exercício e escolha para quais turmas ele vai — cada turma recebe sua própria entrega."
+                  }
+                  action={
+                    search ? undefined : (
+                      <button
+                        type="button"
+                        onClick={() => setAssignmentOpen(true)}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      >
+                        <TaskIcon className="h-4 w-4" />
+                        Criar primeira tarefa
+                      </button>
+                    )
+                  }
+                />
+              ) : (
+                <AnimatePresence initial={false}>
+                  {visibleAssignments.map((assignment, index) => (
+                    <TaskRow
+                      key={assignment.id}
+                      assignment={assignment}
+                      index={index}
+                      busy={busyId === assignment.id}
+                      onDelete={() => {
+                        if (
+                          !window.confirm(
+                            `Excluir a tarefa "${assignment.title}" da turma ${assignment.groupName}?`,
+                          )
+                        )
+                          return;
+                        runPlanAction(assignment.id, () =>
+                          deletePlannerAssignmentAction(assignment.id),
+                        );
+                      }}
+                    />
+                  ))}
+                </AnimatePresence>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -485,6 +566,12 @@ export function PlannerView({
         plans={plans}
         teachers={teachers}
         defaultPlanId={schedulePlanId}
+      />
+
+      <AssignmentPanel
+        open={assignmentOpen}
+        onClose={() => setAssignmentOpen(false)}
+        groups={groups}
       />
     </div>
   );
@@ -764,6 +851,76 @@ function SessionRow({
             )}
           </IconAction>
         )}
+      </div>
+    </motion.div>
+  );
+}
+
+function TaskRow({
+  assignment,
+  index,
+  busy,
+  onDelete,
+}: {
+  assignment: PlannerAssignmentListItem;
+  index: number;
+  busy: boolean;
+  onDelete: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+  const overdue = assignment.dueAt ? new Date(assignment.dueAt) < new Date() : false;
+
+  return (
+    <motion.div
+      layout={!reduceMotion}
+      initial={reduceMotion ? false : { opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 340,
+        damping: 32,
+        delay: reduceMotion ? 0 : Math.min(index * 0.03, 0.2),
+      }}
+      className="group flex flex-wrap items-center gap-4 rounded-2xl border border-admin-border bg-admin-surface px-4 py-3.5 transition-[border-color,box-shadow] hover:border-navy-100 hover:shadow-[0_18px_40px_-32px_rgba(11,26,51,0.6)]"
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-50 text-navy-700">
+        <TaskIcon className="h-5 w-5" />
+      </span>
+
+      <div className="min-w-[200px] flex-1">
+        <p className="truncate font-semibold text-admin-foreground">{assignment.title}</p>
+        <p className="mt-0.5 truncate text-xs text-admin-foreground/55">
+          {assignment.groupName}
+          {assignment.maxScore != null ? ` · nota máxima ${assignment.maxScore}` : ""}
+          {assignment.submissionCount > 0
+            ? ` · ${assignment.submissionCount} entrega(s)`
+            : ""}
+        </p>
+      </div>
+
+      {assignment.dueAt && (
+        <span
+          className={cn(
+            "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold",
+            overdue
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-navy-100 bg-navy-50 text-navy-800",
+          )}
+        >
+          <CalendarIcon className="h-3 w-3" />
+          {formatDay(assignment.dueAt)}
+        </span>
+      )}
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        <IconAction label="Excluir tarefa" onClick={onDelete} disabled={busy} danger>
+          {busy ? (
+            <SpinnerIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <TrashIcon className="h-4 w-4" />
+          )}
+        </IconAction>
       </div>
     </motion.div>
   );

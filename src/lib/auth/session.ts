@@ -19,6 +19,10 @@ export interface SessionContext {
   isViewAs: boolean;
   organizationId: string;
   mustChangePassword: boolean;
+  /** Nome exibido no menu da conta — cai para a parte local do e-mail. */
+  fullName: string;
+  /** URL relativa da foto de perfil (`/api/avatars/...`) ou `null`. */
+  avatarUrl: string | null;
 }
 
 function decodeJwtClaims(accessToken: string): Record<string, unknown> {
@@ -56,7 +60,7 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   // as claims ficam só como fallback caso a linha não exista.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, organization_id, must_change_password")
+    .select("role, organization_id, must_change_password, full_name, avatar_url")
     .eq("id", user.id)
     .single();
 
@@ -89,6 +93,8 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     isViewAs,
     organizationId,
     mustChangePassword: profile?.must_change_password ?? false,
+    fullName: profile?.full_name || (user.email ?? "").split("@")[0] || "Minha conta",
+    avatarUrl: profile?.avatar_url ? `/api/avatars/${profile.avatar_url}` : null,
   };
 });
 

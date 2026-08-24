@@ -5,6 +5,7 @@ import {
   listPlannerPlans,
   listPlannerSessions,
 } from "@/repositories/lesson-planner";
+import { listOrgAssignments } from "@/repositories/assignments";
 import { listUsers } from "@/repositories/users";
 import { PlannerView } from "@/components/features/admin/planner/planner-view";
 
@@ -24,11 +25,12 @@ export default async function PlanejadorPage({ searchParams }: PageProps) {
   const ctx = await requireRole(["admin"]);
   const { nova } = await searchParams;
 
-  const [plans, sessions, groups, teachers] = await Promise.all([
+  const [plans, sessions, groups, teachers, assignments] = await Promise.all([
     listPlannerPlans(ctx.organizationId),
     listPlannerSessions(ctx.organizationId),
     listPlannerGroups(ctx.organizationId),
     listUsers(ctx.organizationId, { role: "teacher" }),
+    listOrgAssignments(ctx.organizationId),
   ]);
 
   return (
@@ -37,6 +39,7 @@ export default async function PlanejadorPage({ searchParams }: PageProps) {
       sessions={sessions}
       groups={groups}
       teachers={teachers}
+      assignments={assignments}
       openCreate={nova !== undefined}
     />
   );

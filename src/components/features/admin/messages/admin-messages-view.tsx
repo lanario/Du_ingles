@@ -11,9 +11,8 @@
  */
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { GroupsIcon, MegaphoneIcon } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
+import { SlideTabs } from "@/components/ui/slide-tabs";
 import { AnnouncementForm } from "@/components/features/admin/announcement-form";
 import {
   MessagesView,
@@ -43,7 +42,6 @@ export function AdminMessagesView({
   currentUserName: string;
 }) {
   const [tab, setTab] = useState<Tab>("chats");
-  const reduceMotion = useReducedMotion();
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
@@ -53,51 +51,19 @@ export function AdminMessagesView({
           Acompanhe a conversa de cada turma ou dispare um comunicado para a escola.
         </p>
 
-        <div
-          role="tablist"
-          aria-label="Seções de mensagens"
-          className="mt-4 inline-flex rounded-xl border border-admin-border bg-admin-surface p-1"
-        >
-          {TABS.map((item) => {
-            const active = tab === item.id;
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(item.id)}
-                className={cn(
-                  "relative inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-[13px] font-medium transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-accent",
-                  active
-                    ? "text-admin-foreground"
-                    : "text-admin-foreground/55 hover:text-admin-foreground",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="admin-messages-tab"
-                    transition={
-                      reduceMotion
-                        ? { duration: 0 }
-                        : { type: "spring", stiffness: 460, damping: 38 }
-                    }
-                    className="absolute inset-0 -z-10 rounded-lg bg-admin-muted"
-                  />
-                )}
-                <Icon className="h-4 w-4" />
-                {item.label}
-                {item.id === "chats" && chats.length > 0 && (
-                  <span className="tabular text-[11px] text-admin-foreground/45">
-                    {chats.length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <SlideTabs
+          className="mt-4"
+          tone="surface"
+          label="Seções de mensagens"
+          value={tab}
+          onValueChange={(value) => setTab(value as Tab)}
+          items={TABS.map(({ id, label, icon: Icon }) => ({
+            value: id,
+            label,
+            icon: <Icon aria-hidden />,
+            badge: id === "chats" && chats.length > 0 ? chats.length : undefined,
+          }))}
+        />
       </header>
 
       {tab === "chats" ? (

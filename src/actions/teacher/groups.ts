@@ -10,6 +10,7 @@ import {
 } from "@/repositories/groups";
 import {
   enrollStudent,
+  getActiveEnrollmentForStudent,
   transferStudent,
   unenrollStudent,
 } from "@/repositories/enrollments";
@@ -127,18 +128,22 @@ export async function updateGroupAction(
   return ok(undefined as never);
 }
 
+/**
+ * Um aluno pertence a uma turma só: matricular quem já está em outra é uma
+ * transferência, e o `transfer` é a confirmação vinda do diálogo. Tirar o
+ * aluno da turma de outro professor continua sendo coordenação — o professor
+ * só confirma a transferência quando a turma de origem também é dele.
+ */
 export async function enrollStudentInMyGroupAction(
   groupId: string,
-  _prev: ActionResult<never> | null,
-  formData: FormData,
+  studentId: string,
+  options: { transfer?: boolean } = {},
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["teacher"]);
   if (!isAdmin(ctx) && !(await isGroupOwnedByTeacher(groupId, ctx.userId)))
     return fail("FORBIDDEN", "Esta turma não é sua.");
 
-  const parsed = createEnrollmentSchema.safeParse({
-    studentId: formData.get("studentId"),
-  });
+  const parsed = createEnrollmentSchema.safeParse({ studentId });
   if (!parsed.success) {
     return fail(
       "VALIDATION_ERROR",
@@ -147,14 +152,25 @@ export async function enrollStudentInMyGroupAction(
     );
   }
 
-  const result = await enrollStudent(groupId, parsed.data.studentId, ctx.organizationId);
+  const current = await getActiveEnrollmentForStudent(parsed.data.studentId);
+  if (current && current.groupId !== groupId && !isAdmin(ctx)) {
+    if (!(await isGroupOwnedByTeacher(current.groupId, ctx.userId)))
+      return fail(
+        "FORBIDDEN",
+        `Este aluno está na turma ${current.groupName}, que não é sua. Peça à coordenação para movê-lo.`,
+      );
+  }
+
+  const result = await enrollStudent(groupId, parsed.data.studentId, ctx.organizationId, {
+    allowTransfer: options.transfer === true,
+  });
   if (!result.success) return fail("CONFLICT", result.message ?? "Falha ao matricular.");
 
   await auditLog({
     organizationId: ctx.organizationId,
     actorId: ctx.userId,
     actorRole: ctx.realRole,
-    action: "ENROLLMENT_CREATE",
+    action: result.transferred ? "ENROLLMENT_TRANSFER" : "ENROLLMENT_CREATE",
     entityType: "group",
     entityId: groupId,
     metadata: { studentId: parsed.data.studentId },

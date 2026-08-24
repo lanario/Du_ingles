@@ -42,6 +42,12 @@ export default async function TarefaDetailPage({ params }: PageProps) {
         </div>
       )}
 
+      {assignment.instructions && (
+        <p className="mt-4 whitespace-pre-wrap rounded-2xl border border-border bg-muted/40 p-4 text-sm text-foreground/80">
+          {assignment.instructions}
+        </p>
+      )}
+
       {ctx.effectiveRole === "teacher" ? (
         <section className="mt-8 space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

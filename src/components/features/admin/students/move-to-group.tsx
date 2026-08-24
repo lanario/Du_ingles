@@ -60,11 +60,7 @@ function Content({
     setSaving(groupId ?? "sem-turma");
     setError(null);
     try {
-      const result = await moveStudentToGroupAction(
-        student.id,
-        student.enrollment?.enrollmentId ?? null,
-        groupId,
-      );
+      const result = await moveStudentToGroupAction(student.id, groupId);
       if (!result.success) {
         setError(result.error.message);
         return;
@@ -139,6 +135,10 @@ function Content({
             onClick={() => move(null)}
           />
         </div>
+
+        <p className="mt-3 text-xs text-admin-foreground/45">
+          Um aluno fica em uma turma por vez — escolher outra encerra a matrícula atual.
+        </p>
 
         {error && (
           <p role="alert" className="mt-3 text-xs text-destructive">

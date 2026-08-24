@@ -1086,6 +1086,8 @@ body {
     transform: translateY(-50%);
     border-radius: 50%;
     background: linear-gradient(-45deg, var(--navy-900) 0%, var(--navy-800) 100%);
+    /* Puro enfeite: durante a travessia ele passa por cima do formulário. */
+    pointer-events: none;
     transition:
       transform 1.4s ease-in-out,
       right 1.4s ease-in-out;
@@ -1124,6 +1126,10 @@ body {
     z-index: 7;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    /* A grade cobre o card inteiro por cima do formulário: sem isto ela
+       engole os cliques na metade branca. Cada painel reativa o ponteiro
+       só onde o convite está de fato visível. */
+    pointer-events: none;
   }
 
   .auth-card-panel {
@@ -1138,16 +1144,14 @@ body {
     color: var(--app-shell-foreground);
   }
 
-  .auth-card-panel--right {
-    pointer-events: none;
-  }
-
-  .auth-card[data-mode="cadastrar"] .auth-card-panel--left {
-    pointer-events: none;
-  }
-
+  .auth-card-panel--left,
   .auth-card[data-mode="cadastrar"] .auth-card-panel--right {
     pointer-events: auto;
+  }
+
+  .auth-card-panel--right,
+  .auth-card[data-mode="cadastrar"] .auth-card-panel--left {
+    pointer-events: none;
   }
 
   /*

@@ -2,6 +2,16 @@ import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { AssignmentStatus } from "@/types/domain";
+import type { Json } from "@/types/database.types";
+
+/** `instructions` é salvo como `{ text }` — ver `createAssignmentsForGroups`. */
+function readInstructionsText(instructions: Json | null): string | null {
+  if (!instructions || typeof instructions !== "object" || Array.isArray(instructions)) {
+    return null;
+  }
+  const text = (instructions as Record<string, Json>).text;
+  return typeof text === "string" && text.length > 0 ? text : null;
+}
 
 export interface AssignmentListItem {
   id: string;
@@ -80,6 +90,7 @@ export interface AssignmentDetail {
   groupId: string;
   groupName: string;
   title: string;
+  instructions: string | null;
   dueAt: string | null;
   maxScore: number | null;
 }
@@ -90,7 +101,7 @@ export async function getAssignmentById(id: string): Promise<AssignmentDetail | 
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("assignments")
-    .select("id, group_id, title, due_at, max_score, group:group_id(name)")
+    .select("id, group_id, title, instructions, due_at, max_score, group:group_id(name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -100,6 +111,7 @@ export async function getAssignmentById(id: string): Promise<AssignmentDetail | 
     groupId: data.group_id,
     groupName: data.group?.name ?? "—",
     title: data.title,
+    instructions: readInstructionsText(data.instructions),
     dueAt: data.due_at,
     maxScore: data.max_score,
   };
@@ -145,6 +157,89 @@ export async function createAssignment(input: {
     max_score: input.maxScore,
     created_by: input.createdBy,
   });
+  return !error;
+}
+
+export interface PlannerAssignmentListItem {
+  id: string;
+  groupId: string;
+  groupName: string;
+  title: string;
+  instructions: string | null;
+  dueAt: string | null;
+  maxScore: number | null;
+  createdAt: string;
+  submissionCount: number;
+}
+
+/**
+ * Visão do admin no planejador: tarefas da escola inteira. Como `assignments`
+ * guarda uma turma por linha, uma tarefa "enviada para 3 turmas" aparece como
+ * 3 linhas com o mesmo título — o mesmo padrão que `class_sessions` já usa
+ * para uma aula agendada em turmas diferentes.
+ */
+export async function listOrgAssignments(
+  organizationId: string,
+): Promise<PlannerAssignmentListItem[]> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("assignments")
+    .select(
+      "id, group_id, title, instructions, due_at, max_score, created_at, group:group_id(name), submissions:assignment_submissions(count)",
+    )
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(300);
+
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id,
+    groupId: row.group_id,
+    groupName: row.group?.name ?? "—",
+    title: row.title,
+    instructions: readInstructionsText(row.instructions),
+    dueAt: row.due_at,
+    maxScore: row.max_score,
+    createdAt: row.created_at,
+    submissionCount: row.submissions?.[0]?.count ?? 0,
+  }));
+}
+
+/** Uma linha em `assignments` por turma selecionada — ver nota acima. */
+export async function createAssignmentsForGroups(input: {
+  groupIds: string[];
+  title: string;
+  instructions?: string;
+  dueAt?: string;
+  maxScore: number;
+  organizationId: string;
+  createdBy: string;
+}): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin.from("assignments").insert(
+    input.groupIds.map((groupId) => ({
+      organization_id: input.organizationId,
+      group_id: groupId,
+      title: input.title,
+      instructions: input.instructions ? { text: input.instructions } : null,
+      due_at: input.dueAt ?? null,
+      max_score: input.maxScore,
+      created_by: input.createdBy,
+    })),
+  );
+  return !error;
+}
+
+export async function deletePlannerAssignment(
+  id: string,
+  organizationId: string,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("assignments")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
   return !error;
 }
 

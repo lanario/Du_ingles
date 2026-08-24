@@ -51,16 +51,20 @@ export async function createGroupAction(
   redirect(`/admin/turmas/${result.groupId}`);
 }
 
+/**
+ * `transfer` é o "sim" do diálogo de conflito: sem ele, matricular alguém que
+ * já está em outra turma é recusado em vez de duplicar o aluno. A confirmação
+ * viaja como argumento (e não como campo do formulário) para que o cliente
+ * não consiga transferir por acidente — tem que ser uma escolha explícita.
+ */
 export async function enrollStudentAction(
   groupId: string,
-  _prev: ActionResult<never> | null,
-  formData: FormData,
+  studentId: string,
+  options: { transfer?: boolean } = {},
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
 
-  const parsed = createEnrollmentSchema.safeParse({
-    studentId: formData.get("studentId"),
-  });
+  const parsed = createEnrollmentSchema.safeParse({ studentId });
   if (!parsed.success) {
     return fail(
       "VALIDATION_ERROR",
@@ -69,20 +73,24 @@ export async function enrollStudentAction(
     );
   }
 
-  const result = await enrollStudent(groupId, parsed.data.studentId, ctx.organizationId);
+  const result = await enrollStudent(groupId, parsed.data.studentId, ctx.organizationId, {
+    allowTransfer: options.transfer === true,
+  });
   if (!result.success) return fail("CONFLICT", result.message ?? "Falha ao matricular.");
 
   await auditLog({
     organizationId: ctx.organizationId,
     actorId: ctx.userId,
     actorRole: ctx.realRole,
-    action: "ENROLLMENT_CREATE",
+    action: result.transferred ? "ENROLLMENT_TRANSFER" : "ENROLLMENT_CREATE",
     entityType: "group",
     entityId: groupId,
     metadata: { studentId: parsed.data.studentId },
   });
 
   revalidatePath(`/admin/turmas/${groupId}`);
+  revalidatePath("/admin/turmas");
+  revalidatePath("/admin/alunos");
   return ok(undefined as never);
 }
 

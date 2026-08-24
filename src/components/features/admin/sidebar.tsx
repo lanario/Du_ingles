@@ -1,17 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { logoutAction } from "@/actions/auth/logout";
+import { UserMenu } from "@/components/features/account/user-menu";
 import { NotificationBell } from "@/components/features/notification-bell";
 import { RoleSwitch } from "@/components/features/admin/role-switch";
 import type { NotificationItem } from "@/repositories/notifications";
-import { CloseIcon, LogoutIcon, MenuIcon } from "@/components/ui/icons";
+import type { MyProfile } from "@/repositories/users";
+import { CloseIcon, MenuIcon } from "@/components/ui/icons";
 
 const RAIL_WIDTH = 64;
 const PANEL_WIDTH = 252;
@@ -166,6 +167,11 @@ interface AdminSidebarProps {
   organizationLabel: string;
   userId: string;
   email: string;
+  fullName: string;
+  /** Foto de perfil já pronta para o `src` (`/api/avatars/...`) ou `null`. */
+  avatarUrl: string | null;
+  /** Dados editáveis do modal de perfil (telefone, nascimento etc). */
+  profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
 }
@@ -238,6 +244,9 @@ function AdminRail({
   organizationLabel,
   userId,
   email,
+  fullName,
+  avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
 }: AdminSidebarProps) {
@@ -247,8 +256,6 @@ function AdminRail({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const expanded = hovered || focused;
-
-  const [loggingOut, startLogout] = useTransition();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
@@ -487,35 +494,18 @@ function AdminRail({
               label="Notificações"
             />
 
-            <div
-              className={cn(
-                "overflow-hidden transition-all duration-200",
-                expanded ? "mt-1 max-h-10 opacity-100" : "max-h-0 opacity-0",
-              )}
-            >
-              <p className="truncate px-2.5 py-1.5 text-xs text-admin-shell-foreground/60">
-                {email}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              disabled={loggingOut}
-              onClick={() =>
-                startLogout(async () => {
-                  await logoutAction();
-                })
-              }
-              className={cn(
-                ROW_CLASS,
-                "text-admin-shell-foreground/70 hover:bg-red-500/10 hover:text-red-700 disabled:opacity-60",
-              )}
-            >
-              <LogoutIcon className="h-[18px] w-[18px] flex-none" />
-              <span data-nav-label style={{ opacity: 0 }} className="whitespace-nowrap">
-                {loggingOut ? "Saindo…" : "Sair"}
-              </span>
-            </button>
+            <UserMenu
+              userId={userId}
+              name={fullName}
+              email={email}
+              role="admin"
+              avatarUrl={avatarUrl}
+              profile={profile}
+              theme="admin"
+              securityHref="/admin/seguranca"
+              compact
+              className="mt-1"
+            />
           </div>
         </div>
       </motion.div>
@@ -537,6 +527,9 @@ function AdminNavMobile({
   organizationLabel,
   userId,
   email,
+  fullName,
+  avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
 }: AdminSidebarProps) {
@@ -545,7 +538,6 @@ function AdminNavMobile({
   const [open, setOpen] = useState(false);
   const [routeAtOpen, setRouteAtOpen] = useState(pathname);
   const atual = itemAtivo(pathname);
-  const [loggingOut, startLogout] = useTransition();
 
   // Navegar fecha a gaveta durante a renderização (não em efeito), assim ela
   // já sai fechada no mesmo passo em que a rota muda — inclui o botão
@@ -691,25 +683,16 @@ function AdminNavMobile({
               </div>
 
               <div className="shrink-0 border-t border-admin-shell-border px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
-                <p className="truncate px-3 py-1.5 text-xs text-admin-shell-foreground/60">
-                  {email}
-                </p>
-                <button
-                  type="button"
-                  disabled={loggingOut}
-                  onClick={() =>
-                    startLogout(async () => {
-                      await logoutAction();
-                    })
-                  }
-                  className={cn(
-                    MOBILE_ROW_CLASS,
-                    "text-admin-shell-foreground/70 active:text-red-700 disabled:opacity-60",
-                  )}
-                >
-                  <LogoutIcon className="h-5 w-5 flex-none" aria-hidden />
-                  {loggingOut ? "Saindo…" : "Sair"}
-                </button>
+                <UserMenu
+                  userId={userId}
+                  name={fullName}
+                  email={email}
+                  role="admin"
+                  avatarUrl={avatarUrl}
+                  profile={profile}
+                  theme="admin"
+                  securityHref="/admin/seguranca"
+                />
               </div>
             </motion.nav>
           </div>

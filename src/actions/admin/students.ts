@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
-import { enrollStudent, transferStudent, unenrollStudent } from "@/repositories/enrollments";
+import {
+  enrollStudent,
+  getActiveEnrollmentForStudent,
+  transferStudent,
+  unenrollStudent,
+} from "@/repositories/enrollments";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -12,13 +17,22 @@ import { fail, ok, type ActionResult } from "@/types/action-result";
  * Resolve sozinha qual das três operações de `repositories/enrollments.ts`
  * cabe: matricular (sem matrícula ativa), transferir (já matriculado) ou
  * cancelar (destino nulo).
+ *
+ * Qual é a matrícula atual sai do banco, não do cliente: uma tela aberta há
+ * meia hora pode achar que o aluno está sem turma e acabaria criando a
+ * segunda matrícula que esta regra existe para impedir.
  */
 export async function moveStudentToGroupAction(
   studentId: string,
-  currentEnrollmentId: string | null,
   toGroupId: string | null,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
+
+  const current = await getActiveEnrollmentForStudent(studentId);
+  const currentEnrollmentId = current?.enrollmentId ?? null;
+
+  // Já está lá — nada a fazer, e nada de erro: a tela pode estar defasada.
+  if (current && current.groupId === toGroupId) return ok(undefined as never);
 
   if (toGroupId === null) {
     if (!currentEnrollmentId) return ok(undefined as never);

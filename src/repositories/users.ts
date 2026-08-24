@@ -226,3 +226,61 @@ export async function getMyDisplayName(userId: string): Promise<string | null> {
 
   return data?.full_name ?? null;
 }
+
+/** Caminho do arquivo de avatar atual — usado para apagar o antigo na troca. */
+export async function getProfileAvatarPath(id: string): Promise<string | null> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", id)
+    .maybeSingle();
+  return data?.avatar_url ?? null;
+}
+
+export async function setProfileAvatar(
+  id: string,
+  path: string | null,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ avatar_url: path })
+    .eq("id", id);
+  return !error;
+}
+
+export interface MyProfile {
+  id: string;
+  fullName: string;
+  email: string;
+  role: AppRole;
+  phone: string | null;
+  birthDate: string | null;
+  /** Caminho no bucket `avatars` (ou `null` quando ainda é só iniciais). */
+  avatarPath: string | null;
+}
+
+/**
+ * Perfil do próprio usuário logado, incluindo o que ele mesmo pode editar.
+ * Passa pela RLS normal (`profiles_select_self`) — sem admin client.
+ */
+export async function getMyProfile(userId: string): Promise<MyProfile | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role, phone, birth_date, avatar_url")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    id: data.id,
+    fullName: data.full_name,
+    email: data.email,
+    role: data.role,
+    phone: data.phone,
+    birthDate: data.birth_date,
+    avatarPath: data.avatar_url,
+  };
+}

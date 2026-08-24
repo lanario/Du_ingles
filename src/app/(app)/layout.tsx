@@ -5,6 +5,7 @@ import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
+import { getMyProfile } from "@/repositories/users";
 
 /**
  * Sidebar hover-expand ocupando a tela inteira, sem cabeçalho acima — mesmo
@@ -14,9 +15,10 @@ import {
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireRole(["teacher", "student"]);
-  const [notifications, unreadCount] = await Promise.all([
+  const [notifications, unreadCount, profile] = await Promise.all([
     listNotifications(),
     countUnreadNotifications(),
+    getMyProfile(ctx.userId),
   ]);
 
   const showAdminSwitch = ctx.realRole === "admin";
@@ -31,6 +33,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           role={ctx.effectiveRole}
           userId={ctx.userId}
           email={ctx.email}
+          fullName={ctx.fullName}
+          avatarUrl={ctx.avatarUrl}
+          profile={profile}
           initialNotifications={notifications}
           initialUnreadCount={unreadCount}
           showAdminSwitch={showAdminSwitch}

@@ -10,6 +10,18 @@ export interface EnrollmentListItem {
   status: string;
 }
 
+/**
+ * Onde o aluno está agora. A regra da escola é uma turma por aluno, então
+ * esta é a única matrícula ativa que pode existir — o índice parcial
+ * `enrollments_one_active_per_student` (migration 0028) garante isso no banco,
+ * e as funções abaixo consultam esta referência antes de qualquer matrícula.
+ */
+export interface ActiveEnrollmentRef {
+  enrollmentId: string;
+  groupId: string;
+  groupName: string;
+}
+
 export async function listGroupEnrollments(
   groupId: string,
 ): Promise<EnrollmentListItem[]> {
@@ -31,12 +43,131 @@ export async function listGroupEnrollments(
   }));
 }
 
+/**
+ * A matrícula ativa do aluno, se houver. Ordena e limita a uma linha em vez
+ * de `.single()`: bases criadas antes do índice único podem ter duplicatas, e
+ * aqui a mais recente é a que vale.
+ */
+export async function getActiveEnrollmentForStudent(
+  studentId: string,
+): Promise<ActiveEnrollmentRef | null> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("enrollments")
+    .select("id, group_id, group:group_id(name)")
+    .eq("student_id", studentId)
+    .eq("status", "active")
+    .order("enrolled_at", { ascending: false })
+    .limit(1);
+
+  const row = data?.[0];
+  if (!row) return null;
+
+  return {
+    enrollmentId: row.id,
+    groupId: row.group_id,
+    groupName: row.group?.name ?? "outra turma",
+  };
+}
+
+/**
+ * Mapa aluno → turma atual da organização inteira. As telas de matrícula usam
+ * isso para avisar **antes** de submeter que o aluno escolhido já está em
+ * outra turma (o servidor recusa de qualquer jeito, mas o aviso na tela é o
+ * que evita a tentativa às cegas).
+ */
+export async function listActiveEnrollmentRefs(
+  organizationId: string,
+): Promise<Record<string, ActiveEnrollmentRef>> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("enrollments")
+    .select("id, student_id, group_id, group:group_id(name)")
+    .eq("organization_id", organizationId)
+    .eq("status", "active");
+
+  const byStudent: Record<string, ActiveEnrollmentRef> = {};
+  for (const row of data ?? []) {
+    byStudent[row.student_id] = {
+      enrollmentId: row.id,
+      groupId: row.group_id,
+      groupName: row.group?.name ?? "outra turma",
+    };
+  }
+  return byStudent;
+}
+
+export interface EnrollResult {
+  success: boolean;
+  message?: string;
+  /** Turma onde o aluno já está — só vem preenchido quando o conflito barrou. */
+  conflictGroupName?: string;
+  /** `true` quando a matrícula anterior foi movida, e não criada do zero. */
+  transferred?: boolean;
+}
+
+/**
+ * Matricula o aluno. Um aluno pertence a **uma** turma: se já houver matrícula
+ * ativa em outra, matricular vira transferência — e só acontece com
+ * `allowTransfer`, que a UI passa depois de o usuário confirmar no diálogo.
+ * Sem confirmação, devolve o conflito com o nome da turma atual.
+ */
 export async function enrollStudent(
   groupId: string,
   studentId: string,
   organizationId: string,
-): Promise<{ success: boolean; message?: string }> {
+  options: { allowTransfer?: boolean } = {},
+): Promise<EnrollResult> {
+  const current = await getActiveEnrollmentForStudent(studentId);
+
+  if (current) {
+    if (current.groupId === groupId)
+      return { success: false, message: "Aluno já matriculado nesta turma." };
+
+    if (!options.allowTransfer)
+      return {
+        success: false,
+        conflictGroupName: current.groupName,
+        message: `Este aluno já está na turma ${current.groupName}. Um aluno só pode estar em uma turma por vez.`,
+      };
+
+    const moved = await transferStudent(current.enrollmentId, groupId);
+    return moved.success
+      ? { success: true, transferred: true }
+      : { success: false, message: moved.message };
+  }
+
+  return activateEnrollment(groupId, studentId, organizationId);
+}
+
+/**
+ * Põe o aluno como ativo na turma reaproveitando a linha antiga quando ela
+ * existe. Sem isso, rematricular alguém que já passou pela turma esbarra na
+ * unicidade `(group_id, student_id)` e volta como "falha ao matricular".
+ */
+async function activateEnrollment(
+  groupId: string,
+  studentId: string,
+  organizationId: string,
+): Promise<EnrollResult> {
   const admin = createAdminSupabaseClient();
+
+  const { data: existing } = await admin
+    .from("enrollments")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("student_id", studentId)
+    .limit(1);
+
+  const previous = existing?.[0];
+  if (previous) {
+    const { error } = await admin
+      .from("enrollments")
+      .update({ status: "active", enrolled_at: new Date().toISOString() })
+      .eq("id", previous.id);
+    return error ? { success: false, message: "Falha ao matricular." } : { success: true };
+  }
+
   const { error } = await admin.from("enrollments").insert({
     organization_id: organizationId,
     group_id: groupId,
@@ -47,7 +178,7 @@ export async function enrollStudent(
       success: false,
       message:
         error.code === "23505"
-          ? "Aluno já matriculado nesta turma."
+          ? "Este aluno já está matriculado em outra turma."
           : "Falha ao matricular.",
     };
   }
@@ -154,6 +285,32 @@ export async function transferStudent(
 
   if ((count ?? 0) >= target.max_students)
     return { success: false, message: "A turma de destino está lotada." };
+
+  // O aluno já passou por esta turma antes: a linha antiga ocupa o par
+  // `(group_id, student_id)`, então reativa aquela e encerra a atual — mover
+  // esta por cima esbarraria na unicidade.
+  const { data: previous } = await admin
+    .from("enrollments")
+    .select("id")
+    .eq("group_id", toGroupId)
+    .eq("student_id", enrollment.student_id)
+    .limit(1);
+
+  if (previous?.[0]) {
+    const { error: cancelError } = await admin
+      .from("enrollments")
+      .update({ status: "cancelled" })
+      .eq("id", enrollmentId);
+    if (cancelError) return { success: false, message: "Falha ao transferir." };
+
+    const { error: activateError } = await admin
+      .from("enrollments")
+      .update({ status: "active", enrolled_at: new Date().toISOString() })
+      .eq("id", previous[0].id);
+    if (activateError) return { success: false, message: "Falha ao transferir." };
+
+    return { success: true, studentId: enrollment.student_id };
+  }
 
   const { error } = await admin
     .from("enrollments")

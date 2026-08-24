@@ -34,6 +34,7 @@ export async function listGroups(): Promise<GroupListItem[]> {
     .select(
       "id, name, level, max_students, is_active, course_id, teacher:teacher_id(id, full_name), course:course_id(name), enrollments(count)",
     )
+    .eq("enrollments.status", "active")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
@@ -96,6 +97,7 @@ export async function listGroupsByTeacher(teacherId: string): Promise<GroupDetai
     .from("groups")
     .select(GROUP_SELECT)
     .eq("teacher_id", teacherId)
+    .eq("enrollments.status", "active")
     .order("is_active", { ascending: false })
     .order("name");
 
@@ -114,6 +116,7 @@ export async function listGroupsByIds(ids: string[]): Promise<GroupDetail[]> {
     .from("groups")
     .select(GROUP_SELECT)
     .in("id", ids)
+    .eq("enrollments.status", "active")
     .order("name");
 
   if (error || !data) return [];
@@ -127,6 +130,7 @@ export async function listActiveGroups(): Promise<GroupDetail[]> {
     .from("groups")
     .select(GROUP_SELECT)
     .eq("is_active", true)
+    .eq("enrollments.status", "active")
     .order("name");
 
   if (error || !data) return [];
@@ -139,6 +143,7 @@ export async function listAllGroups(): Promise<GroupDetail[]> {
   const { data, error } = await supabase
     .from("groups")
     .select(GROUP_SELECT)
+    .eq("enrollments.status", "active")
     .order("is_active", { ascending: false })
     .order("name");
 
@@ -174,6 +179,7 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
       "id, name, level, max_students, is_active, course_id, schedule, start_date, end_date, teacher:teacher_id(id, full_name), course:course_id(name), enrollments(count)",
     )
     .eq("id", id)
+    .eq("enrollments.status", "active")
     .single();
 
   if (error || !data) return null;

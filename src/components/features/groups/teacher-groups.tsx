@@ -10,6 +10,10 @@ import {
 import { GroupCard } from "@/components/features/groups/group-card";
 import { CreateGroupDialog } from "@/components/features/groups/create-group-dialog";
 import { EditGroupDialog } from "@/components/features/groups/edit-group-dialog";
+import {
+  EnrollmentConflictDialog,
+  type EnrollmentConflict,
+} from "@/components/features/groups/enrollment-conflict-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +22,7 @@ import { FormBanner } from "@/components/ui/form-message";
 import { ChevronIcon, PencilIcon, SwapIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { GroupDetail } from "@/repositories/groups";
-import type { EnrollmentListItem } from "@/repositories/enrollments";
+import type { ActiveEnrollmentRef, EnrollmentListItem } from "@/repositories/enrollments";
 import type { UserListItem } from "@/repositories/users";
 import type { Course } from "@/repositories/courses";
 
@@ -32,24 +36,62 @@ function GroupRoster({
   group,
   roster,
   students,
+  activeByStudent,
   onTransfer,
 }: {
   group: GroupDetail;
   roster: EnrollmentListItem[];
   students: UserListItem[];
+  activeByStudent: Record<string, ActiveEnrollmentRef>;
   onTransfer: (target: TransferTarget) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [isRemoving, startRemove] = useTransition();
   const [removeError, setRemoveError] = useState<string | null>(null);
-  const enrollAction = enrollStudentInMyGroupAction.bind(null, group.id);
-  const [state, formAction, isPending] = useActionState(enrollAction, null);
+  const [selected, setSelected] = useState("");
+  const [enrollError, setEnrollError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<EnrollmentConflict | null>(null);
+  const [isPending, startEnroll] = useTransition();
   const reduceMotion = useReducedMotion();
 
   const active = roster.filter((entry) => entry.status === "active");
   const enrolledIds = new Set(active.map((entry) => entry.studentId));
   const available = students.filter((student) => !enrolledIds.has(student.id));
   const isFull = active.length >= group.maxStudents;
+
+  function enroll(studentId: string, transfer: boolean) {
+    startEnroll(async () => {
+      const result = await enrollStudentInMyGroupAction(group.id, studentId, { transfer });
+      setConflict(null);
+      if (!result.success) {
+        setEnrollError(result.error.message);
+        return;
+      }
+      setEnrollError(null);
+      setSelected("");
+    });
+  }
+
+  /**
+   * Um aluno pertence a uma turma só: se ele já tem outra, adicionar aqui é
+   * transferir, e isso passa pelo aviso antes de virar chamada.
+   */
+  function submitEnroll() {
+    if (!selected) return;
+    setEnrollError(null);
+
+    const current = activeByStudent[selected];
+    if (current && current.groupId !== group.id) {
+      setConflict({
+        studentName: students.find((item) => item.id === selected)?.fullName ?? "Este aluno",
+        fromGroupName: current.groupName,
+        toGroupName: group.name,
+      });
+      return;
+    }
+
+    enroll(selected, false);
+  }
 
   return (
     <div className="space-y-3">
@@ -78,10 +120,8 @@ function GroupRoster({
             className="overflow-hidden"
           >
             <div className="space-y-3 pt-1">
-              {(state && !state.success) || removeError ? (
-                <FormBanner tone="error">
-                  {removeError ?? (state && !state.success ? state.error.message : "")}
-                </FormBanner>
+              {removeError || enrollError ? (
+                <FormBanner tone="error">{removeError ?? enrollError}</FormBanner>
               ) : null}
 
               {active.length === 0 ? (
@@ -141,28 +181,47 @@ function GroupRoster({
                 </ul>
               )}
 
-              <form action={formAction} className="flex items-end gap-2">
+              <div className="flex items-end gap-2">
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <Label htmlFor={`enroll-${group.id}`} className="text-xs">
                     Adicionar aluno
                   </Label>
-                  <Select id={`enroll-${group.id}`} name="studentId" defaultValue="">
+                  <Select
+                    id={`enroll-${group.id}`}
+                    value={selected}
+                    onChange={setSelected}
+                  >
                     <option value="">Selecione…</option>
-                    {available.map((student) => (
-                      <option key={student.id} value={student.id}>
-                        {student.fullName}
-                      </option>
-                    ))}
+                    {available.map((student) => {
+                      const current = activeByStudent[student.id];
+                      return (
+                        <option key={student.id} value={student.id}>
+                          {student.fullName}
+                          {current && current.groupId !== group.id
+                            ? ` · em ${current.groupName}`
+                            : ""}
+                        </option>
+                      );
+                    })}
                   </Select>
                 </div>
                 <Button
-                  type="submit"
-                  disabled={isPending || isFull || available.length === 0}
+                  type="button"
+                  onClick={submitEnroll}
+                  disabled={isPending || isFull || available.length === 0 || !selected}
                   title={isFull ? "Turma lotada" : undefined}
                 >
                   {isPending ? "Adicionando…" : "Adicionar"}
                 </Button>
-              </form>
+              </div>
+
+              <EnrollmentConflictDialog
+                conflict={conflict}
+                tone="app"
+                busy={isPending}
+                onConfirm={() => enroll(selected, true)}
+                onCancel={() => setConflict(null)}
+              />
               {isFull && (
                 <p className="text-xs text-warning">
                   Turma lotada — aumente o limite para matricular mais alunos.
@@ -251,12 +310,18 @@ export function TeacherGroups({
   groups,
   rosters,
   students,
+  activeByStudent,
   courses,
   teachers,
 }: {
   groups: GroupDetail[];
   rosters: Record<string, EnrollmentListItem[]>;
   students: UserListItem[];
+  /**
+   * Turma atual de cada aluno da escola — inclusive as de outros professores,
+   * que não aparecem em `rosters`. É daqui que sai o aviso de "já tem turma".
+   */
+  activeByStudent: Record<string, ActiveEnrollmentRef>;
   courses: Course[];
   /**
    * Só o admin recebe essa lista. A presença dela é o que liga o modo
@@ -314,6 +379,7 @@ export function TeacherGroups({
                 group={group}
                 roster={rosters[group.id] ?? []}
                 students={students}
+                activeByStudent={activeByStudent}
                 onTransfer={setTarget}
               />
             </GroupCard>

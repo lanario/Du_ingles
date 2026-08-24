@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { getGroupById } from "@/repositories/groups";
 import { listCourses } from "@/repositories/courses";
-import { listGroupEnrollments } from "@/repositories/enrollments";
+import {
+  listActiveEnrollmentRefs,
+  listGroupEnrollments,
+} from "@/repositories/enrollments";
 import { listGroupSessions } from "@/repositories/class-sessions";
 import { listUsers } from "@/repositories/users";
 import { GroupHeader } from "@/components/features/admin/groups/group-header";
@@ -24,13 +27,15 @@ export default async function TurmaDetailPage({ params }: PageProps) {
   const group = await getGroupById(id);
   if (!group) notFound();
 
-  const [enrollments, sessions, students, courses, teachers] = await Promise.all([
-    listGroupEnrollments(id),
-    listGroupSessions(id),
-    listUsers(ctx.organizationId, { role: "student" }),
-    listCourses(),
-    listUsers(ctx.organizationId, { role: "teacher" }),
-  ]);
+  const [enrollments, sessions, students, courses, teachers, activeByStudent] =
+    await Promise.all([
+      listGroupEnrollments(id),
+      listGroupSessions(id),
+      listUsers(ctx.organizationId, { role: "student" }),
+      listCourses(),
+      listUsers(ctx.organizationId, { role: "teacher" }),
+      listActiveEnrollmentRefs(ctx.organizationId),
+    ]);
 
   const activeCount = enrollments.filter((item) => item.status === "active").length;
 
@@ -43,8 +48,10 @@ export default async function TurmaDetailPage({ params }: PageProps) {
           <SectionTitle hint={`${activeCount}/${group.maxStudents}`}>Matrículas</SectionTitle>
           <EnrollStudentForm
             groupId={group.id}
+            groupName={group.name}
             enrollments={enrollments}
             students={students}
+            activeByStudent={activeByStudent}
             seatsLeft={Math.max(0, group.maxStudents - activeCount)}
           />
         </section>
