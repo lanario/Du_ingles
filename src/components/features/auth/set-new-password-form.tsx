@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function SetNewPasswordForm({ heading }: { heading: string }) {
   const [state, formAction, isPending] = useActionState(setNewPasswordAction, null);
@@ -54,7 +55,14 @@ export function SetNewPasswordForm({ heading }: { heading: string }) {
         </div>
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Salvando…" : "Salvar nova senha"}
+          {isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <LogoLoader size={16} label={null} />
+              Salvando…
+            </span>
+          ) : (
+            "Salvar nova senha"
+          )}
         </Button>
       </form>
     </div>

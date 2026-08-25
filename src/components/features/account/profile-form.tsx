@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { MyProfile } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const ROLE_LABEL: Record<MyProfile["role"], string> = {
   admin: "Administrador",
@@ -102,7 +103,14 @@ export function ProfileForm({
         </div>
 
         <Button type="submit" disabled={isPending} className={classes.primaryButton}>
-          {isPending ? "Salvando…" : "Salvar alterações"}
+          {isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <LogoLoader size={16} label={null} />
+              Salvando…
+            </span>
+          ) : (
+            "Salvar alterações"
+          )}
         </Button>
       </div>
     </form>

@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import { CEFR_LEVELS } from "@/types/domain";
 import type { LessonPlanDetail } from "@/repositories/lesson-plans";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function LessonPlanMetaForm({ plan }: { plan: LessonPlanDetail }) {
   const action = updateLessonPlanMetaAction.bind(null, plan.id);
@@ -79,7 +80,14 @@ export function LessonPlanMetaForm({ plan }: { plan: LessonPlanDetail }) {
           disabled={isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {isPending ? "Salvando…" : "Salvar dados"}
+          {isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <LogoLoader size={16} label={null} />
+              Salvando…
+            </span>
+          ) : (
+            "Salvar dados"
+          )}
         </button>
       )}
     </form>

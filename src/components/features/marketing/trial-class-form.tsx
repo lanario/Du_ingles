@@ -31,10 +31,10 @@ import {
   MailIcon,
   MessageIcon,
   ShieldIcon,
-  SpinnerIcon,
   UserIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -651,7 +651,7 @@ export function TrialClassForm() {
                 >
                   {isPending ? (
                     <>
-                      <SpinnerIcon className="h-4 w-4 animate-spin" />
+                      <LogoLoader size={16} label={null} />
                       Enviando…
                     </>
                   ) : (

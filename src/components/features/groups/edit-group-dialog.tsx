@@ -14,6 +14,7 @@ import { CEFR_LEVELS } from "@/types/domain";
 import type { Course } from "@/repositories/courses";
 import type { GroupDetail } from "@/repositories/groups";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function EditGroupDialog({
   group,
@@ -160,7 +161,14 @@ export function EditGroupDialog({
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando…" : "Salvar alterações"}
+              {isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <LogoLoader size={16} label={null} />
+                  Salvando…
+                </span>
+              ) : (
+                "Salvar alterações"
+              )}
             </Button>
           </div>
         </form>

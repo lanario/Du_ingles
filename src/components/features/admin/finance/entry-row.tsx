@@ -19,7 +19,6 @@ import {
   ArrowOutIcon,
   CheckIcon,
   PencilIcon,
-  SpinnerIcon,
   SwapIcon,
   TrashIcon,
 } from "@/components/ui/icons";
@@ -35,6 +34,7 @@ import {
   formatMoney,
   type FinanceEntry,
 } from "./finance-utils";
+import { LoadingVeil, LogoLoader } from "@/components/ui/logo-loader";
 
 interface EntryRowProps {
   entry: FinanceEntry;
@@ -96,9 +96,10 @@ export function EntryRow({
         "group relative flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-admin-border px-3 py-3 transition-colors last:border-0 sm:px-4",
         "hover:bg-admin-muted/50",
         menuOpen && "relative z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
       )}
     >
+      {busy && <LoadingVeil label={null} size={22} />}
       <span
         aria-hidden
         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
@@ -178,7 +179,7 @@ export function EntryRow({
           style={settled ? undefined : { backgroundColor: "var(--success)" }}
         >
           {busy ? (
-            <SpinnerIcon className="h-3.5 w-3.5 animate-spin" />
+            <LogoLoader size={14} label={null} />
           ) : settled ? (
             <SwapIcon className="h-3.5 w-3.5" />
           ) : (

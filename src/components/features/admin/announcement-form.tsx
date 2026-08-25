@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { GroupListItem } from "@/repositories/groups";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function AnnouncementForm({ groups }: { groups: GroupListItem[] }) {
   const [state, formAction, isPending] = useActionState(createAnnouncementAction, null);
@@ -67,7 +68,14 @@ export function AnnouncementForm({ groups }: { groups: GroupListItem[] }) {
         disabled={isPending}
         className="rounded-md bg-admin-accent px-4 py-2 text-sm font-medium text-admin-accent-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? "Enviando…" : "Enviar comunicado"}
+        {isPending ? (
+          <span className="inline-flex items-center gap-2">
+            <LogoLoader size={16} label={null} />
+            Enviando…
+          </span>
+        ) : (
+          "Enviar comunicado"
+        )}
       </button>
     </form>
   );

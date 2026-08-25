@@ -5,6 +5,7 @@ import { changeUserRoleAction } from "@/actions/admin/users";
 import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { AppRole } from "@/types/domain";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function ChangeRoleForm({
   userId,
@@ -38,7 +39,14 @@ export function ChangeRoleForm({
         disabled={isPending}
         className="h-10 rounded-md border border-admin-border px-3 text-sm hover:bg-admin-muted disabled:opacity-50"
       >
-        {isPending ? "Salvando…" : "Alterar papel"}
+        {isPending ? (
+          <span className="inline-flex items-center gap-2">
+            <LogoLoader size={16} label={null} />
+            Salvando…
+          </span>
+        ) : (
+          "Alterar papel"
+        )}
       </button>
     </form>
   );

@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FormBanner } from "@/components/ui/form-message";
 import { cn } from "@/lib/utils";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 /** Espelha `AVATAR_MAX_BYTES`/`AVATAR_MIME_TYPES` de `lib/avatars.ts`. */
 const MAX_MB = 2;
@@ -135,7 +136,16 @@ export function AvatarUploader({
               disabled={busy}
               onClick={() => inputRef.current?.click()}
             >
-              {uploading ? "Enviando…" : shown ? "Trocar foto" : "Enviar foto"}
+              {uploading ? (
+                <span className="inline-flex items-center gap-2">
+                  <LogoLoader size={16} label={null} />
+                  Enviando…
+                </span>
+              ) : shown ? (
+                "Trocar foto"
+              ) : (
+                "Enviar foto"
+              )}
             </Button>
 
             {avatarUrl && (
@@ -146,7 +156,14 @@ export function AvatarUploader({
                 onClick={onRemove}
                 className="text-destructive hover:bg-destructive/10"
               >
-                {removing ? "Removendo…" : "Remover"}
+                {removing ? (
+                  <span className="inline-flex items-center gap-2">
+                    <LogoLoader size={16} label={null} />
+                    Removendo…
+                  </span>
+                ) : (
+                  "Remover"
+                )}
               </Button>
             )}
           </div>

@@ -6,6 +6,7 @@ import { requestPasswordResetAction } from "@/actions/auth/request-password-rese
 import { AuthField } from "@/components/features/auth/auth-field";
 import { MailIcon } from "@/components/ui/icons";
 import { FormBanner } from "@/components/ui/form-message";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export interface RequestResetFormProps {
   /**
@@ -65,7 +66,14 @@ export function RequestResetForm({ onBack }: RequestResetFormProps = {}) {
         disabled={isPending}
         className="btn-cta-fill h-12 w-full text-sm uppercase tracking-wide disabled:pointer-events-none disabled:opacity-60"
       >
-        {isPending ? "Enviando…" : "Enviar link"}
+        {isPending ? (
+          <span className="inline-flex items-center gap-2">
+            <LogoLoader size={16} label={null} />
+            Enviando…
+          </span>
+        ) : (
+          "Enviar link"
+        )}
       </button>
 
       {back}

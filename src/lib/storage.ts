@@ -1,15 +1,17 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
-const SIGNED_URL_TTL_SECONDS = 60;
-
-/** Nenhum bucket de conteúdo pedagógico é público — só signed URL de curta duração (§6). */
-export async function getSignedPdfUrl(path: string): Promise<string | null> {
+/**
+ * Nenhum bucket de conteúdo pedagógico é público (§6). O arquivo é lido aqui,
+ * no servidor, com a chave de serviço — e servido ao aluno pela rota
+ * `/api/sessions/[id]/pdf`, que reaplica a permissão. Assim o endereço do
+ * Supabase nunca chega ao navegador: o que o aluno vê na barra é o domínio
+ * da escola.
+ */
+export async function downloadSessionPdf(path: string): Promise<Blob | null> {
   const admin = createAdminSupabaseClient();
-  const { data, error } = await admin.storage
-    .from("session-pdfs")
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  const { data, error } = await admin.storage.from("session-pdfs").download(path);
 
   if (error || !data) return null;
-  return data.signedUrl;
+  return data;
 }

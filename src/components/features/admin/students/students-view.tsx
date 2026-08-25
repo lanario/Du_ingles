@@ -19,6 +19,7 @@ import { deactivateUserAction, reactivateUserAction } from "@/actions/admin/user
 import { getUserByIdAction } from "@/actions/admin/users-detail";
 import { moveStudentToGroupAction } from "@/actions/admin/students";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
+import { useArea } from "@/components/features/admin/area-context";
 import {
   EnrollmentConflictDialog,
   type EnrollmentConflict,
@@ -65,6 +66,10 @@ const VIEW_MODE_KEY = "du:alunos:modo";
 
 export function StudentsView({ students, groups }: StudentsViewProps) {
   const router = useRouter();
+  // Na área do professor a tela é de consulta: ele acompanha quem está na
+  // turma dele, mas cadastro, matrícula e ciclo de vida da conta continuam
+  // sendo coordenação.
+  const { canManagePeople: canManage } = useArea();
   const reduceMotion = useReducedMotion();
 
   const [search, setSearch] = useState("");
@@ -246,7 +251,9 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         <div>
           <h1 className="text-2xl font-semibold text-admin-foreground">Alunos</h1>
           <p className="mt-2 max-w-xl text-sm text-admin-foreground/60">
-            Matrículas, turmas e responsáveis dos alunos da organização.
+            {canManage
+              ? "Matrículas, turmas e responsáveis dos alunos da organização."
+              : "Os alunos matriculados nas suas turmas."}
           </p>
         </div>
 
@@ -363,6 +370,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
           </ViewModeButton>
         </div>
 
+        {canManage && (
         <motion.div whileHover={reduceMotion ? undefined : { scale: 1.03 }} whileTap={reduceMotion ? undefined : { scale: 0.97 }}>
           <Link
             href="/admin/usuarios?convite=student"
@@ -372,6 +380,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
             <span className="hidden sm:inline">Novo aluno</span>
           </Link>
         </motion.div>
+        )}
       </div>
 
       <GroupsRail
@@ -380,8 +389,8 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         onFilterChange={setGroupFilter}
         unassigned={totals.unassigned}
         total={totals.total}
-        dragging={draggingId !== null}
-        onDropOnGroup={dropOnGroup}
+        dragging={canManage && draggingId !== null}
+        onDropOnGroup={canManage ? dropOnGroup : undefined}
       />
 
       <AnimatePresence>
@@ -406,13 +415,17 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
             }
             description={
               noStudentsAtAll
-                ? "Cadastre o primeiro aluno para começar."
+                ? canManage
+                  ? "Cadastre o primeiro aluno para começar."
+                  : "Nenhum aluno matriculado nas suas turmas ainda."
                 : groupEmpty
-                  ? `Nenhum aluno em "${groupOpenName}". Arraste um aluno até a turma, ou use "Mover de turma" no menu dele.`
+                  ? canManage
+                    ? `Nenhum aluno em "${groupOpenName}". Arraste um aluno até a turma, ou use "Mover de turma" no menu dele.`
+                    : `Nenhum aluno matriculado em "${groupOpenName}".`
                   : "Ajuste a busca ou troque os filtros."
             }
             action={
-              noStudentsAtAll ? (
+              noStudentsAtAll && canManage ? (
                 <Link
                   href="/admin/usuarios?convite=student"
                   className="inline-flex items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-semibold text-admin-foreground transition-opacity hover:opacity-90"
@@ -447,6 +460,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                   onMove={() => setMoveTarget(student)}
                   onDragStart={() => setDraggingId(student.id)}
                   onDragEnd={() => setDraggingId(null)}
+                  canManage={canManage}
                 />
               ))}
             </AnimatePresence>
@@ -479,6 +493,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                     onMove={() => setMoveTarget(student)}
                     onDragStart={() => setDraggingId(student.id)}
                     onDragEnd={() => setDraggingId(null)}
+                    canManage={canManage}
                   />
                 ))}
               </AnimatePresence>
@@ -500,9 +515,17 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         student={detailStudent}
         session={detailSession}
         onMove={() => detailStudent && setMoveTarget(detailStudent)}
+        canManage={canManage}
       />
 
-      <MoveToGroup open={moveTarget !== null} student={moveTarget} groups={groups} onClose={() => setMoveTarget(null)} />
+      {canManage && (
+        <MoveToGroup
+          open={moveTarget !== null}
+          student={moveTarget}
+          groups={groups}
+          onClose={() => setMoveTarget(null)}
+        />
+      )}
 
       <EnrollmentConflictDialog
         conflict={pendingMove?.conflict ?? null}

@@ -219,3 +219,9 @@ export function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(iso));
 }
+
+// Vocabulário e preços do construtor "nível → ritmo → compromisso" moram em
+// `@/lib/plans/tier-catalog` (a camada de repositório também precisa deles,
+// para o gerador do catálogo padrão). Reexportado aqui para não quebrar quem
+// já importa tudo de planos a partir deste módulo.
+export * from "@/lib/plans/tier-catalog";

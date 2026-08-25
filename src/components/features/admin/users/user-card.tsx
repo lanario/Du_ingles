@@ -20,6 +20,7 @@ import {
   UserAvatar,
 } from "./users-visuals";
 import { formatDate } from "./users-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 interface UserCardProps {
   user: UserListItem;
@@ -67,10 +68,11 @@ export function UserCard({ user, isSelf, busy, onOpen, onDeactivate, onReactivat
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-20px_rgba(11,26,51,0.4)]",
         "hover:border-gold-300",
         menuOpen && "z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !user.isActive && "opacity-70",
       )}
     >
+      {busy && <LoadingVeil label={null} size={40} className="rounded-2xl" />}
       <div className="relative flex items-start justify-between gap-2">
         <StatusPill isActive={user.isActive} />
         <ActionMenu items={actions} disabled={busy} onOpenChange={setMenuOpen} label={`Ações de ${user.fullName}`} />

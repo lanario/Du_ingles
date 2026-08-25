@@ -14,6 +14,7 @@ import { onOpenClick } from "@/components/ui/detail-panel";
 import { cn } from "@/lib/utils";
 import { GroupPill, LevelPill, StatusPill, UserAvatar } from "./students-visuals";
 import { formatDate, type Student } from "./students-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 export const LIST_GRID =
   "grid grid-cols-[1.6fr_1fr_0.7fr_0.8fr_1fr_auto] items-center gap-3";
@@ -27,6 +28,8 @@ interface StudentListItemProps {
   onMove: () => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  /** Sem gestão, a linha vira consulta: sem arraste e sem menu de ações. */
+  canManage?: boolean;
 }
 
 export function StudentListItem({
@@ -38,18 +41,21 @@ export function StudentListItem({
   onMove,
   onDragStart,
   onDragEnd,
+  canManage = true,
 }: StudentListItemProps) {
   const reduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
 
-  const actions: ActionMenuItem[] = [
-    { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
-    { label: "Mover de turma", icon: SwapIcon, tone: "accent", separated: true, onSelect: onMove },
-    student.isActive
-      ? { label: "Desativar", icon: PowerIcon, tone: "danger", onSelect: onDeactivate }
-      : { label: "Reativar", icon: PowerIcon, tone: "accent", onSelect: onReactivate },
-  ];
+  const actions: ActionMenuItem[] = canManage
+    ? [
+        { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
+        { label: "Mover de turma", icon: SwapIcon, tone: "accent", separated: true, onSelect: onMove },
+        student.isActive
+          ? { label: "Desativar", icon: PowerIcon, tone: "danger", onSelect: onDeactivate }
+          : { label: "Reativar", icon: PowerIcon, tone: "accent", onSelect: onReactivate },
+      ]
+    : [{ label: "Ver detalhes", icon: UserIcon, onSelect: onOpen }];
 
   return (
     <motion.div
@@ -58,8 +64,9 @@ export function StudentListItem({
       animate={{ opacity: 1, y: 0 }}
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      draggable
+      draggable={canManage}
       onDragStartCapture={(event) => {
+        if (!canManage) return;
         event.dataTransfer.setData("text/plain", student.id);
         event.dataTransfer.effectAllowed = "move";
         setDragging(true);
@@ -72,14 +79,16 @@ export function StudentListItem({
       onClick={onOpenClick(onOpen)}
       className={cn(
         LIST_GRID,
-        "cursor-grab border-b border-admin-border bg-admin-surface px-4 py-3 text-sm transition-colors last:border-0",
+        canManage ? "cursor-grab" : "cursor-pointer",
+        "border-b border-admin-border bg-admin-surface px-4 py-3 text-sm transition-colors last:border-0",
         "hover:bg-admin-muted/60",
         menuOpen && "relative z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !student.isActive && "opacity-70",
         dragging && "opacity-40",
       )}
     >
+      {busy && <LoadingVeil label={null} size={22} />}
       <div className="flex min-w-0 items-center gap-3">
         <UserAvatar id={student.id} name={student.fullName} size="sm" />
         <div className="min-w-0">

@@ -14,7 +14,7 @@
  * o admin decide o visual olhando o resultado, não imaginando.
  */
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -27,19 +27,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
-import { SpinnerIcon } from "@/components/ui/icons";
 import { CEFR_LEVELS } from "@/types/domain";
-import { PLAN_ACCENTS, PLAN_INTERVALS, type PlanAccent } from "@/schemas/student-plans";
+import {
+  PLAN_ACCENTS,
+  PLAN_INTERVALS,
+  PLAN_TIERS,
+  type PlanAccent,
+  type PlanTier,
+} from "@/schemas/student-plans";
 import { cn } from "@/lib/utils";
 import {
   ACCENT_LABEL,
   ACCENT_TONE,
+  FREQUENCY_LABEL,
   INTERVAL_LABEL,
   INTERVAL_SUFFIX,
+  TIER_LABEL,
+  WEEKLY_FREQUENCIES,
   splitMoney,
+  tierFeatures,
   type StudentPlan,
 } from "./plans-utils";
 import type { ActionResult } from "@/types/action-result";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const FIELD =
   "border-admin-border bg-admin-background focus-visible:ring-gold-500 text-admin-foreground";
@@ -82,6 +92,11 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
   const [interval, setInterval] = useState(plan?.billingInterval ?? "month");
   const [accent, setAccent] = useState<PlanAccent>(plan?.accent ?? "gold");
   const [badge, setBadge] = useState(plan?.badge ?? "");
+  const [tier, setTier] = useState<PlanTier | "">(plan?.tier ?? "");
+  const [weeklyFrequency, setWeeklyFrequency] = useState(
+    plan?.weeklyFrequency ? String(plan.weeklyFrequency) : "",
+  );
+  const featuresRef = useRef<HTMLTextAreaElement>(null);
 
   // Reabrir o painel noutro plano tem de recarregar a prévia — sem isto ela
   // continuaria mostrando o plano anterior.
@@ -92,7 +107,17 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
     setInterval(plan?.billingInterval ?? "month");
     setAccent(plan?.accent ?? "gold");
     setBadge(plan?.badge ?? "");
+    setTier(plan?.tier ?? "");
+    setWeeklyFrequency(plan?.weeklyFrequency ? String(plan.weeklyFrequency) : "");
   }, [plan, open]);
+
+  /** Preenche benefícios com o padrão do PDF comercial para o nível escolhido. */
+  function applyTierDefaults(nextTier: PlanTier | "") {
+    setTier(nextTier);
+    if (nextTier && featuresRef.current) {
+      featuresRef.current.value = tierFeatures(nextTier).join("\n");
+    }
+  }
 
   // O sucesso pode ser parcial: salvo no banco, recusado pela Stripe. Nesse
   // caso o painel *não* fecha — o admin precisa ver por quê.
@@ -178,6 +203,7 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
                 Benefícios
               </Label>
               <textarea
+                ref={featuresRef}
                 id="plan-features"
                 name="features"
                 rows={5}
@@ -211,6 +237,60 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
                 )}
               />
               <FieldError messages={fields?.["description"]} />
+            </div>
+          </Section>
+
+          {/* ---------------------------------------------------------------
+              Grade de níveis
+          --------------------------------------------------------------- */}
+          <Section title="Grade de níveis (opcional)">
+            <p className="-mt-2 text-[11px] leading-relaxed text-admin-foreground/45">
+              Marcando nível e ritmo, este plano entra no construtor &ldquo;nível → ritmo →
+              compromisso&rdquo; da vitrine. Deixe em branco para um plano avulso, fora da grade.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="plan-tier" className="text-admin-foreground">
+                  Nível
+                </Label>
+                <Select
+                  id="plan-tier"
+                  name="tier"
+                  tone="admin"
+                  value={tier}
+                  onChange={(next) => applyTierDefaults(next as PlanTier | "")}
+                  placeholder="Plano avulso"
+                >
+                  <option value="">Plano avulso (fora da grade)</option>
+                  {PLAN_TIERS.map((item) => (
+                    <option key={item} value={item}>
+                      {TIER_LABEL[item]}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="plan-weekly-frequency" className="text-admin-foreground">
+                  Ritmo semanal
+                </Label>
+                <Select
+                  id="plan-weekly-frequency"
+                  name="weeklyFrequency"
+                  tone="admin"
+                  value={weeklyFrequency}
+                  onChange={(next) => setWeeklyFrequency(next)}
+                  placeholder="Sem ritmo fixo"
+                >
+                  <option value="">Sem ritmo fixo</option>
+                  {WEEKLY_FREQUENCIES.map((item) => (
+                    <option key={item} value={item}>
+                      {FREQUENCY_LABEL[item]}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError messages={fields?.["weeklyFrequency"]} />
+              </div>
             </div>
           </Section>
 
@@ -495,7 +575,7 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
               "disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
-            {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+            {isPending && <LogoLoader size={16} label={null} />}
             {isPending
               ? "Publicando na Stripe..."
               : isEdit

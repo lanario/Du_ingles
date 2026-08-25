@@ -23,11 +23,12 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { ScheduleBuilder } from "@/components/features/admin/groups/schedule-builder";
-import { CalendarIcon, GraduationIcon, SpinnerIcon } from "@/components/ui/icons";
+import { CalendarIcon, GraduationIcon } from "@/components/ui/icons";
 import { CEFR_LEVELS } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import type { Course } from "@/repositories/courses";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const LEVEL_HINT: Record<string, string> = {
   A1: "Iniciante",
@@ -224,7 +225,7 @@ export function CreateGroupPanel({
           >
             {isPending ? (
               <>
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                <LogoLoader size={16} label={null} />
                 Criando…
               </>
             ) : (

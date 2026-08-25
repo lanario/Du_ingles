@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
-import { CheckIcon, CopyIcon, ClockIcon, SpinnerIcon } from "@/components/ui/icons";
+import { CheckIcon, CopyIcon, ClockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import {
   ACCENT_TONE,
@@ -33,6 +33,7 @@ import {
   type StudentPlan,
 } from "./plans-utils";
 import type { PlanAccent } from "@/schemas/student-plans";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -376,7 +377,7 @@ export function CopyLinkButton({
 export function BusyLabel({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 text-[12px] text-admin-foreground/55">
-      <SpinnerIcon className="h-3.5 w-3.5 animate-spin" />
+      <LogoLoader size={14} label={null} />
       {children}
     </span>
   );

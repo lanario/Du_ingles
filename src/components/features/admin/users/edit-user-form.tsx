@@ -7,6 +7,7 @@ import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import type { UserDetail } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function EditUserForm({ user }: { user: UserDetail }) {
   const action = updateUserAction.bind(null, user.id);
@@ -45,7 +46,14 @@ export function EditUserForm({ user }: { user: UserDetail }) {
         disabled={isPending}
         className="rounded-md bg-admin-accent px-4 py-2 text-sm font-medium text-admin-accent-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? "Salvando…" : "Salvar alterações"}
+        {isPending ? (
+          <span className="inline-flex items-center gap-2">
+            <LogoLoader size={16} label={null} />
+            Salvando…
+          </span>
+        ) : (
+          "Salvar alterações"
+        )}
       </button>
     </form>
   );

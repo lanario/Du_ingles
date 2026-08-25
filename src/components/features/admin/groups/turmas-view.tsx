@@ -17,9 +17,11 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { setGroupActiveAction } from "@/actions/admin/groups";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
+import { useArea } from "@/components/features/admin/area-context";
 import { useListProgress, useStickyBar } from "@/components/motion/list-motion";
 import { useNarrowScreen, useViewMode } from "@/components/motion/use-view-mode";
 import { Select } from "@/components/ui/select";
@@ -91,6 +93,9 @@ export function TurmasView({
 }: TurmasViewProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
+  // O professor opera as próprias turmas; criar turma nova (e escolher quem
+  // responde por ela) continua sendo coordenação.
+  const { base, canManageGroups } = useArea();
 
   const [page, setPage] = useState<PageTab>("turmas");
   const [search, setSearch] = useState("");
@@ -123,7 +128,7 @@ export function TurmasView({
 
   function closeCreate() {
     setCreateOpen(false);
-    if (openCreate) router.replace("/admin/turmas");
+    if (openCreate) router.replace(`${base}/turmas` as Route);
   }
 
   // "/" foca a busca, como nas outras listas do painel.
@@ -427,16 +432,18 @@ export function TurmasView({
           </>
         )}
 
-        <motion.button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          whileHover={reduceMotion ? undefined : { scale: 1.03 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
-        >
-          <PlusIcon className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Nova turma</span>
-        </motion.button>
+        {canManageGroups && (
+          <motion.button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
+          >
+            <PlusIcon className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Nova turma</span>
+          </motion.button>
+        )}
       </div>
 
       <GroupsFilterRail
@@ -466,14 +473,22 @@ export function TurmasView({
       <div ref={listRef}>
         {filtered.length === 0 ? (
           <EmptyState
-            title={noGroupsAtAll ? "Nenhuma turma criada ainda" : "Nada encontrado"}
+            title={
+              noGroupsAtAll
+                ? canManageGroups
+                  ? "Nenhuma turma criada ainda"
+                  : "Você ainda não tem turmas"
+                : "Nada encontrado"
+            }
             description={
               noGroupsAtAll
-                ? "Crie a primeira turma para começar a matricular alunos e gerar as sessões da agenda."
+                ? canManageGroups
+                  ? "Crie a primeira turma para começar a matricular alunos e gerar as sessões da agenda."
+                  : "Assim que a coordenação atribuir uma turma a você, ela aparece aqui."
                 : "Ajuste a busca ou troque os filtros de professor, nível e status."
             }
             action={
-              noGroupsAtAll ? (
+              noGroupsAtAll && canManageGroups ? (
                 <button
                   type="button"
                   onClick={() => setCreateOpen(true)}
@@ -562,12 +577,14 @@ export function TurmasView({
         teachers={teachers}
       />
 
-      <CreateGroupPanel
-        open={createOpen}
-        onClose={closeCreate}
-        courses={courses}
-        teachers={teachers}
-      />
+      {canManageGroups && (
+        <CreateGroupPanel
+          open={createOpen}
+          onClose={closeCreate}
+          courses={courses}
+          teachers={teachers}
+        />
+      )}
     </div>
   );
 }

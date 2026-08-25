@@ -18,11 +18,11 @@ import { Select } from "@/components/ui/select";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
-import { SpinnerIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { defaultScheduleParts } from "./planner-utils";
 import type { PlannerGroupOption, PlannerPlan } from "@/repositories/lesson-planner";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const DURATIONS = [30, 45, 60, 90, 120];
 
@@ -261,7 +261,7 @@ export function SchedulePanel({
           >
             {isPending ? (
               <>
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                <LogoLoader size={16} label={null} />
                 Agendando…
               </>
             ) : (

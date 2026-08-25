@@ -17,23 +17,16 @@ import {
   useRef,
   useState,
   useTransition,
-  type ComponentType,
 } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth/logout";
 import { AccountAvatar } from "@/components/features/account/account-avatar";
 import { AccountModal } from "@/components/features/account/account-modal";
-import {
-  ChevronIcon,
-  KeyIcon,
-  LogoutIcon,
-  UserIcon,
-  type IconProps,
-} from "@/components/ui/icons";
+import { SecurityModal } from "@/components/features/account/security-modal";
+import { ChevronIcon, KeyIcon, LogoutIcon, UserIcon } from "@/components/ui/icons";
 import type { MyProfile } from "@/repositories/users";
 import type { AppRole } from "@/types/domain";
 
@@ -55,16 +48,11 @@ interface UserMenuProps {
   profile: MyProfile | null;
   /** `app` = rail navy; `admin` = rail dourado. Muda só o cartão-gatilho. */
   theme: "app" | "admin";
-  securityHref: Route;
+  /** Destino de "Meus dados", linkado a partir do modal de Segurança. */
+  dataHref: Route;
   /** Rail recolhido mostra só a foto; a gaveta do mobile é sempre larga. */
   compact?: boolean;
   className?: string;
-}
-
-interface MenuLink {
-  href: Route;
-  label: string;
-  icon: ComponentType<IconProps>;
 }
 
 export function UserMenu({
@@ -75,12 +63,13 @@ export function UserMenu({
   avatarUrl,
   profile,
   theme,
-  securityHref,
+  dataHref,
   compact = false,
   className,
 }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
   const [coords, setCoords] = useState<{ left: number; bottom: number } | null>(null);
   const [loggingOut, startLogout] = useTransition();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -130,8 +119,6 @@ export function UserMenu({
       window.removeEventListener("scroll", onReflow, true);
     };
   }, [open, place]);
-
-  const links: MenuLink[] = [{ href: securityHref, label: "Segurança", icon: KeyIcon }];
 
   const menu =
     typeof document === "undefined"
@@ -186,18 +173,18 @@ export function UserMenu({
                     <UserIcon className="h-[18px] w-[18px] text-navy-900/60" />
                     Perfil
                   </button>
-                  {links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      role="menuitem"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-medium text-navy-900 transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
-                    >
-                      <link.icon className="h-[18px] w-[18px] text-navy-900/60" />
-                      {link.label}
-                    </Link>
-                  ))}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setOpen(false);
+                      setSecurityOpen(true);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm font-medium text-navy-900 transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                  >
+                    <KeyIcon className="h-[18px] w-[18px] text-navy-900/60" />
+                    Segurança
+                  </button>
                 </div>
 
                 <div className="h-px bg-border" />
@@ -288,14 +275,25 @@ export function UserMenu({
 
       {typeof document !== "undefined" &&
         createPortal(
-          <AccountModal
-            open={profileOpen}
-            onClose={() => setProfileOpen(false)}
-            profile={profile}
-            avatarUrl={avatarUrl}
-            theme={theme}
-            securityHref={securityHref}
-          />,
+          <>
+            <AccountModal
+              open={profileOpen}
+              onClose={() => setProfileOpen(false)}
+              profile={profile}
+              avatarUrl={avatarUrl}
+              theme={theme}
+              onOpenSecurity={() => {
+                setProfileOpen(false);
+                setSecurityOpen(true);
+              }}
+            />
+            <SecurityModal
+              open={securityOpen}
+              onClose={() => setSecurityOpen(false)}
+              theme={theme}
+              dataHref={dataHref}
+            />
+          </>,
           document.body,
         )}
     </>

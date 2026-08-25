@@ -32,11 +32,11 @@ import {
   ClockIcon,
   EyeIcon,
   ShieldIcon,
-  SpinnerIcon,
   SwapIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { ConnectAccount } from "@/repositories/stripe-connect";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 /**
  * Os três estágios pelos quais uma conta conectada passa. O rótulo é o que o
@@ -324,7 +324,7 @@ function OnboardingCall({
               )}
             >
               {pending ? (
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                <LogoLoader size={16} label={null} />
               ) : (
                 <ShieldIcon className="h-4 w-4" />
               )}
@@ -422,7 +422,7 @@ function BarButton({
       disabled={busy}
       className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-50"
     >
-      {busy ? <SpinnerIcon className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
+      {busy ? <LogoLoader size={14} label={null} /> : <Icon className="h-3.5 w-3.5" />}
       {label}
     </button>
   );
@@ -524,7 +524,7 @@ function ConnectSettings({
           )}
         >
           {pending ? (
-            <SpinnerIcon className="h-4 w-4 animate-spin" />
+            <LogoLoader size={16} label={null} />
           ) : saved ? (
             <CheckIcon className="h-4 w-4" />
           ) : null}

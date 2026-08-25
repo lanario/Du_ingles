@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -20,7 +21,19 @@ const OPEN_DELAY = 90;
 const CLOSE_DELAY = 120;
 const GLOW_HEIGHT = 72;
 
-const NAV_SECTIONS = [
+export interface AdminNavItem {
+  href: Route;
+  label: string;
+  icon: IconName;
+}
+
+export interface AdminNavSection {
+  label: string;
+  items: AdminNavItem[];
+}
+
+/** Mapa completo da coordenação — o padrão quando nenhuma seção é passada. */
+export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
     label: "Visão geral",
     items: [{ href: "/admin", label: "Painel", icon: "grid" }],
@@ -52,9 +65,22 @@ const NAV_SECTIONS = [
       { href: "/admin/configuracoes", label: "Configurações", icon: "gear" },
     ],
   },
-] as const;
+];
 
-type IconName = (typeof NAV_SECTIONS)[number]["items"][number]["icon"];
+export type IconName =
+  | "grid"
+  | "users"
+  | "book"
+  | "board"
+  | "chart"
+  | "chat"
+  | "shield"
+  | "user"
+  | "graduation"
+  | "clipboard"
+  | "coin"
+  | "lesson"
+  | "gear";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   grid: (
@@ -174,28 +200,39 @@ interface AdminSidebarProps {
   profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
+  /** Mapa de navegação — o padrão é o da coordenação. */
+  sections?: AdminNavSection[];
+  /** Rota-raiz da área: a única que casa por igualdade, não por prefixo. */
+  rootHref?: string;
+  /** Papel exibido no menu da conta. */
+  role?: "admin" | "teacher";
+  /** Destino de "Meus dados" no menu da conta. */
+  dataHref?: Route;
+  /**
+   * A chave "ver como" é da coordenação. A área do professor não alterna
+   * para lado nenhum — quem dá aula tem um contexto só.
+   */
+  showRoleSwitch?: boolean;
+  navLabel?: string;
 }
 
-// `/admin` casaria com tudo por prefixo; a raiz precisa de match exato.
-function isActivePath(pathname: string, href: string) {
-  return href === "/admin"
+// A raiz da área (`/admin`, `/professor`) casaria com tudo por prefixo — só
+// ela precisa de match exato.
+function isActivePath(pathname: string, href: string, rootHref: string) {
+  return href === rootHref
     ? pathname === href
     : pathname === href || pathname.startsWith(href + "/");
 }
 
-/* `NAV_SECTIONS` é `as const`, então cada seção tem um tipo de tupla próprio e
-   o `flatMap` sem anotação vira uma união inútil de tuplas. */
-type NavItem = { href: string; label: string; icon: IconName };
-
-const ALL_ITEMS: NavItem[] = NAV_SECTIONS.flatMap<NavItem>(
-  (section) => section.items as readonly NavItem[],
-)
-  // Do mais específico para o mais genérico: `/admin/turmas` tem que ganhar
-  // de `/admin` na hora de rotular o cabeçalho mobile.
-  .sort((a, b) => b.href.length - a.href.length);
-
-function itemAtivo(pathname: string) {
-  return ALL_ITEMS.find((item) => isActivePath(pathname, item.href));
+function itemAtivo(pathname: string, sections: AdminNavSection[], rootHref: string) {
+  return (
+    sections
+      .flatMap((section) => section.items)
+      // Do mais específico para o mais genérico: `/admin/turmas` tem que
+      // ganhar de `/admin` na hora de rotular o cabeçalho mobile.
+      .sort((a, b) => b.href.length - a.href.length)
+      .find((item) => isActivePath(pathname, item.href, rootHref))
+  );
 }
 
 /** Emblema "Du" do chrome admin, em duas variantes (compacta/completa). */
@@ -249,6 +286,11 @@ function AdminRail({
   profile,
   initialNotifications,
   initialUnreadCount,
+  sections = ADMIN_NAV_SECTIONS,
+  rootHref = "/admin",
+  role = "admin",
+  dataHref = "/admin/meus-dados",
+  navLabel = "Navegação administrativa",
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -336,7 +378,7 @@ function AdminRail({
     gsap.to(glow, { opacity: 0, duration: 0.25, ease: "power2.in" });
   }, [reduceMotion]);
 
-  const isActive = (href: string) => isActivePath(pathname, href);
+  const isActive = (href: string) => isActivePath(pathname, href, rootHref);
 
   return (
     <aside
@@ -413,10 +455,10 @@ function AdminRail({
           </div>
 
           <nav
-            aria-label="Navegação administrativa"
+            aria-label={navLabel}
             className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2"
           >
-            {NAV_SECTIONS.map((section, index) => (
+            {sections.map((section, index) => (
               <div key={section.label}>
                 {index > 0 && <div className="my-1.5 h-px bg-admin-shell-border" />}
                 <p
@@ -498,11 +540,11 @@ function AdminRail({
               userId={userId}
               name={fullName}
               email={email}
-              role="admin"
+              role={role}
               avatarUrl={avatarUrl}
               profile={profile}
               theme="admin"
-              securityHref="/admin/seguranca"
+              dataHref={dataHref}
               compact
               className="mt-1"
             />
@@ -532,12 +574,18 @@ function AdminNavMobile({
   profile,
   initialNotifications,
   initialUnreadCount,
+  sections = ADMIN_NAV_SECTIONS,
+  rootHref = "/admin",
+  role = "admin",
+  dataHref = "/admin/meus-dados",
+  showRoleSwitch = true,
+  navLabel = "Navegação administrativa",
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [routeAtOpen, setRouteAtOpen] = useState(pathname);
-  const atual = itemAtivo(pathname);
+  const atual = itemAtivo(pathname, sections, rootHref);
 
   // Navegar fecha a gaveta durante a renderização (não em efeito), assim ela
   // já sai fechada no mesmo passo em que a rota muda — inclui o botão
@@ -582,7 +630,9 @@ function AdminNavMobile({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <RoleSwitch active="admin" awayLabel="Aluno" awayRole="student" collapsed />
+          {showRoleSwitch && (
+            <RoleSwitch active="admin" awayLabel="Aluno" awayRole="student" collapsed />
+          )}
           <NotificationBell
             userId={userId}
             initialNotifications={initialNotifications}
@@ -604,7 +654,7 @@ function AdminNavMobile({
               className="absolute inset-0 bg-navy-950/40 backdrop-blur-[2px]"
             />
             <motion.nav
-              aria-label="Navegação administrativa"
+              aria-label={navLabel}
               role="dialog"
               aria-modal="true"
               initial={reduceMotion ? { opacity: 0 } : { x: "-100%" }}
@@ -636,7 +686,7 @@ function AdminNavMobile({
               </div>
 
               <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-2">
-                {NAV_SECTIONS.map((section, index) => (
+                {sections.map((section, index) => (
                   <div key={section.label}>
                     {index > 0 && <div className="my-1.5 h-px bg-admin-shell-border" />}
                     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-admin-shell-foreground/50">
@@ -644,7 +694,7 @@ function AdminNavMobile({
                     </p>
                     <div className="space-y-0.5">
                       {section.items.map((item) => {
-                        const active = isActivePath(pathname, item.href);
+                        const active = isActivePath(pathname, item.href, rootHref);
                         return (
                           <Link
                             key={item.href}
@@ -687,11 +737,11 @@ function AdminNavMobile({
                   userId={userId}
                   name={fullName}
                   email={email}
-                  role="admin"
+                  role={role}
                   avatarUrl={avatarUrl}
                   profile={profile}
                   theme="admin"
-                  securityHref="/admin/seguranca"
+                  dataHref={dataHref}
                 />
               </div>
             </motion.nav>

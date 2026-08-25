@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
+import { isStripeConfigured, isStripeLiveMode } from "@/lib/stripe/client";
+import { getConnectAccount } from "@/repositories/stripe-connect";
+import { SettingsView } from "@/components/features/admin/settings/settings-view";
 
 export const metadata: Metadata = { title: "Configurações" };
 
 export default async function ConfiguracoesPage() {
-  await requireRole(["admin"]);
+  const ctx = await requireRole(["admin"]);
+  const account = await getConnectAccount(ctx.organizationId);
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold">Configurações</h1>
-      <p className="mt-1 text-sm text-admin-foreground/70">
-        Preferências e configurações gerais da plataforma.
-      </p>
-
-      <p className="mt-10 rounded-lg border border-dashed border-admin-border p-10 text-center text-admin-foreground/70">
-        Esta página está em construção.
-      </p>
-    </div>
+    <SettingsView
+      account={account}
+      stripeConfigured={isStripeConfigured()}
+      stripeLiveMode={isStripeLiveMode()}
+    />
   );
 }

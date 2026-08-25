@@ -8,6 +8,7 @@ import {
   unenrollFromMyGroupAction,
 } from "@/actions/teacher/groups";
 import { GroupCard } from "@/components/features/groups/group-card";
+import { AccountAvatar } from "@/components/features/account/account-avatar";
 import { CreateGroupDialog } from "@/components/features/groups/create-group-dialog";
 import { EditGroupDialog } from "@/components/features/groups/edit-group-dialog";
 import {
@@ -135,13 +136,21 @@ function GroupRoster({
                       key={entry.id}
                       className="flex items-center justify-between gap-3 px-3 py-2.5"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {entry.studentName}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {entry.studentEmail}
-                        </p>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <AccountAvatar
+                          id={entry.studentId}
+                          name={entry.studentName}
+                          src={entry.studentAvatarUrl}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {entry.studentName}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {entry.studentEmail}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex flex-none items-center gap-1">
                         <button

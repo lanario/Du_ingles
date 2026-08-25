@@ -6,6 +6,7 @@ import { requestDataDeletionAction } from "@/actions/shared/lgpd";
 import { Button } from "@/components/ui/button";
 import { FormBanner } from "@/components/ui/form-message";
 import { cn } from "@/lib/utils";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function LgpdPanel({ theme = "app" }: { theme?: "app" | "admin" }) {
   const [state, formAction, isPending] = useActionState(requestDataDeletionAction, null);
@@ -54,7 +55,14 @@ export function LgpdPanel({ theme = "app" }: { theme?: "app" | "admin" }) {
             <FormBanner tone="error">{state.error.message}</FormBanner>
           )}
           <Button type="submit" variant="destructive" disabled={isPending} className="mt-2">
-            {isPending ? "Enviando…" : "Solicitar exclusão"}
+            {isPending ? (
+              <span className="inline-flex items-center gap-2">
+                <LogoLoader size={16} label={null} />
+                Enviando…
+              </span>
+            ) : (
+              "Solicitar exclusão"
+            )}
           </Button>
         </form>
       )}

@@ -22,6 +22,7 @@ import {
   LevelPill,
 } from "./students-visuals";
 import { formatDate, type Student } from "./students-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 interface StudentCardProps {
   student: Student;
@@ -32,6 +33,8 @@ interface StudentCardProps {
   onMove: () => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  /** Sem gestão, o cartão vira consulta: sem arraste e sem menu de ações. */
+  canManage?: boolean;
 }
 
 export function StudentCard({
@@ -43,18 +46,21 @@ export function StudentCard({
   onMove,
   onDragStart,
   onDragEnd,
+  canManage = true,
 }: StudentCardProps) {
   const reduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
 
-  const actions: ActionMenuItem[] = [
-    { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
-    { label: "Mover de turma", icon: SwapIcon, tone: "accent", separated: true, onSelect: onMove },
-    student.isActive
-      ? { label: "Desativar", icon: PowerIcon, tone: "danger", onSelect: onDeactivate }
-      : { label: "Reativar", icon: PowerIcon, tone: "accent", onSelect: onReactivate },
-  ];
+  const actions: ActionMenuItem[] = canManage
+    ? [
+        { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
+        { label: "Mover de turma", icon: SwapIcon, tone: "accent", separated: true, onSelect: onMove },
+        student.isActive
+          ? { label: "Desativar", icon: PowerIcon, tone: "danger", onSelect: onDeactivate }
+          : { label: "Reativar", icon: PowerIcon, tone: "accent", onSelect: onReactivate },
+      ]
+    : [{ label: "Ver detalhes", icon: UserIcon, onSelect: onOpen }];
 
   return (
     <motion.article
@@ -68,8 +74,9 @@ export function StudentCard({
       // Arrastar o cartão para uma turma da barra. Os handlers `*Capture` usam
       // o DragEvent nativo — os do framer-motion são de outra gesture, que
       // aqui não está ligada.
-      draggable
+      draggable={canManage}
       onDragStartCapture={(event) => {
+        if (!canManage) return;
         event.dataTransfer.setData("text/plain", student.id);
         event.dataTransfer.effectAllowed = "move";
         setDragging(true);
@@ -80,16 +87,18 @@ export function StudentCard({
         onDragEnd?.();
       }}
       className={cn(
-        "group relative flex cursor-grab flex-col rounded-2xl border p-5 transition-colors duration-300",
+        "group relative flex flex-col rounded-2xl border p-5 transition-colors duration-300",
+        canManage ? "cursor-grab" : "cursor-pointer",
         "border-admin-border bg-admin-surface",
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-20px_rgba(11,26,51,0.4)]",
         "hover:border-gold-300",
         menuOpen && "z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !student.isActive && "opacity-70",
         dragging && "opacity-40",
       )}
     >
+      {busy && <LoadingVeil label={null} size={40} className="rounded-2xl" />}
       <div className="relative flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <StatusPill isActive={student.isActive} />

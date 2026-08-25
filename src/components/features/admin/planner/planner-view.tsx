@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -33,11 +34,11 @@ import {
   PencilIcon,
   PlusIcon,
   SearchIcon,
-  SpinnerIcon,
   TaskIcon,
   TrashIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import { AssignmentPanel } from "./assignment-panel";
 import { PlanFormPanel } from "./plan-form-panel";
 import { SchedulePanel } from "./schedule-panel";
@@ -57,6 +58,7 @@ import type {
 } from "@/repositories/lesson-planner";
 import type { PlannerAssignmentListItem } from "@/repositories/assignments";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 type Tab = "atelie" | "agenda" | "tarefas";
 type AgendaFilter = "proximas" | "hoje" | "aovivo" | "concluidas";
@@ -74,6 +76,12 @@ export interface PlannerViewProps {
   groups: PlannerGroupOption[];
   teachers: UserListItem[];
   assignments: PlannerAssignmentListItem[];
+  /**
+   * Quando presente, só os planos deste autor mostram editar/excluir — é
+   * assim que o professor usa um plano compartilhado sem poder reescrevê-lo
+   * (a action confere a autoria de novo; isto é só a interface honesta).
+   */
+  editableAuthorId?: string;
   /** `?nova` na URL abre o painel de criação já na primeira pintura. */
   openCreate?: boolean;
 }
@@ -84,6 +92,7 @@ export function PlannerView({
   groups,
   teachers,
   assignments,
+  editableAuthorId,
   openCreate = false,
 }: PlannerViewProps) {
   const router = useRouter();
@@ -419,6 +428,10 @@ export function PlannerView({
                             return;
                           runPlanAction(plan.id, () => deletePlannerPlanAction(plan.id));
                         }}
+                        canEdit={
+                          editableAuthorId === undefined ||
+                          plan.authorId === editableAuthorId
+                        }
                       />
                     ))}
                   </AnimatePresence>
@@ -627,6 +640,7 @@ function PlanCard({
   onSchedule,
   onDuplicate,
   onDelete,
+  canEdit,
 }: {
   plan: PlannerPlan;
   index: number;
@@ -635,8 +649,11 @@ function PlanCard({
   onSchedule: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  /** Reescrever este plano é permitido — falso em plano compartilhado alheio. */
+  canEdit: boolean;
 }) {
   const reduceMotion = useReducedMotion();
+  const { base } = useArea();
 
   return (
     <motion.article
@@ -668,7 +685,7 @@ function PlanCard({
       </div>
 
       <Link
-        href={`/admin/planejador/${plan.id}`}
+        href={`${base}/planejador/${plan.id}` as Route}
         className="relative mt-3 line-clamp-2 text-lg font-semibold leading-snug text-admin-foreground transition-colors hover:text-navy-700 focus:outline-none focus-visible:underline"
       >
         {plan.title}
@@ -700,7 +717,7 @@ function PlanCard({
 
       <div className="relative z-10 mt-4 flex items-center gap-1.5 border-t border-admin-border/70 pt-3">
         <Link
-          href={`/admin/planejador/${plan.id}`}
+          href={`${base}/planejador/${plan.id}` as Route}
           className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-navy-900 px-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           Abrir canvas
@@ -708,15 +725,19 @@ function PlanCard({
         <IconAction label="Agendar" onClick={onSchedule} disabled={busy}>
           <CalendarIcon className="h-4 w-4" />
         </IconAction>
-        <IconAction label="Editar ficha" onClick={onEdit} disabled={busy}>
-          <PencilIcon className="h-4 w-4" />
-        </IconAction>
+        {canEdit && (
+          <IconAction label="Editar ficha" onClick={onEdit} disabled={busy}>
+            <PencilIcon className="h-4 w-4" />
+          </IconAction>
+        )}
         <IconAction label="Duplicar" onClick={onDuplicate} disabled={busy}>
-          {busy ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : <CopyIcon className="h-4 w-4" />}
+          {busy ? <LogoLoader size={16} label={null} /> : <CopyIcon className="h-4 w-4" />}
         </IconAction>
-        <IconAction label="Excluir" onClick={onDelete} disabled={busy} danger>
-          <TrashIcon className="h-4 w-4" />
-        </IconAction>
+        {canEdit && (
+          <IconAction label="Excluir" onClick={onDelete} disabled={busy} danger>
+            <TrashIcon className="h-4 w-4" />
+          </IconAction>
+        )}
       </div>
     </motion.article>
   );
@@ -767,6 +788,7 @@ function SessionRow({
   onCancel: () => void;
 }) {
   const reduceMotion = useReducedMotion();
+  const { base } = useArea();
   const status = STATUS_META[session.status];
   const live = session.status === "in_progress";
 
@@ -830,7 +852,7 @@ function SessionRow({
 
       <div className="flex shrink-0 items-center gap-1.5">
         <Link
-          href={`/admin/planejador/aula/${session.id}`}
+          href={`${base}/planejador/aula/${session.id}` as Route}
           className={cn(
             "inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-semibold transition-opacity hover:opacity-90",
             live
@@ -845,7 +867,7 @@ function SessionRow({
         {session.status === "scheduled" && (
           <IconAction label="Cancelar aula" onClick={onCancel} disabled={busy} danger>
             {busy ? (
-              <SpinnerIcon className="h-4 w-4 animate-spin" />
+              <LogoLoader size={16} label={null} />
             ) : (
               <TrashIcon className="h-4 w-4" />
             )}
@@ -868,6 +890,7 @@ function TaskRow({
   onDelete: () => void;
 }) {
   const reduceMotion = useReducedMotion();
+  const { base } = useArea();
   const overdue = assignment.dueAt ? new Date(assignment.dueAt) < new Date() : false;
 
   return (
@@ -888,16 +911,28 @@ function TaskRow({
         <TaskIcon className="h-5 w-5" />
       </span>
 
-      <div className="min-w-[200px] flex-1">
+      <Link
+        href={`${base}/planejador/tarefa/${assignment.id}` as Route}
+        className="min-w-[200px] flex-1 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+      >
         <p className="truncate font-semibold text-admin-foreground">{assignment.title}</p>
         <p className="mt-0.5 truncate text-xs text-admin-foreground/55">
           {assignment.groupName}
+          {assignment.questionCount > 0
+            ? ` · ${assignment.questionCount} questão(ões)`
+            : " · resposta livre"}
           {assignment.maxScore != null ? ` · nota máxima ${assignment.maxScore}` : ""}
           {assignment.submissionCount > 0
             ? ` · ${assignment.submissionCount} entrega(s)`
             : ""}
         </p>
-      </div>
+      </Link>
+
+      {assignment.pendingReviewCount > 0 && (
+        <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-gold-300 bg-gold-50 px-2.5 text-[11px] font-semibold text-gold-700">
+          {assignment.pendingReviewCount} para corrigir
+        </span>
+      )}
 
       {assignment.dueAt && (
         <span
@@ -916,7 +951,7 @@ function TaskRow({
       <div className="flex shrink-0 items-center gap-1.5">
         <IconAction label="Excluir tarefa" onClick={onDelete} disabled={busy} danger>
           {busy ? (
-            <SpinnerIcon className="h-4 w-4 animate-spin" />
+            <LogoLoader size={16} label={null} />
           ) : (
             <TrashIcon className="h-4 w-4" />
           )}

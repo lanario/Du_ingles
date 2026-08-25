@@ -5,6 +5,7 @@ import { submitAssignmentAction } from "@/actions/student/assignments";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function SubmitAssignmentForm({
   assignmentId,
@@ -39,7 +40,14 @@ export function SubmitAssignmentForm({
       </div>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Enviando…" : "Enviar resposta"}
+        {isPending ? (
+          <span className="inline-flex items-center gap-2">
+            <LogoLoader size={16} label={null} />
+            Enviando…
+          </span>
+        ) : (
+          "Enviar resposta"
+        )}
       </Button>
     </form>
   );

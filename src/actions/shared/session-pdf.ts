@@ -1,15 +1,18 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getSignedPdfUrl } from "@/lib/storage";
 import { getSessionContext } from "@/lib/auth/session";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
- * A leitura de `pdf_path` passa pela RLS normal de `class_sessions`
- * (professor dono, aluno com sessão publicada, ou admin) — se a linha nem
- * aparece, não há como pedir a signed URL. TTL de 60s (§6): gerada sob
- * demanda, nunca cacheada no cliente.
+ * Pré-checagem do botão de download: confirma que a aula é visível para quem
+ * pediu (RLS normal de `class_sessions` — professor dono, aluno com sessão
+ * publicada, ou admin) e que o PDF já existe, devolvendo o endereço no
+ * domínio da escola.
+ *
+ * Quem entrega o arquivo é `GET /api/sessions/[id]/pdf`, que reaplica a mesma
+ * permissão — esta action não é a tranca, é o que permite o botão dizer
+ * "PDF em preparo" ou "sessão expirada" antes de abrir uma aba.
  */
 export async function getSessionPdfUrlAction(
   sessionId: string,
@@ -28,8 +31,5 @@ export async function getSessionPdfUrlAction(
     return fail("NOT_FOUND", "PDF ainda não disponível para esta aula.");
   }
 
-  const url = await getSignedPdfUrl(session.pdf_path);
-  if (!url) return fail("INTERNAL_ERROR", "Falha ao gerar o link de download.");
-
-  return ok(url);
+  return ok(`/api/sessions/${sessionId}/pdf`);
 }

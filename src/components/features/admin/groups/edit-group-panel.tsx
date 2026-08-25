@@ -23,12 +23,14 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { ScheduleBuilder } from "@/components/features/admin/groups/schedule-builder";
-import { CalendarIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons";
+import { CalendarIcon, PencilIcon } from "@/components/ui/icons";
 import { CEFR_LEVELS } from "@/types/domain";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import { scheduleSummary, type Group } from "./groups-utils";
 import type { Course } from "@/repositories/courses";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const LEVEL_HINT: Record<string, string> = {
   A1: "Iniciante",
@@ -53,6 +55,9 @@ export function EditGroupPanel({
   teachers: UserListItem[];
 }) {
   const router = useRouter();
+  // Reatribuir o responsável é coordenação — na área do professor o campo
+  // nem aparece (e a action ignora `teacherId` vindo de quem não é admin).
+  const { canManageGroups } = useArea();
   const [state, formAction, isPending] = useActionState(updateGroupAction, null);
   const [level, setLevel] = useState<string>(group?.level ?? CEFR_LEVELS[0] ?? "A1");
   const [editSchedule, setEditSchedule] = useState(false);
@@ -111,28 +116,30 @@ export function EditGroupPanel({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-group-teacherId" className="text-admin-foreground">
-                  Professor <span className="text-gold-600">*</span>
-                </Label>
-                <Select
-                  id="edit-group-teacherId"
-                  name="teacherId"
-                  tone="admin"
-                  required
-                  defaultValue={group.teacherId}
-                >
-                  {teachers.every((teacher) => teacher.id !== group.teacherId) && (
-                    <option value={group.teacherId}>{group.teacherName}</option>
-                  )}
-                  {teachers.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.fullName}
-                    </option>
-                  ))}
-                </Select>
-                <FieldError messages={fields?.["teacherId"]} />
-              </div>
+              {canManageGroups && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-group-teacherId" className="text-admin-foreground">
+                    Professor <span className="text-gold-600">*</span>
+                  </Label>
+                  <Select
+                    id="edit-group-teacherId"
+                    name="teacherId"
+                    tone="admin"
+                    required
+                    defaultValue={group.teacherId}
+                  >
+                    {teachers.every((teacher) => teacher.id !== group.teacherId) && (
+                      <option value={group.teacherId}>{group.teacherName}</option>
+                    )}
+                    {teachers.map((teacher) => (
+                      <option key={teacher.id} value={teacher.id}>
+                        {teacher.fullName}
+                      </option>
+                    ))}
+                  </Select>
+                  <FieldError messages={fields?.["teacherId"]} />
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="edit-group-courseId" className="text-admin-foreground">
@@ -286,7 +293,7 @@ export function EditGroupPanel({
             >
               {isPending ? (
                 <>
-                  <SpinnerIcon className="h-4 w-4 animate-spin" />
+                  <LogoLoader size={16} label={null} />
                   Salvando…
                 </>
               ) : (

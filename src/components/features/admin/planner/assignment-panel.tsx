@@ -10,14 +10,16 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createPlannerAssignmentAction } from "@/actions/admin/assignments";
+import { QuestionBuilder } from "./question-builder";
 import { SidePanel } from "@/components/ui/side-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateField } from "@/components/ui/date-field";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
-import { CheckIcon, SpinnerIcon } from "@/components/ui/icons";
+import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { PlannerGroupOption } from "@/repositories/lesson-planner";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function AssignmentPanel({
   open,
@@ -33,13 +35,19 @@ export function AssignmentPanel({
     null,
   );
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // O construtor de questões guarda o rascunho em estado próprio; trocar a
+  // chave a cada abertura é o que garante painel novo = tarefa em branco.
+  const [builderKey, setBuilderKey] = useState(0);
 
   const fields = state && !state.success ? state.error.fields : undefined;
   const noGroups = groups.length === 0;
   const allSelected = groups.length > 0 && selected.size === groups.length;
 
   useEffect(() => {
-    if (open) setSelected(new Set());
+    if (open) {
+      setSelected(new Set());
+      setBuilderKey((k) => k + 1);
+    }
   }, [open]);
 
   useEffect(() => {
@@ -60,7 +68,7 @@ export function AssignmentPanel({
       open={open}
       onClose={onClose}
       title="Nova tarefa"
-      subtitle="Escreva o exercício e escolha para quais turmas ele vai — cada turma recebe sua própria entrega e nota."
+      subtitle="Monte as questões e escolha para quais turmas a tarefa vai — o aluno responde dentro do app, e cada turma tem sua própria entrega e nota."
       wide
     >
       <form action={formAction} className="flex min-h-full flex-col" noValidate>
@@ -103,6 +111,11 @@ export function AssignmentPanel({
               className="w-full rounded-md border border-admin-border bg-admin-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             />
             <FieldError messages={fields?.["instructions"]} />
+          </div>
+
+          <div className="border-t border-admin-border pt-5">
+            <QuestionBuilder key={builderKey} />
+            <FieldError messages={fields?.["questions"]} />
           </div>
 
           <fieldset className="space-y-2">
@@ -230,7 +243,7 @@ export function AssignmentPanel({
           >
             {isPending ? (
               <>
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                <LogoLoader size={16} label={null} />
                 Enviando…
               </>
             ) : (

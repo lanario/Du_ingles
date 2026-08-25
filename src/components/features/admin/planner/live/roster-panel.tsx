@@ -12,6 +12,7 @@ import { recordPlannerAttendanceAction } from "@/actions/admin/lesson-planner";
 import { cn } from "@/lib/utils";
 import type { AttendanceRow } from "@/repositories/attendance";
 import type { AttendanceStatus } from "@/types/domain";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const OPTIONS: { value: AttendanceStatus; label: string; short: string; tone: string }[] =
   [
@@ -157,7 +158,14 @@ export function RosterPanel({
             disabled={isPending}
             className="inline-flex h-9 items-center rounded-lg bg-navy-900 px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isPending ? "Salvando…" : "Salvar chamada"}
+            {isPending ? (
+              <span className="inline-flex items-center gap-2">
+                <LogoLoader size={16} label={null} />
+                Salvando…
+              </span>
+            ) : (
+              "Salvar chamada"
+            )}
           </button>
           {savedAt && (
             <span className="text-[11px] text-admin-foreground/50">

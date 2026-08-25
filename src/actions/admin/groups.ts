@@ -1,8 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth/session";
+import { isAdmin, requireRole } from "@/lib/auth/session";
+import { canTouchGroup, requireStaff } from "@/lib/auth/staff";
+import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
 import { createGroup, getGroupById, setGroupActive, updateGroup } from "@/repositories/groups";
 import { enrollStudent, unenrollStudent } from "@/repositories/enrollments";
@@ -47,7 +48,7 @@ export async function createGroupAction(
     entityId: result.groupId,
   });
 
-  revalidatePath("/admin/turmas");
+  revalidateStaffPath("/turmas");
   redirect(`/admin/turmas/${result.groupId}`);
 }
 
@@ -62,7 +63,9 @@ export async function enrollStudentAction(
   studentId: string,
   options: { transfer?: boolean } = {},
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await canTouchGroup(ctx, groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
 
   const parsed = createEnrollmentSchema.safeParse({ studentId });
   if (!parsed.success) {
@@ -88,9 +91,9 @@ export async function enrollStudentAction(
     metadata: { studentId: parsed.data.studentId },
   });
 
-  revalidatePath(`/admin/turmas/${groupId}`);
-  revalidatePath("/admin/turmas");
-  revalidatePath("/admin/alunos");
+  revalidateStaffPath(`/turmas/${groupId}`);
+  revalidateStaffPath("/turmas");
+  revalidateStaffPath("/alunos");
   return ok(undefined as never);
 }
 
@@ -98,7 +101,9 @@ export async function unenrollStudentAction(
   groupId: string,
   enrollmentId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await canTouchGroup(ctx, groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
 
   const success = await unenrollStudent(enrollmentId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");
@@ -113,14 +118,13 @@ export async function unenrollStudentAction(
     metadata: { enrollmentId },
   });
 
-  revalidatePath(`/admin/turmas/${groupId}`);
+  revalidateStaffPath(`/turmas/${groupId}`);
   return ok(undefined as never);
 }
 
 /**
- * Edição de turma pelo admin. Espelha a `updateGroupAction` da área logada,
- * mas sem checagem de posse: o admin coordena todas as turmas, então a única
- * regra aqui é o papel.
+ * Edição de turma pelo painel. O admin coordena todas; o professor só mexe
+ * na própria (`canTouchGroup`) e nunca no responsável.
  *
  * `schedule` só viaja quando o construtor de horários está montado — ausente
  * significa "não mexi na grade", e o repositório usa isso para não regerar
@@ -130,7 +134,12 @@ export async function updateGroupAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+
+  const groupId = formData.get("id");
+  if (typeof groupId !== "string") return fail("VALIDATION_ERROR", "Turma inválida.");
+  if (!(await canTouchGroup(ctx, groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
 
   const parsed = updateGroupSchema.safeParse({
     id: formData.get("id"),
@@ -152,7 +161,11 @@ export async function updateGroupAction(
     );
   }
 
-  const result = await updateGroup(parsed.data);
+  // Só a coordenação reatribui o responsável — o professor edita a própria
+  // turma, mas não decide de quem ela passa a ser.
+  const input = isAdmin(ctx) ? parsed.data : { ...parsed.data, teacherId: undefined };
+
+  const result = await updateGroup(input);
   if (!result.success)
     return fail("INTERNAL_ERROR", result.message ?? "Falha ao salvar a turma.");
 
@@ -165,8 +178,8 @@ export async function updateGroupAction(
     entityId: parsed.data.id,
   });
 
-  revalidatePath("/admin/turmas");
-  revalidatePath(`/admin/turmas/${parsed.data.id}`);
+  revalidateStaffPath("/turmas");
+  revalidateStaffPath(`/turmas/${parsed.data.id}`);
   return ok(undefined as never);
 }
 
@@ -180,7 +193,9 @@ export async function removeScheduleEntryAction(
   groupId: string,
   entry: { weekday: number; start: string; end: string },
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await canTouchGroup(ctx, groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
 
   const group = await getGroupById(groupId);
   if (!group) return fail("NOT_FOUND", "Turma não encontrada.");
@@ -220,8 +235,8 @@ export async function removeScheduleEntryAction(
     metadata: { removedScheduleEntry: entry },
   });
 
-  revalidatePath("/admin/turmas");
-  revalidatePath(`/admin/turmas/${groupId}`);
+  revalidateStaffPath("/turmas");
+  revalidateStaffPath(`/turmas/${groupId}`);
   return ok(undefined as never);
 }
 
@@ -248,7 +263,7 @@ export async function setGroupActiveAction(
     metadata: { isActive },
   });
 
-  revalidatePath("/admin/turmas");
-  revalidatePath(`/admin/turmas/${groupId}`);
+  revalidateStaffPath("/turmas");
+  revalidateStaffPath(`/turmas/${groupId}`);
   return ok(undefined as never);
 }

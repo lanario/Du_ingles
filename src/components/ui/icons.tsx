@@ -439,3 +439,31 @@ export function TrendDownIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** Selo de ritmo recomendado, no seletor de planos. */
+export function StarIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8Z" />
+    </Icon>
+  );
+}
+
+/** Navegação entre passos do construtor de planos. */
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 5.5 15.5 12 9 18.5" />
+    </Icon>
+  );
+}
+
+/** Cadeado aberto — usada para ilustrar "sem fidelidade" no compromisso mensal. */
+export function SparkleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3.5c.6 3 2.1 4.5 5.1 5.1-3 .6-4.5 2.1-5.1 5.1-.6-3-2.1-4.5-5.1-5.1 3-.6 4.5-2.1 5.1-5.1Z" />
+      <path d="M18.5 15.5c.3 1.5 1 2.2 2.5 2.5-1.5.3-2.2 1-2.5 2.5-.3-1.5-1-2.2-2.5-2.5 1.5-.3 2.2-1 2.5-2.5Z" />
+    </Icon>
+  );
+}

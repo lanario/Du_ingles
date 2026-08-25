@@ -5,6 +5,7 @@ import { recordAttendanceAction } from "@/actions/teacher/live-session";
 import { FormBanner } from "@/components/ui/form-message";
 import type { AttendanceRow } from "@/repositories/attendance";
 import type { AttendanceStatus } from "@/types/domain";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: "present", label: "Presente" },
@@ -99,7 +100,14 @@ export function AttendancePanel({
           disabled={isPending}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {isPending ? "Salvando…" : "Salvar chamada"}
+          {isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <LogoLoader size={16} label={null} />
+              Salvando…
+            </span>
+          ) : (
+            "Salvar chamada"
+          )}
         </button>
         {saved && <span className="text-sm text-muted-foreground">Chamada salva.</span>}
       </div>

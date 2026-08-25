@@ -22,7 +22,7 @@ export default async function TarefasPage({ searchParams }: PageProps) {
         <div>
           <h1 className="text-2xl font-semibold text-navy-900">Tarefas</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            O que seus professores esperam de você, por prazo.
+            Responda aqui mesmo. O que venceu aparece primeiro.
           </p>
         </div>
         <StudentAssignments assignments={assignments} />

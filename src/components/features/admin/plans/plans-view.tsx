@@ -572,9 +572,9 @@ function ViewToggle({
  */
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   const examples = [
-    { name: "Essencial", price: "R$ 249/mês", detail: "4 aulas em grupo", accent: "navy" as const },
-    { name: "Premium", price: "R$ 449/mês", detail: "8 aulas + conversação", accent: "gold" as const },
-    { name: "Intensivo", price: "R$ 799/mês", detail: "aulas individuais", accent: "emerald" as const },
+    { name: "Standard", price: "R$ 249,90/mês", detail: "1x por semana, em grupo", accent: "navy" as const },
+    { name: "Premium", price: "R$ 499,90/mês", detail: "2x/semana + 1 aula individual", accent: "gold" as const },
+    { name: "Elite", price: "R$ 999,90/mês", detail: "3x/semana + 2 aulas individuais", accent: "violet" as const },
   ];
 
   return (
@@ -610,14 +610,16 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={onCreate}
-        className="mt-7 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-navy-800 to-navy-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
-      >
-        <PlusIcon className="h-4 w-4" />
-        Criar o primeiro plano
-      </button>
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={onCreate}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-navy-800 to-navy-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Criar plano avulso
+        </button>
+      </div>
     </motion.div>
   );
 }

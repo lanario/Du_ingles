@@ -13,13 +13,16 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { removeScheduleEntryAction } from "@/actions/admin/groups";
-import { CalendarIcon, GraduationIcon, PencilIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons";
+import { CalendarIcon, GraduationIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import { WEEKDAY_LONG, type Group } from "./groups-utils";
 import type { EnrollmentListItem } from "@/repositories/enrollments";
 import type { ScheduleEntry } from "@/schemas/groups";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 /** Segunda a domingo, como o resto da grade da escola — semana começa em sala de aula, não no calendário ISO. */
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -113,6 +116,7 @@ function SlotCard({
 }) {
   const { group, entry } = slot;
   const reduceMotion = useReducedMotion();
+  const { base } = useArea();
   const [isRemoving, startRemove] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -169,7 +173,7 @@ function SlotCard({
               className="rounded-md p-1 text-admin-foreground/35 transition-colors hover:bg-destructive/10 hover:text-destructive focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:pointer-events-none disabled:opacity-50"
             >
               {isRemoving ? (
-                <SpinnerIcon className="h-3.5 w-3.5 animate-spin" />
+                <LogoLoader size={14} label={null} />
               ) : (
                 <TrashIcon className="h-3.5 w-3.5" />
               )}
@@ -179,7 +183,7 @@ function SlotCard({
       </div>
 
       <Link
-        href={`/admin/turmas/${group.id}`}
+        href={`${base}/turmas/${group.id}` as Route}
         className="mt-1 block truncate text-sm font-semibold text-admin-foreground transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
       >
         {group.name}

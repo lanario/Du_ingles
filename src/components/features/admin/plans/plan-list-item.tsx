@@ -19,6 +19,7 @@ import {
   formatMoney,
   type StudentPlan,
 } from "./plans-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 export const LIST_GRID =
   "grid grid-cols-[1.6fr_0.9fr_0.8fr_1fr_0.9fr_0.8fr_auto] items-center gap-3";
@@ -73,10 +74,11 @@ export function PlanListItem({
         "cursor-pointer border-b border-admin-border bg-admin-surface px-4 py-3 text-sm transition-colors last:border-0",
         "hover:bg-admin-muted/60",
         menuOpen && "relative z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !plan.isActive && "opacity-70",
       )}
     >
+      {busy && <LoadingVeil label={null} size={22} />}
       <div className="flex min-w-0 items-center gap-2.5">
         <span
           aria-hidden

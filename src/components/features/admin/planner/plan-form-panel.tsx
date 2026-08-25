@@ -15,11 +15,11 @@ import { SidePanel } from "@/components/ui/side-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
-import { SpinnerIcon } from "@/components/ui/icons";
 import { CEFR_LEVELS } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import { LEVEL_HINT } from "./planner-utils";
 import type { PlannerPlan } from "@/repositories/lesson-planner";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const DURATIONS = [30, 45, 60, 90, 120];
 
@@ -191,7 +191,7 @@ export function PlanFormPanel({
           >
             {isPending ? (
               <>
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                <LogoLoader size={16} label={null} />
                 Salvando…
               </>
             ) : plan ? (

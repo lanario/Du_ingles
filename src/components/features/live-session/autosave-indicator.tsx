@@ -1,4 +1,5 @@
 import type { AutosaveStatus } from "@/hooks/use-autosave";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const LABEL: Record<AutosaveStatus, string> = {
   idle: "",
@@ -27,10 +28,13 @@ export function AutosaveIndicator({
       role="status"
       className={
         status === "error"
-          ? "text-sm font-medium text-destructive"
-          : "text-sm text-muted-foreground"
+          ? "inline-flex items-center gap-2 text-sm font-medium text-destructive"
+          : "inline-flex items-center gap-2 text-sm text-muted-foreground"
       }
     >
+      {/* Só o salvamento em curso ganha a marca; "salvo" e "não salvo" são
+          estados parados, e um loader neles diria o contrário. */}
+      {status === "saving" && <LogoLoader size={14} label={null} />}
       {text}
     </span>
   );

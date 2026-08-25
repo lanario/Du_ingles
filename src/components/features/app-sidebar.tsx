@@ -467,7 +467,7 @@ function Sidebar({
               avatarUrl={avatarUrl}
               profile={profile}
               theme="app"
-              securityHref="/seguranca"
+              dataHref="/meus-dados"
               compact
               className="mt-1"
             />
@@ -656,7 +656,7 @@ function NavMobile({
                   avatarUrl={avatarUrl}
                   profile={profile}
                   theme="app"
-                  securityHref="/seguranca"
+                  dataHref="/meus-dados"
                 />
               </div>
             </motion.nav>

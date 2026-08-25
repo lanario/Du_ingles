@@ -16,8 +16,9 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { SpinnerIcon, SwapIcon } from "@/components/ui/icons";
+import { SwapIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export interface EnrollmentConflict {
   studentName: string;
@@ -169,7 +170,7 @@ function Panel({
               : "bg-navy-900 text-white",
           )}
         >
-          {busy && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+          {busy && <LogoLoader size={16} label={null} />}
           {busy ? "Movendo…" : "Mover para esta turma"}
         </button>
       </div>

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { AppSidebar } from "@/components/features/app-sidebar";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,10 @@ import { getMyProfile } from "@/repositories/users";
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireRole(["teacher", "student"]);
+  // Esta área é do aluno. O professor tem a própria (`/professor`), com as
+  // telas do painel recortadas para ele — e não transita entre as duas.
+  if (ctx.effectiveRole === "teacher") redirect("/professor");
+
   const [notifications, unreadCount, profile] = await Promise.all([
     listNotifications(),
     countUnreadNotifications(),

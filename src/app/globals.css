@@ -1188,3 +1188,460 @@ body {
     transition-delay: 0s;
   }
 }
+
+/*
+ * Botão de download da Biblioteca.
+ *
+ * Três estados encadeados, cada um com uma leitura própria: em repouso é uma
+ * pílula com o disco à esquerda; ao pedir o link a pílula encolhe para o
+ * próprio disco, que gira, é preenchido de baixo para cima e ganha um ponto
+ * dourado orbitando a borda; ao terminar, o disco sai de cena e a pílula
+ * reabre já dourada com a confirmação. O estado vem de `data-state` escrito
+ * pelo React — a duração do preenchimento acompanha a espera real da signed
+ * URL, com um piso para o ciclo não virar um flash.
+ */
+.dl-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 172px;
+  padding: 4px;
+  border: 2px solid var(--navy-700);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    width 0.4s ease,
+    border-color 0.4s ease,
+    background-color 0.4s ease;
+}
+
+.dl-btn:disabled {
+  cursor: default;
+}
+
+.dl-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Ponto que orbita a borda enquanto o link é gerado. */
+.dl-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 100%;
+  background: var(--gold-500);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.dl-btn__circle {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--navy-700);
+  box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.6);
+  transition:
+    rotate 0.4s ease,
+    width 0.35s ease,
+    scale 0.35s ease,
+    opacity 0.3s ease,
+    background-color 0.3s ease;
+}
+
+/* Coluna que sobe preenchendo o disco — a "barra de progresso" do botão. */
+.dl-btn__circle::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 0;
+  background: var(--gold-500);
+}
+
+.dl-btn__icon,
+.dl-btn__square {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  transition: opacity 0.3s ease;
+}
+
+.dl-btn__icon {
+  width: 20px;
+  height: 20px;
+  color: #fff;
+}
+
+.dl-btn__square {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #fff;
+  opacity: 0;
+}
+
+.dl-btn__label {
+  min-width: 0;
+  flex: 1;
+  padding-inline: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--navy-900);
+  transition:
+    opacity 0.3s ease,
+    color 0.4s ease;
+}
+
+/* --- repouso ------------------------------------------------------------ */
+.dl-btn[data-state="idle"]:hover {
+  border-color: var(--gold-500);
+}
+
+.dl-btn[data-state="idle"]:hover .dl-btn__circle {
+  background: var(--navy-900);
+  scale: 1.06;
+}
+
+/* --- gerando o link ----------------------------------------------------- */
+.dl-btn[data-state="loading"] {
+  width: 52px;
+}
+
+.dl-btn[data-state="loading"]::before {
+  animation: dlOrbit 1.2s linear infinite;
+}
+
+.dl-btn[data-state="loading"] .dl-btn__circle {
+  rotate: 180deg;
+  animation: dlPulse 1.1s ease-out infinite;
+}
+
+.dl-btn[data-state="loading"] .dl-btn__circle::before {
+  animation: dlFill var(--dl-duration, 1.2s) ease-in-out forwards;
+}
+
+.dl-btn[data-state="loading"] .dl-btn__icon,
+.dl-btn[data-state="loading"] .dl-btn__label {
+  opacity: 0;
+}
+
+.dl-btn[data-state="loading"] .dl-btn__square {
+  opacity: 1;
+}
+
+/* --- concluído ---------------------------------------------------------- */
+.dl-btn[data-state="done"] {
+  width: 158px;
+  border-color: var(--gold-500);
+  background: var(--gold-50);
+}
+
+.dl-btn[data-state="done"] .dl-btn__circle {
+  width: 0;
+  scale: 0.4;
+  opacity: 0;
+}
+
+.dl-btn[data-state="done"] .dl-btn__label {
+  color: var(--gold-700);
+  animation: dlLabelIn 0.4s ease forwards;
+}
+
+/* --- falha -------------------------------------------------------------- */
+.dl-btn[data-state="error"] {
+  border-color: var(--destructive);
+}
+
+.dl-btn[data-state="error"] .dl-btn__circle {
+  background: var(--destructive);
+}
+
+.dl-btn[data-state="error"] .dl-btn__label {
+  color: var(--destructive);
+}
+
+@keyframes dlFill {
+  from {
+    height: 0;
+  }
+  to {
+    height: 100%;
+  }
+}
+
+@keyframes dlPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(201, 162, 39, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 162, 39, 0);
+  }
+}
+
+@keyframes dlOrbit {
+  from {
+    transform: rotate(-90deg) translate(26px);
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    transform: rotate(270deg) translate(26px);
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@keyframes dlLabelIn {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/*
+ * Sem animação: os três estados continuam legíveis pela cor e pelo rótulo,
+ * que é o que de fato informa o resultado.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dl-btn,
+  .dl-btn__circle,
+  .dl-btn__label {
+    transition-duration: 0.01ms;
+  }
+
+  .dl-btn::before,
+  .dl-btn__circle,
+  .dl-btn__circle::before,
+  .dl-btn[data-state="done"] .dl-btn__label {
+    animation: none;
+  }
+
+  .dl-btn[data-state="loading"] .dl-btn__circle::before {
+    height: 100%;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Logo loader
+ * ---------------------------------------------------------------------------
+ * A marca se desenha sozinha: uma camada preenchida que apaga e volta, e por
+ * cima um traço que percorre o contorno de cada forma. O `pathLength="360"`
+ * aplicado a cada `path` no componente normaliza comprimentos muito
+ * diferentes — sem ele o pontinho do "i" completaria a volta dezenas de vezes
+ * enquanto o "D" ainda estivesse no primeiro terço.
+ *
+ * Ciclo de 4s no traço; o preenchimento usa o dobro, para que a marca não
+ * pisque a cada volta.
+ */
+.du-loader {
+  --du-speed: 4s;
+  --du-navy: var(--navy-800);
+  --du-gold: var(--gold-500);
+  --du-stroke: 40;
+
+  display: block;
+  width: var(--du-size, 6rem);
+  height: var(--du-size, 6rem);
+  overflow: visible;
+  flex: none;
+}
+
+.du-loader svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.du-loader .du-fill path {
+  animation: du-fill calc(var(--du-speed) * 2) ease-in-out infinite;
+}
+
+.du-loader .du-fill .du-navy {
+  fill: var(--du-navy);
+}
+
+.du-loader .du-fill .du-gold {
+  fill: var(--du-gold);
+}
+
+.du-loader .du-dash path {
+  fill: none;
+  stroke-width: var(--du-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation:
+    du-dash-array var(--du-speed) ease-in-out infinite,
+    du-dash-offset var(--du-speed) linear infinite;
+}
+
+.du-loader .du-dash .du-navy {
+  stroke: var(--du-navy);
+}
+
+/* O dourado é o acento: traço um pouco mais grosso para não sumir ao lado
+   das formas grandes em azul marinho. */
+.du-loader .du-dash .du-gold {
+  stroke: var(--du-gold);
+  stroke-width: calc(var(--du-stroke) * 1.4);
+}
+
+/* As seis formas não partem juntas — o atraso em cascata faz o traço
+   atravessar a marca da esquerda para a direita em vez de acender tudo de
+   uma vez. */
+.du-loader .du-dash path:nth-child(2) {
+  animation-delay: calc(var(--du-speed) * -0.08), calc(var(--du-speed) * -0.08);
+}
+.du-loader .du-dash path:nth-child(3) {
+  animation-delay: calc(var(--du-speed) * -0.16), calc(var(--du-speed) * -0.16);
+}
+.du-loader .du-dash path:nth-child(4) {
+  animation-delay: calc(var(--du-speed) * -0.24), calc(var(--du-speed) * -0.24);
+}
+.du-loader .du-dash path:nth-child(5) {
+  animation-delay: calc(var(--du-speed) * -0.32), calc(var(--du-speed) * -0.32);
+}
+.du-loader .du-dash path:nth-child(6) {
+  animation-delay: calc(var(--du-speed) * -0.4), calc(var(--du-speed) * -0.4);
+}
+
+/* Sobre chrome escuro (sidebar navy, botão primário) o azul marinho da marca
+   desapareceria: ali as duas camadas herdam a cor do texto. */
+.du-loader[data-tone="current"] {
+  --du-navy: currentColor;
+  --du-gold: currentColor;
+}
+
+/* Versão da marca para fundos navy: o azul marinho vira o azul claro da
+   escala e o dourado sobe um tom — as duas cores continuam se distinguindo. */
+.du-loader[data-tone="light"] {
+  --du-navy: var(--navy-100);
+  --du-gold: var(--gold-400);
+}
+
+@keyframes du-dash-array {
+  0% {
+    stroke-dasharray: 0 1 359 0;
+  }
+  50% {
+    stroke-dasharray: 0 359 1 0;
+  }
+  100% {
+    stroke-dasharray: 359 1 0 0;
+  }
+}
+
+@keyframes du-dash-offset {
+  0% {
+    stroke-dashoffset: -5;
+  }
+  100% {
+    stroke-dashoffset: -365;
+  }
+}
+
+@keyframes du-fill {
+  0%,
+  100% {
+    fill-opacity: 1;
+  }
+  30%,
+  55% {
+    fill-opacity: 0;
+  }
+}
+
+/* Sem animação a marca fica sólida e parada: o `aria-busy` e o rótulo já
+   dizem que algo está carregando. */
+@media (prefers-reduced-motion: reduce) {
+  .du-loader .du-fill path,
+  .du-loader .du-dash path {
+    animation: none;
+  }
+
+  .du-loader .du-dash {
+    display: none;
+  }
+}
+
+/*
+ * Véu de carregamento. Cobre a área que está sendo recarregada e desfoca o
+ * que está atrás — o usuário continua vendo a forma da tela (a coluna, o
+ * cabeçalho, a tabela) sem conseguir ler dados que já podem estar velhos.
+ */
+.du-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  backdrop-filter: blur(6px) saturate(115%);
+  -webkit-backdrop-filter: blur(6px) saturate(115%);
+  animation: du-veil-in 180ms ease-out both;
+}
+
+.du-veil[data-fixed="true"] {
+  position: fixed;
+}
+
+/* Sobre chrome navy (telas de acesso, sala ao vivo) o véu escurece em vez de
+   clarear — um leite branco ali apagaria o fundo institucional. */
+.du-veil[data-surface="dark"] {
+  background: color-mix(in srgb, var(--navy-950) 55%, transparent);
+  color: var(--navy-100);
+}
+
+.du-veil[data-surface="dark"] .du-veil__label {
+  color: var(--navy-100);
+}
+
+/* O canvas do admin é branco puxado para azul; um véu branco puro sobre ele
+   apareceria como um degrau na altura do desfoque. */
+[data-admin-theme] .du-veil {
+  background: color-mix(in srgb, var(--navy-50) 62%, transparent);
+}
+
+.du-veil__label {
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  color: var(--muted-foreground, #5b6b85);
+}
+
+@keyframes du-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .du-veil {
+    animation: none;
+  }
+}

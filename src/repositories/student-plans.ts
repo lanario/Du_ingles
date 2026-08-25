@@ -1,6 +1,13 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import type { StudentPlanInput, PlanAccent, PlanInterval } from "@/schemas/student-plans";
+import type {
+  StudentPlanInput,
+  PlanAccent,
+  PlanInterval,
+  PlanTier,
+  PlanWeeklyFrequency,
+} from "@/schemas/student-plans";
+import type { TierPlanSeed } from "@/lib/plans/tier-catalog";
 import type { Database } from "@/types/database.types";
 import type { CefrLevel } from "@/types/domain";
 
@@ -24,6 +31,8 @@ export interface StudentPlan {
   minutesPerLesson: number | null;
   level: CefrLevel | null;
   seatLimit: number | null;
+  tier: PlanTier | null;
+  weeklyFrequency: PlanWeeklyFrequency | null;
 
   accent: PlanAccent;
   badge: string | null;
@@ -69,6 +78,8 @@ function mapRow(row: Row, activeSubscribers = 0): StudentPlan {
     minutesPerLesson: row.minutes_per_lesson,
     level: row.level,
     seatLimit: row.seat_limit,
+    tier: row.tier as PlanTier | null,
+    weeklyFrequency: row.weekly_frequency as PlanWeeklyFrequency | null,
     accent: row.accent as PlanAccent,
     badge: row.badge,
     isFeatured: row.is_featured,
@@ -185,12 +196,64 @@ function toRow(input: StudentPlanInput) {
     minutes_per_lesson: input.minutesPerLesson ?? null,
     level: (input.level ?? null) as CefrLevel | null,
     seat_limit: input.seatLimit ?? null,
+    tier: input.tier ?? null,
+    weekly_frequency: input.weeklyFrequency ?? null,
     accent: input.accent,
     badge: input.badge ?? null,
     is_featured: input.isFeatured,
     is_public: input.isPublic,
     sort_order: input.sortOrder,
   };
+}
+
+/**
+ * Cria em lote as combinações nível × ritmo × compromisso que ainda não
+ * existem no catálogo. Uma única escrita (não uma por plano) porque a grade é
+ * gerada de uma vez só; nada aqui precisa da granularidade de
+ * `createStudentPlan`.
+ *
+ * Devolve o erro do banco em vez de uma lista vazia: sem ele, uma coluna que
+ * falta (migration pendente) e "não havia nada a criar" chegavam na tela como
+ * a mesma mensagem genérica, sem pista do motivo.
+ */
+export async function createManyStudentPlans(
+  seeds: TierPlanSeed[],
+  organizationId: string,
+  createdBy: string,
+): Promise<{ plans: StudentPlan[]; error: string | null }> {
+  if (seeds.length === 0) return { plans: [], error: null };
+
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("student_plans")
+    .insert(
+      seeds.map((seed) => ({
+        name: seed.name,
+        headline: seed.headline,
+        description: seed.description,
+        features: seed.features,
+        price_cents: seed.priceCents,
+        billing_interval: seed.billingInterval,
+        setup_fee_cents: 0,
+        trial_days: 0,
+        tier: seed.tier,
+        weekly_frequency: seed.weeklyFrequency,
+        accent: seed.accent,
+        badge: seed.badge,
+        is_featured: seed.isFeatured,
+        is_public: true,
+        is_active: true,
+        sort_order: seed.sortOrder,
+        organization_id: organizationId,
+        created_by: createdBy,
+      })),
+    )
+    .select("*");
+
+  if (error || !data) {
+    return { plans: [], error: error?.message ?? "Erro desconhecido ao inserir os planos." };
+  }
+  return { plans: data.map((row) => mapRow(row)), error: null };
 }
 
 export async function createStudentPlan(

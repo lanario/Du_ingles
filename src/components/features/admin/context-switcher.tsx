@@ -1,11 +1,10 @@
 import { enterViewAsModeAction, exitViewAsModeAction } from "@/actions/admin/view-as";
 import { cn } from "@/lib/utils";
 
-export type ViewContext = "admin" | "teacher" | "student";
+export type ViewContext = "admin" | "student";
 
 const LABELS: Record<ViewContext, string> = {
   admin: "Admin",
-  teacher: "Professor",
   student: "Aluno",
 };
 
@@ -14,9 +13,9 @@ const LABELS: Record<ViewContext, string> = {
  * Action — sem JS no cliente e sem estado local, então o contexto exibido é
  * sempre o que o cookie assinado diz, nunca o que o React acha que é.
  *
- * Voltar para "Admin" apaga o cookie (`exitViewAsModeAction`); os outros dois
- * o reemitem com o papel escolhido. Trocar direto de Professor para Aluno
- * funciona porque a ação sobrescreve o cookie existente.
+ * Voltar para "Admin" apaga o cookie (`exitViewAsModeAction`); "Aluno" o
+ * reemite. O professor não aparece aqui: virou área própria (`/professor`),
+ * com papel de verdade, não um contexto que o admin veste.
  */
 export function ContextSwitcher({
   current,

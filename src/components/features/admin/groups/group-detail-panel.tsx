@@ -24,7 +24,9 @@ import {
   PowerIcon,
   UserIcon,
 } from "@/components/ui/icons";
+import type { Route } from "next";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import {
   GroupStatusPill,
   LevelPill,
@@ -61,6 +63,7 @@ export function GroupDetailPanel({
   busy,
 }: GroupDetailPanelProps) {
   const reduceMotion = useReducedMotion();
+  const { base, canManageGroups } = useArea();
 
   return (
     <SidePanel
@@ -91,17 +94,19 @@ export function GroupDetailPanel({
             <DetailButton
               icon={GroupsIcon}
               label="Abrir turma"
-              href={`/admin/turmas/${group.id}`}
+              href={`${base}/turmas/${group.id}` as Route}
               tone="accent"
             />
             <DetailButton icon={PencilIcon} label="Editar" onClick={onEdit} disabled={busy} />
-            <DetailButton
-              icon={PowerIcon}
-              label={group.isActive ? "Arquivar" : "Reativar"}
-              onClick={onToggleActive}
-              disabled={busy}
-              tone={group.isActive ? "danger" : "accent"}
-            />
+            {canManageGroups && (
+              <DetailButton
+                icon={PowerIcon}
+                label={group.isActive ? "Arquivar" : "Reativar"}
+                onClick={onToggleActive}
+                disabled={busy}
+                tone={group.isActive ? "danger" : "accent"}
+              />
+            )}
           </DetailActions>
 
           <DetailSection title="Grade semanal">

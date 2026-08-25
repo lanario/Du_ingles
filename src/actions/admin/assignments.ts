@@ -1,10 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth/session";
+import { canTouchGroup, canTouchGroups, requireStaff } from "@/lib/auth/staff";
+import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
 import * as repo from "@/repositories/assignments";
-import { createPlannerAssignmentSchema } from "@/schemas/assignments";
+import {
+  createExerciseAssignmentSchema,
+  gradeSubmissionSchema,
+} from "@/schemas/assignments";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -13,18 +17,19 @@ import { fail, ok, type ActionResult } from "@/types/action-result";
  * linha própria, então a nota e as entregas seguem independentes por turma.
  */
 
-const PLANNER_PATH = "/admin/planejador";
+const PLANNER_SUFFIX = "/planejador";
 
 export async function createPlannerAssignmentAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
-  const parsed = createPlannerAssignmentSchema.safeParse({
+  const parsed = createExerciseAssignmentSchema.safeParse({
     groupIds: formData.getAll("groupIds"),
     title: formData.get("title"),
     instructions: formData.get("instructions") || undefined,
+    questions: formData.get("questions") || undefined,
     dueAt: formData.get("dueAt") || undefined,
     maxScore: formData.get("maxScore") || undefined,
   });
@@ -36,10 +41,14 @@ export async function createPlannerAssignmentAction(
     );
   }
 
+  if (!(await canTouchGroups(ctx, parsed.data.groupIds)))
+    return fail("FORBIDDEN", "Só dá para criar tarefa nas suas turmas.");
+
   const success = await repo.createAssignmentsForGroups({
     groupIds: parsed.data.groupIds,
     title: parsed.data.title,
     instructions: parsed.data.instructions,
+    questions: parsed.data.questions,
     dueAt: parsed.data.dueAt,
     maxScore: parsed.data.maxScore,
     organizationId: ctx.organizationId,
@@ -56,7 +65,7 @@ export async function createPlannerAssignmentAction(
     metadata: { groupIds: parsed.data.groupIds, title: parsed.data.title },
   });
 
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(PLANNER_SUFFIX);
   revalidatePath("/tarefas");
   return ok(undefined as never);
 }
@@ -64,7 +73,14 @@ export async function createPlannerAssignmentAction(
 export async function deletePlannerAssignmentAction(
   assignmentId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+
+  // A tarefa precisa ser de uma turma de quem apaga — `deletePlannerAssignment`
+  // só confere a escola.
+  const assignment = await repo.getOrgAssignmentById(assignmentId, ctx.organizationId);
+  if (!assignment) return fail("NOT_FOUND", "Tarefa não encontrada.");
+  if (!(await canTouchGroup(ctx, assignment.groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
 
   const success = await repo.deletePlannerAssignment(assignmentId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir a tarefa.");
@@ -78,7 +94,69 @@ export async function deletePlannerAssignmentAction(
     entityId: assignmentId,
   });
 
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(PLANNER_SUFFIX);
   revalidatePath("/tarefas");
+  return ok(undefined as never);
+}
+
+/**
+ * Correção pelo admin. O professor tem a sua própria ação (que se autoriza
+ * pelo RLS de dono da turma); aqui o recorte é a escola: a tarefa precisa ser
+ * da mesma organização de quem está corrigindo, e é isso que
+ * `getOrgAssignmentById` confirma antes de qualquer escrita.
+ */
+export async function gradeSubmissionAsAdminAction(
+  assignmentId: string,
+  studentId: string,
+  _prev: ActionResult<never> | null,
+  formData: FormData,
+): Promise<ActionResult<never>> {
+  const ctx = await requireStaff();
+
+  const parsed = gradeSubmissionSchema.safeParse({
+    score: formData.get("score"),
+    feedback: formData.get("feedback") || undefined,
+  });
+  if (!parsed.success) {
+    return fail(
+      "VALIDATION_ERROR",
+      "Verifique a nota.",
+      parsed.error.flatten().fieldErrors,
+    );
+  }
+
+  const assignment = await repo.getOrgAssignmentById(assignmentId, ctx.organizationId);
+  if (!assignment) return fail("NOT_FOUND", "Tarefa não encontrada.");
+  if (!(await canTouchGroup(ctx, assignment.groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
+
+  if (assignment.maxScore != null && parsed.data.score > assignment.maxScore) {
+    return fail("VALIDATION_ERROR", `A nota máxima desta tarefa é ${assignment.maxScore}.`, {
+      score: [`Use um valor entre 0 e ${assignment.maxScore}.`],
+    });
+  }
+
+  const success = await repo.gradeSubmission(
+    assignmentId,
+    studentId,
+    ctx.userId,
+    parsed.data.score,
+    parsed.data.feedback,
+  );
+  if (!success) return fail("INTERNAL_ERROR", "Falha ao salvar a nota.");
+
+  await auditLog({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    action: "SUBMISSION_GRADE",
+    entityType: "assignment",
+    entityId: assignmentId,
+    metadata: { studentId },
+  });
+
+  revalidateStaffPath(PLANNER_SUFFIX);
+  revalidateStaffPath(`${PLANNER_SUFFIX}/tarefa/${assignmentId}`);
+  revalidatePath(`/tarefas/${assignmentId}`);
   return ok(undefined as never);
 }

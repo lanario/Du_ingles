@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import type { Route } from "next";
 import { after } from "next/server";
 import { fromZonedTime } from "date-fns-tz";
-import { requireRole } from "@/lib/auth/session";
+import { isAdmin } from "@/lib/auth/session";
+import { canTouchGroup, requireStaff, staffBase } from "@/lib/auth/staff";
+import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
 import { generateSessionPdf } from "@/lib/pdf/generate";
 import * as planner from "@/repositories/lesson-planner";
@@ -21,16 +23,45 @@ import type { Json } from "@/types/database.types";
 /** Fuso da escola — data e hora digitadas no formulário são locais, não UTC. */
 const TZ = "America/Sao_Paulo";
 
-const PLANNER_PATH = "/admin/planejador";
+const PLANNER_SUFFIX = "/planejador";
 
 /**
- * Toda action aqui exige admin e confirma que a entidade pertence à
- * organização de quem chama. As queries do repositório usam service-role
- * (ignoram RLS), então esse par papel + org É a autorização real.
+ * Toda action aqui exige coordenação ou professor e confirma que a entidade
+ * pertence à organização de quem chama. As queries do repositório usam
+ * service-role (ignoram RLS), então esse par papel + org É a autorização real.
+ *
+ * Para o professor há uma segunda trava, porque "mesma escola" não é o
+ * recorte dele: plano tem que ser de sua autoria, aula tem que ser sua e
+ * turma tem que ser sua (`canTouchGroup`). O admin passa em todas.
  */
 
 function toUtcIso(date: string, time: string): string {
   return fromZonedTime(`${date}T${time}:00`, TZ).toISOString();
+}
+
+/** Plano que quem chama pode reescrever: da escola e (se professor) dele. */
+async function loadWritablePlan(
+  ctx: Awaited<ReturnType<typeof requireStaff>>,
+  planId: string,
+) {
+  const plan = await planner.getPlannerPlan(planId, ctx.organizationId);
+  if (!plan) return null;
+  if (!isAdmin(ctx) && plan.authorId !== ctx.userId) return null;
+  return plan;
+}
+
+/**
+ * Aula que quem chama pode conduzir. O admin dá aula de qualquer turma (é
+ * quem cobre falta); o professor, só as suas.
+ */
+async function loadOwnedSession(
+  ctx: Awaited<ReturnType<typeof requireStaff>>,
+  sessionId: string,
+) {
+  const session = await planner.getPlannerSession(sessionId, ctx.organizationId);
+  if (!session) return null;
+  if (!isAdmin(ctx) && session.teacherId !== ctx.userId) return null;
+  return session;
 }
 
 // --------------------------------------------------------------- planos ----
@@ -39,7 +70,7 @@ export async function createPlannerPlanAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
   const parsed = plannerPlanSchema.safeParse({
     title: formData.get("title"),
@@ -72,8 +103,8 @@ export async function createPlannerPlanAction(
     entityId: id,
   });
 
-  revalidatePath(PLANNER_PATH);
-  redirect(`${PLANNER_PATH}/${id}`);
+  revalidateStaffPath(PLANNER_SUFFIX);
+  redirect(`${staffBase(ctx)}${PLANNER_SUFFIX}/${id}` as Route);
 }
 
 export async function updatePlannerPlanMetaAction(
@@ -81,7 +112,9 @@ export async function updatePlannerPlanMetaAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await loadWritablePlan(ctx, planId)))
+    return fail("FORBIDDEN", "Este plano não é seu.");
 
   const parsed = plannerPlanSchema.safeParse({
     title: formData.get("title"),
@@ -105,8 +138,8 @@ export async function updatePlannerPlanMetaAction(
   );
   if (!success) return fail("INTERNAL_ERROR", "Falha ao salvar.");
 
-  revalidatePath(PLANNER_PATH);
-  revalidatePath(`${PLANNER_PATH}/${planId}`);
+  revalidateStaffPath(PLANNER_SUFFIX);
+  revalidateStaffPath(`${PLANNER_SUFFIX}/${planId}`);
   return ok(undefined as never);
 }
 
@@ -115,7 +148,9 @@ export async function savePlannerPlanContentAction(
   planId: string,
   content: Json,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await loadWritablePlan(ctx, planId)))
+    return fail("FORBIDDEN", "Este plano não é seu.");
 
   const success = await planner.updatePlannerPlanContent(
     planId,
@@ -129,7 +164,13 @@ export async function savePlannerPlanContentAction(
 export async function duplicatePlannerPlanAction(
   planId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+
+  // Duplicar não escreve no original — basta poder lê-lo: o próprio, ou um
+  // compartilhado pela escola. A cópia nasce no nome de quem duplicou.
+  const source = await planner.getPlannerPlan(planId, ctx.organizationId);
+  if (!source || (!isAdmin(ctx) && source.authorId !== ctx.userId && !source.isShared))
+    return fail("NOT_FOUND", "Plano não encontrado.");
 
   const id = await planner.duplicatePlannerPlan(
     planId,
@@ -138,14 +179,16 @@ export async function duplicatePlannerPlanAction(
   );
   if (!id) return fail("INTERNAL_ERROR", "Falha ao duplicar.");
 
-  revalidatePath(PLANNER_PATH);
-  redirect(`${PLANNER_PATH}/${id}`);
+  revalidateStaffPath(PLANNER_SUFFIX);
+  redirect(`${staffBase(ctx)}${PLANNER_SUFFIX}/${id}` as Route);
 }
 
 export async function deletePlannerPlanAction(
   planId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await loadWritablePlan(ctx, planId)))
+    return fail("FORBIDDEN", "Este plano não é seu.");
 
   const success = await planner.deletePlannerPlan(planId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir.");
@@ -159,7 +202,7 @@ export async function deletePlannerPlanAction(
     entityId: planId,
   });
 
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(PLANNER_SUFFIX);
   return ok(undefined as never);
 }
 
@@ -169,7 +212,7 @@ export async function scheduleSessionAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
   const parsed = schedulePlannerSessionSchema.safeParse({
     groupId: formData.get("groupId"),
@@ -191,10 +234,15 @@ export async function scheduleSessionAction(
   const groups = await planner.listPlannerGroups(ctx.organizationId);
   const group = groups.find((item) => item.id === parsed.data.groupId);
   if (!group) return fail("NOT_FOUND", "Turma não encontrada.");
+  if (!(await canTouchGroup(ctx, parsed.data.groupId)))
+    return fail("FORBIDDEN", "Esta turma não é sua.");
 
   // Sem professor escolhido, a aula fica com o titular da turma — é quem
-  // aparece para o aluno e quem responde pela sessão nos relatórios.
-  const teacherId = parsed.data.teacherId ?? group.teacherId;
+  // aparece para o aluno e quem responde pela sessão nos relatórios. O
+  // professor agenda sempre para si: escalar outra pessoa é coordenação.
+  const teacherId = isAdmin(ctx)
+    ? (parsed.data.teacherId ?? group.teacherId)
+    : ctx.userId;
   if (!teacherId) return fail("VALIDATION_ERROR", "A turma não tem professor.");
 
   const id = await planner.schedulePlannerSession({
@@ -218,7 +266,7 @@ export async function scheduleSessionAction(
     metadata: { groupId: parsed.data.groupId },
   });
 
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(PLANNER_SUFFIX);
   return ok(undefined as never);
 }
 
@@ -227,7 +275,9 @@ export async function rescheduleSessionAction(
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await loadOwnedSession(ctx, sessionId)))
+    return fail("NOT_FOUND", "Aula não encontrada.");
 
   const parsed = rescheduleSessionSchema.safeParse({
     date: formData.get("date"),
@@ -250,14 +300,16 @@ export async function rescheduleSessionAction(
   );
   if (!success) return fail("CONFLICT", "Só é possível remarcar aula agendada.");
 
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(PLANNER_SUFFIX);
   return ok(undefined as never);
 }
 
 export async function cancelSessionAction(
   sessionId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
+  if (!(await loadOwnedSession(ctx, sessionId)))
+    return fail("NOT_FOUND", "Aula não encontrada.");
 
   const success = await planner.cancelPlannerSession(sessionId, ctx.organizationId);
   if (!success) return fail("CONFLICT", "Só é possível cancelar aula agendada.");
@@ -271,23 +323,19 @@ export async function cancelSessionAction(
     entityId: sessionId,
   });
 
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(PLANNER_SUFFIX);
   return ok(undefined as never);
 }
 
 // ---------------------------------------------------------- sala de aula ---
 
-async function loadOrgSession(sessionId: string, organizationId: string) {
-  return planner.getPlannerSession(sessionId, organizationId);
-}
-
 export async function startPlannerSessionAction(
   sessionId: string,
   lessonPlanId: string | null,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
-  const session = await loadOrgSession(sessionId, ctx.organizationId);
+  const session = await loadOwnedSession(ctx, sessionId);
   if (!session) return fail("NOT_FOUND", "Aula não encontrada.");
   if (session.status !== "scheduled")
     return fail("CONFLICT", "Esta aula já foi iniciada.");
@@ -306,7 +354,7 @@ export async function startPlannerSessionAction(
     entityId: sessionId,
   });
 
-  revalidatePath(`${PLANNER_PATH}/aula/${sessionId}`);
+  revalidateStaffPath(`${PLANNER_SUFFIX}/aula/${sessionId}`);
   return ok(undefined as never);
 }
 
@@ -316,9 +364,9 @@ export async function savePlannerSessionContentAction(
   teacherNotes?: string,
   homework?: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
-  const session = await loadOrgSession(sessionId, ctx.organizationId);
+  const session = await loadOwnedSession(ctx, sessionId);
   if (!session) return fail("NOT_FOUND", "Aula não encontrada.");
   if (session.status === "completed")
     return fail("CONFLICT", "Esta aula já foi encerrada.");
@@ -332,8 +380,8 @@ export async function savePlannerSessionVersionAction(
   sessionId: string,
   content: Json,
 ): Promise<void> {
-  const ctx = await requireRole(["admin"]);
-  const session = await loadOrgSession(sessionId, ctx.organizationId);
+  const ctx = await requireStaff();
+  const session = await loadOwnedSession(ctx, sessionId);
   if (!session) return;
   await live.saveVersion(sessionId, content, ctx.userId);
 }
@@ -342,8 +390,8 @@ export async function acquirePlannerLockAction(
   sessionId: string,
   clientId: string,
 ): Promise<{ acquired: boolean; heldBySomeoneElse: boolean }> {
-  const ctx = await requireRole(["admin"]);
-  const session = await loadOrgSession(sessionId, ctx.organizationId);
+  const ctx = await requireStaff();
+  const session = await loadOwnedSession(ctx, sessionId);
   if (!session) return { acquired: false, heldBySomeoneElse: false };
   return live.acquireLock(sessionId, clientId);
 }
@@ -351,9 +399,9 @@ export async function acquirePlannerLockAction(
 export async function endPlannerSessionAction(
   sessionId: string,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
-  const session = await loadOrgSession(sessionId, ctx.organizationId);
+  const session = await loadOwnedSession(ctx, sessionId);
   if (!session) return fail("NOT_FOUND", "Aula não encontrada.");
   if (session.status !== "in_progress")
     return fail("CONFLICT", "Esta aula não está em andamento.");
@@ -373,8 +421,8 @@ export async function endPlannerSessionAction(
   // Depois da resposta: o PDF não pode segurar a tela de quem acabou de dar aula.
   after(() => generateSessionPdf(sessionId));
 
-  revalidatePath(`${PLANNER_PATH}/aula/${sessionId}`);
-  revalidatePath(PLANNER_PATH);
+  revalidateStaffPath(`${PLANNER_SUFFIX}/aula/${sessionId}`);
+  revalidateStaffPath(PLANNER_SUFFIX);
   return ok(undefined as never);
 }
 
@@ -382,9 +430,9 @@ export async function recordPlannerAttendanceAction(
   sessionId: string,
   formData: FormData,
 ): Promise<ActionResult<never>> {
-  const ctx = await requireRole(["admin"]);
+  const ctx = await requireStaff();
 
-  const session = await loadOrgSession(sessionId, ctx.organizationId);
+  const session = await loadOwnedSession(ctx, sessionId);
   if (!session) return fail("NOT_FOUND", "Aula não encontrada.");
 
   let entries: unknown;
@@ -405,6 +453,6 @@ export async function recordPlannerAttendanceAction(
   );
   if (!success) return fail("INTERNAL_ERROR", "Falha ao salvar a chamada.");
 
-  revalidatePath(`${PLANNER_PATH}/aula/${sessionId}`);
+  revalidateStaffPath(`${PLANNER_SUFFIX}/aula/${sessionId}`);
   return ok(undefined as never);
 }

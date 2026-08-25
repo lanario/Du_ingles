@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
 import {
-  listActiveGroups,
   listAllGroups,
   listGroupsByIds,
   listGroupsByTeacher,
@@ -9,6 +8,7 @@ import {
 import {
   listActiveEnrollmentRefs,
   listEnrollmentsForGroups,
+  listGroupClassmates,
   listStudentEnrollments,
 } from "@/repositories/enrollments";
 import { listCourses } from "@/repositories/courses";
@@ -24,15 +24,15 @@ export const metadata: Metadata = { title: "Turmas" };
 export default async function TurmasPage() {
   const ctx = await requireRole(["teacher", "student"]);
 
-  // O admin vê a gestão completa (todas as turmas da escola, professor
-  // reatribuível) sempre — mesmo dentro de um "ver como" professor/aluno.
-  // A pré-visualização é uma lente sobre a UI de terceiros; o admin nunca
-  // perde a própria capacidade de gerir.
-  if (ctx.realRole === "admin") {
+  // "Ver como aluno" mostra a tela do aluno de verdade — só leitura. A gestão
+  // completa continua a um clique de distância no seletor de papel; o admin
+  // não perde capacidade, só troca a lente.
+  if (ctx.effectiveRole !== "student") {
+    const isAdmin = ctx.realRole === "admin";
     const [groups, courses, teachers, students, activeByStudent] = await Promise.all([
-      listAllGroups(),
+      isAdmin ? listAllGroups() : listGroupsByTeacher(ctx.userId),
       listCourses(),
-      listUsers(ctx.organizationId, { role: "teacher" }),
+      isAdmin ? listUsers(ctx.organizationId, { role: "teacher" }) : Promise.resolve([]),
       listUsers(ctx.organizationId, { role: "student" }),
       listActiveEnrollmentRefs(ctx.organizationId),
     ]);
@@ -45,47 +45,29 @@ export default async function TurmasPage() {
         students={students}
         activeByStudent={activeByStudent}
         courses={courses}
-        teachers={teachers}
+        teachers={isAdmin ? teachers : undefined}
       />
     );
   }
 
-  if (ctx.effectiveRole === "teacher") {
-    const [groups, courses, students, activeByStudent] = await Promise.all([
-      listGroupsByTeacher(ctx.userId),
-      listCourses(),
-      listUsers(ctx.organizationId, { role: "student" }),
-      listActiveEnrollmentRefs(ctx.organizationId),
-    ]);
-    const rosters = await listEnrollmentsForGroups(groups.map((group) => group.id));
-
-    return (
-      <TeacherGroups
-        groups={groups}
-        rosters={rosters}
-        students={students}
-        activeByStudent={activeByStudent}
-        courses={courses}
-      />
-    );
-  }
-
-  const enrollments = await listStudentEnrollments(ctx.userId);
-  const [myGroupDetails, activeGroups] = await Promise.all([
-    listGroupsByIds(enrollments.map((enrollment) => enrollment.groupId)),
-    listActiveGroups(),
+  // Aluno: só as próprias turmas. Nenhuma consulta a turmas de terceiros.
+  const enrollments = (await listStudentEnrollments(ctx.userId)).filter(
+    (enrollment) => enrollment.status !== "cancelled",
+  );
+  const groupIds = enrollments.map((enrollment) => enrollment.groupId);
+  const [myGroupDetails, classmatesByGroup] = await Promise.all([
+    listGroupsByIds(groupIds),
+    listGroupClassmates(groupIds),
   ]);
 
   const byId = new Map(myGroupDetails.map((group) => [group.id, group]));
-  const myGroups: StudentGroupView[] = enrollments
-    .filter((enrollment) => enrollment.status !== "cancelled")
-    .flatMap((enrollment) => {
-      const group = byId.get(enrollment.groupId);
-      return group ? [{ group, enrollment }] : [];
-    });
+  const myGroups: StudentGroupView[] = enrollments.flatMap((enrollment) => {
+    const group = byId.get(enrollment.groupId);
+    if (!group) return [];
+    return [
+      { group, enrollment, classmates: classmatesByGroup[enrollment.groupId] ?? [] },
+    ];
+  });
 
-  const mine = new Set(myGroups.map((item) => item.group.id));
-  const otherGroups = activeGroups.filter((group) => !mine.has(group.id));
-
-  return <StudentGroups myGroups={myGroups} otherGroups={otherGroups} />;
+  return <StudentGroups myGroups={myGroups} currentStudentId={ctx.userId} />;
 }

@@ -28,7 +28,9 @@ import {
   EyeIcon,
   PencilIcon,
 } from "@/components/ui/icons";
+import type { Route } from "next";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import { PlanFormPanel } from "../plan-form-panel";
 import { SchedulePanel } from "../schedule-panel";
 import { LEVEL_HINT, STATUS_META, formatDay, formatTime } from "../planner-utils";
@@ -46,11 +48,24 @@ export interface LessonStudioProps {
   sessions: PlannerSession[];
   groups: PlannerGroupOption[];
   teachers: UserListItem[];
+  /**
+   * Plano compartilhado de outra pessoa: dá para ler, apresentar e agendar,
+   * mas não reescrever — o autosave nem é ligado (a action recusaria de
+   * qualquer forma, e um "salvando…" que nunca salva é pior que nada).
+   */
+  readOnly?: boolean;
 }
 
-export function LessonStudio({ plan, sessions, groups, teachers }: LessonStudioProps) {
+export function LessonStudio({
+  plan,
+  sessions,
+  groups,
+  teachers,
+  readOnly = false,
+}: LessonStudioProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
+  const { base } = useArea();
 
   const [content, setContent] = useState<JSONContent>(
     (plan.content as JSONContent) ?? { type: "doc", content: [] },
@@ -135,7 +150,7 @@ export function LessonStudio({ plan, sessions, groups, teachers }: LessonStudioP
       >
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href="/admin/planejador"
+            href={`${base}/planejador` as Route}
             className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             aria-label="Voltar ao planejador"
           >
@@ -157,18 +172,22 @@ export function LessonStudio({ plan, sessions, groups, teachers }: LessonStudioP
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden sm:block">
-              <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
-            </span>
+            {!readOnly && (
+              <span className="hidden sm:block">
+                <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
+              </span>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setFormOpen(true)}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
-            >
-              <PencilIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Ficha</span>
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => setFormOpen(true)}
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+              >
+                <PencilIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Ficha</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -211,7 +230,8 @@ export function LessonStudio({ plan, sessions, groups, teachers }: LessonStudioP
         <div data-studio-enter className="min-w-0 lg:h-[calc(100dvh-13.5rem)]">
           <LessonCanvas
             content={content}
-            onChange={handleChange}
+            onChange={readOnly ? undefined : handleChange}
+            editable={!readOnly}
             scope={`plano-${plan.id}`}
             placeholder="Comece pelo objetivo da aula… cole imagens direto aqui (Ctrl+V)."
             fill
@@ -283,7 +303,7 @@ export function LessonStudio({ plan, sessions, groups, teachers }: LessonStudioP
                   return (
                     <li key={session.id}>
                       <Link
-                        href={`/admin/planejador/aula/${session.id}`}
+                        href={`${base}/planejador/aula/${session.id}` as Route}
                         className="flex items-center gap-3 rounded-xl border border-admin-border/70 px-3 py-2 transition-colors hover:border-navy-100 hover:bg-admin-muted/50"
                       >
                         <span className="flex w-14 shrink-0 flex-col">

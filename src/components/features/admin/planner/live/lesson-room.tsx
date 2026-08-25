@@ -29,19 +29,17 @@ import { AutosaveIndicator } from "@/components/features/live-session/autosave-i
 import { DownloadPdfButton } from "@/components/features/library/download-pdf-button";
 import { useAutosave } from "@/hooks/use-autosave";
 import { Select } from "@/components/ui/select";
-import {
-  ArrowLeftIcon,
-  CloseIcon,
-  EyeIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons";
+import { ArrowLeftIcon, CloseIcon, EyeIcon } from "@/components/ui/icons";
+import type { Route } from "next";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import { RosterPanel } from "./roster-panel";
 import { STATUS_META, formatDay, formatTime, formatWeekday } from "../planner-utils";
 import type { AttendanceRow } from "@/repositories/attendance";
 import type { LiveSessionDetail } from "@/repositories/live-session";
 import type { PlannerPlan, PlannerSession } from "@/repositories/lesson-planner";
 import type { Json } from "@/types/database.types";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const VERSION_SNAPSHOT_MS = 5 * 60 * 1000;
 const LOCK_HEARTBEAT_MS = 30_000;
@@ -67,11 +65,12 @@ function RoomHeader({
   right?: React.ReactNode;
 }) {
   const status = STATUS_META[session.status];
+  const { base } = useArea();
   return (
     <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-admin-border/70 bg-admin-background/85 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/admin/planejador"
+          href={`${base}/planejador` as Route}
           aria-label="Voltar ao planejador"
           className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
         >
@@ -188,7 +187,7 @@ function BeforeLesson({ session, plans, attendance }: LessonRoomProps) {
             >
               {isPending ? (
                 <>
-                  <SpinnerIcon className="h-4 w-4 animate-spin" />
+                  <LogoLoader size={16} label={null} />
                   Iniciando…
                 </>
               ) : (
@@ -345,7 +344,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
             >
               {ending ? (
                 <>
-                  <SpinnerIcon className="h-4 w-4 animate-spin" />
+                  <LogoLoader size={16} label={null} />
                   Encerrando…
                 </>
               ) : (

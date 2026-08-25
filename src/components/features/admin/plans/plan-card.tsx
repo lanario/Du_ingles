@@ -36,6 +36,7 @@ import {
   VisibilityPill,
 } from "./plans-visuals";
 import { ACCENT_TONE, type StudentPlan } from "./plans-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 interface PlanCardProps {
   plan: StudentPlan;
@@ -90,7 +91,7 @@ export function PlanCard({
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-20px_rgba(11,26,51,0.4)]",
         plan.isFeatured ? "border-transparent" : "border-admin-border hover:border-gold-300",
         menuOpen && "z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !plan.isActive && "opacity-75",
       )}
       style={
@@ -99,6 +100,7 @@ export function PlanCard({
           : undefined
       }
     >
+      {busy && <LoadingVeil label={null} size={40} className="rounded-2xl" />}
       <AccentAura accent={plan.accent} />
 
       {/* Fio do acento no topo: identifica o plano antes de o olho ler o nome. */}

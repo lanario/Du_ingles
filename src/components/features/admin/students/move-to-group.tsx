@@ -10,10 +10,11 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { moveStudentToGroupAction } from "@/actions/admin/students";
-import { CheckIcon, CloseIcon, GroupsIcon, SpinnerIcon } from "@/components/ui/icons";
+import { CheckIcon, CloseIcon, GroupsIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { GroupListItem } from "@/repositories/groups";
 import type { Student } from "./students-utils";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 interface MoveToGroupProps {
   open: boolean;
@@ -189,7 +190,7 @@ function GroupOption({
         {detail && <span className="block text-xs text-admin-foreground/45">{detail}</span>}
       </span>
       {loading ? (
-        <SpinnerIcon className="h-3.5 w-3.5 animate-spin text-gold-600" />
+        <LogoLoader size={14} label={null} className="text-gold-600" />
       ) : current ? (
         <CheckIcon className="h-3.5 w-3.5 text-gold-600" />
       ) : null}

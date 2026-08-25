@@ -23,12 +23,13 @@ import {
 } from "@/components/features/groups/enrollment-conflict-dialog";
 import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
-import { PlusIcon, SpinnerIcon, TrashIcon, UserIcon } from "@/components/ui/icons";
+import { PlusIcon, TrashIcon, UserIcon } from "@/components/ui/icons";
 import { UserAvatar } from "@/components/features/admin/users/users-visuals";
 import { CopyButton } from "./groups-visuals";
 import { cn } from "@/lib/utils";
 import type { ActiveEnrollmentRef, EnrollmentListItem } from "@/repositories/enrollments";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function EnrollStudentForm({
   groupId,
@@ -143,7 +144,7 @@ export function EnrollStudentForm({
         >
           {isPending ? (
             <>
-              <SpinnerIcon className="h-4 w-4 animate-spin" />
+              <LogoLoader size={16} label={null} />
               Matriculando…
             </>
           ) : (

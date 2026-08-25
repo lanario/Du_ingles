@@ -6,7 +6,13 @@ import type { AppRole } from "@/types/domain";
 const PUBLIC_PATHS = ["/login", "/recuperar-senha", "/redefinir-senha"];
 const FORCED_PASSWORD_PATH = "/definir-senha";
 const ADMIN_PREFIX = "/admin";
-const PROTECTED_PREFIXES = [ADMIN_PREFIX, "/dashboard", FORCED_PASSWORD_PATH];
+const TEACHER_PREFIX = "/professor";
+const PROTECTED_PREFIXES = [
+  ADMIN_PREFIX,
+  TEACHER_PREFIX,
+  "/dashboard",
+  FORCED_PASSWORD_PATH,
+];
 
 function decodeJwtClaims(accessToken: string): Record<string, unknown> {
   const payload = accessToken.split(".")[1];
@@ -21,7 +27,9 @@ function decodeJwtClaims(accessToken: string): Record<string, unknown> {
 }
 
 function roleHomePath(role: AppRole): string {
-  return role === "admin" ? "/admin" : "/dashboard";
+  if (role === "admin") return "/admin";
+  if (role === "teacher") return "/professor";
+  return "/dashboard";
 }
 
 /**
@@ -128,6 +136,16 @@ export async function middleware(request: NextRequest) {
     }
 
     if (pathname.startsWith(ADMIN_PREFIX) && appRole !== "admin") {
+      return redirectTo("/403");
+    }
+
+    // A área do professor é dele e da coordenação (que cai no próprio painel
+    // pelo layout) — aluno nenhum entra aqui.
+    if (
+      pathname.startsWith(TEACHER_PREFIX) &&
+      appRole !== "teacher" &&
+      appRole !== "admin"
+    ) {
       return redirectTo("/403");
     }
   } else if (user && PUBLIC_PATHS.includes(pathname)) {

@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
-import { ArrowInIcon, ArrowOutIcon, SpinnerIcon } from "@/components/ui/icons";
+import { ArrowInIcon, ArrowOutIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import {
   categoriesFor,
@@ -42,6 +42,7 @@ import {
   type FinanceEntry,
 } from "./finance-utils";
 import type { ActionResult } from "@/types/action-result";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const FIELD =
   "border-admin-border bg-admin-background focus-visible:ring-gold-500 text-admin-foreground";
@@ -547,7 +548,7 @@ export function EntryFormPanel({
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
             )}
           >
-            {isPending && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+            {isPending && <LogoLoader size={16} label={null} />}
             {isEdit ? "Salvar alterações" : copy.create}
           </button>
         </div>

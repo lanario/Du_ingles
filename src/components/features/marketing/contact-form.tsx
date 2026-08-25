@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function ContactForm() {
   const [state, formAction, isPending] = useActionState(createLeadAction, null);
@@ -60,7 +61,14 @@ export function ContactForm() {
 
       <div className="sm:col-span-2">
         <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-          {isPending ? "Enviando…" : "Agendar aula experimental"}
+          {isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <LogoLoader size={16} label={null} />
+              Enviando…
+            </span>
+          ) : (
+            "Agendar aula experimental"
+          )}
         </Button>
       </div>
     </form>

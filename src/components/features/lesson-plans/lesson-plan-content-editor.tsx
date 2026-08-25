@@ -6,6 +6,7 @@ import { updateLessonPlanContentAction } from "@/actions/teacher/lesson-plans";
 import { TiptapEditor } from "@/components/features/lesson-plans/tiptap-editor-dynamic";
 import { FormBanner } from "@/components/ui/form-message";
 import type { Json } from "@/types/database.types";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function LessonPlanContentEditor({
   planId,
@@ -62,7 +63,14 @@ export function LessonPlanContentEditor({
             disabled={isSaving || !dirty}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {isSaving ? "Salvando…" : "Salvar conteúdo"}
+            {isSaving ? (
+              <span className="inline-flex items-center gap-2">
+                <LogoLoader size={16} label={null} />
+                Salvando…
+              </span>
+            ) : (
+              "Salvar conteúdo"
+            )}
           </button>
           <span className="text-sm text-muted-foreground">
             {dirty

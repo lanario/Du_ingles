@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 /**
  * O Tiptap (e o ProseMirror atrás dele) só entra no bundle de quem abre um
@@ -14,7 +15,9 @@ export const LessonCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="min-h-[520px] animate-pulse rounded-2xl border border-admin-border bg-admin-muted" />
+      <div className="relative min-h-[520px] rounded-2xl border border-admin-border bg-admin-surface">
+        <LoadingVeil label="Abrindo o editor…" size={72} className="rounded-2xl" />
+      </div>
     ),
   },
 );

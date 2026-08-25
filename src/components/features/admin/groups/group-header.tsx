@@ -14,8 +14,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { setGroupActiveAction } from "@/actions/admin/groups";
-import { ChevronIcon, PencilIcon, PowerIcon, SpinnerIcon } from "@/components/ui/icons";
+import { ChevronIcon, PencilIcon, PowerIcon } from "@/components/ui/icons";
+import type { Route } from "next";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import { EditGroupPanel } from "./edit-group-panel";
 import {
   CoursePill,
@@ -35,6 +37,7 @@ import {
 } from "./groups-utils";
 import type { Course } from "@/repositories/courses";
 import type { UserListItem } from "@/repositories/users";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function GroupHeader({
   group,
@@ -47,6 +50,7 @@ export function GroupHeader({
 }) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
+  const { base, canManageGroups } = useArea();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +73,7 @@ export function GroupHeader({
   return (
     <header>
       <Link
-        href="/admin/turmas"
+        href={`${base}/turmas` as Route}
         className="inline-flex items-center gap-1.5 text-xs font-medium text-admin-foreground/50 transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
       >
         <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
@@ -114,6 +118,7 @@ export function GroupHeader({
               <PencilIcon className="h-4 w-4" />
               Editar
             </button>
+            {canManageGroups && (
             <button
               type="button"
               onClick={toggleActive}
@@ -127,12 +132,13 @@ export function GroupHeader({
               )}
             >
               {busy ? (
-                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                <LogoLoader size={16} label={null} />
               ) : (
                 <PowerIcon className="h-4 w-4" />
               )}
               {group.isActive ? "Arquivar" : "Reativar"}
             </button>
+            )}
           </div>
         </div>
 

@@ -11,7 +11,10 @@ export type Database = {
     Tables: {
       assignment_submissions: {
         Row: {
+          answers: Json | null;
           assignment_id: string;
+          auto_max: number | null;
+          auto_score: number | null;
           content: string | null;
           feedback: string | null;
           file_path: string | null;
@@ -25,7 +28,10 @@ export type Database = {
           submitted_at: string | null;
         };
         Insert: {
+          answers?: Json | null;
           assignment_id: string;
+          auto_max?: number | null;
+          auto_score?: number | null;
           content?: string | null;
           feedback?: string | null;
           file_path?: string | null;
@@ -39,7 +45,10 @@ export type Database = {
           submitted_at?: string | null;
         };
         Update: {
+          answers?: Json | null;
           assignment_id?: string;
+          auto_max?: number | null;
+          auto_score?: number | null;
           content?: string | null;
           feedback?: string | null;
           file_path?: string | null;
@@ -85,6 +94,7 @@ export type Database = {
       };
       assignments: {
         Row: {
+          answer_key: Json | null;
           created_at: string;
           created_by: string;
           due_at: string | null;
@@ -97,6 +107,7 @@ export type Database = {
           title: string;
         };
         Insert: {
+          answer_key?: Json | null;
           created_at?: string;
           created_by: string;
           due_at?: string | null;
@@ -109,6 +120,7 @@ export type Database = {
           title: string;
         };
         Update: {
+          answer_key?: Json | null;
           created_at?: string;
           created_by?: string;
           due_at?: string | null;
@@ -1182,8 +1194,10 @@ export type Database = {
           sync_error: string | null;
           sync_status: Database["public"]["Enums"]["plan_sync_status"];
           synced_at: string | null;
+          tier: Database["public"]["Enums"]["plan_tier"] | null;
           trial_days: number;
           updated_at: string;
+          weekly_frequency: number | null;
         };
         Insert: {
           accent?: string;
@@ -1215,8 +1229,10 @@ export type Database = {
           sync_error?: string | null;
           sync_status?: Database["public"]["Enums"]["plan_sync_status"];
           synced_at?: string | null;
+          tier?: Database["public"]["Enums"]["plan_tier"] | null;
           trial_days?: number;
           updated_at?: string;
+          weekly_frequency?: number | null;
         };
         Update: {
           accent?: string;
@@ -1248,8 +1264,10 @@ export type Database = {
           sync_error?: string | null;
           sync_status?: Database["public"]["Enums"]["plan_sync_status"];
           synced_at?: string | null;
+          tier?: Database["public"]["Enums"]["plan_tier"] | null;
           trial_days?: number;
           updated_at?: string;
+          weekly_frequency?: number | null;
         };
         Relationships: [
           {
@@ -1611,6 +1629,7 @@ export type Database = {
         "pix" | "boleto" | "credit_card" | "debit_card" | "cash" | "transfer" | "other";
       plan_interval: "month" | "quarter" | "semester" | "year" | "one_time";
       plan_sync_status: "draft" | "synced" | "error";
+      plan_tier: "standard" | "premium" | "elite";
       session_status: "scheduled" | "in_progress" | "completed" | "cancelled";
       stripe_charge_model: "destination" | "direct";
       subscription_status:
@@ -1764,6 +1783,7 @@ export const Constants = {
       ],
       plan_interval: ["month", "quarter", "semester", "year", "one_time"],
       plan_sync_status: ["draft", "synced", "error"],
+      plan_tier: ["standard", "premium", "elite"],
       session_status: ["scheduled", "in_progress", "completed", "cancelled"],
       stripe_charge_model: ["destination", "direct"],
       subscription_status: [

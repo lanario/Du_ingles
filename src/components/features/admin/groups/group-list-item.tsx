@@ -8,11 +8,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { motion, useReducedMotion } from "framer-motion";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { onOpenClick } from "@/components/ui/detail-panel";
 import { PencilIcon, PowerIcon, UserIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import {
   GroupStatusPill,
   LevelPill,
@@ -20,6 +22,7 @@ import {
   ScheduleChips,
 } from "./groups-visuals";
 import type { Group } from "./groups-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 export const LIST_GRID =
   "grid grid-cols-[1.5fr_1fr_0.5fr_1fr_1.2fr_0.7fr_auto] items-center gap-3";
@@ -40,18 +43,25 @@ export function GroupListItem({
   onToggleActive,
 }: GroupListItemProps) {
   const reduceMotion = useReducedMotion();
+  const { base, canManageGroups } = useArea();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Arquivar tira a turma da operação da escola inteira — decisão de
+  // coordenação. O professor edita a própria turma, mas não a arquiva.
   const actions: ActionMenuItem[] = [
     { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
     { label: "Editar turma", icon: PencilIcon, tone: "accent", onSelect: onEdit },
-    {
-      label: group.isActive ? "Arquivar turma" : "Reativar turma",
-      icon: PowerIcon,
-      tone: group.isActive ? "danger" : "accent",
-      separated: true,
-      onSelect: onToggleActive,
-    },
+    ...(canManageGroups
+      ? [
+          {
+            label: group.isActive ? "Arquivar turma" : "Reativar turma",
+            icon: PowerIcon,
+            tone: (group.isActive ? "danger" : "accent") as ActionMenuItem["tone"],
+            separated: true,
+            onSelect: onToggleActive,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -67,13 +77,14 @@ export function GroupListItem({
         "cursor-pointer border-b border-admin-border bg-admin-surface px-4 py-3 text-sm transition-colors last:border-0",
         "hover:bg-admin-muted/60",
         menuOpen && "relative z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !group.isActive && "opacity-70",
       )}
     >
+      {busy && <LoadingVeil label={null} size={22} />}
       <div className="min-w-0">
         <Link
-          href={`/admin/turmas/${group.id}`}
+          href={`${base}/turmas/${group.id}` as Route}
           className="block max-w-full truncate font-medium text-admin-foreground transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
         >
           {group.name}

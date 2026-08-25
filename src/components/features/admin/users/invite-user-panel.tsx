@@ -27,7 +27,6 @@ import {
   GraduationIcon,
   MessageIcon,
   ShieldIcon,
-  SpinnerIcon,
   UserIcon,
   type IconProps,
 } from "@/components/ui/icons";
@@ -35,6 +34,7 @@ import { formatPhoneDisplay, formatPhoneInput } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/domain";
 import type { ComponentType } from "react";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const ROLES: { id: AppRole; label: string; hint: string; icon: ComponentType<IconProps> }[] = [
   { id: "student", label: "Aluno", hint: "Turmas e tarefas", icon: UserIcon },
@@ -209,7 +209,7 @@ export function InviteUserPanel({
             <PrimaryButton type="submit" disabled={isPending}>
               {isPending ? (
                 <>
-                  <SpinnerIcon className="h-4 w-4 animate-spin" />
+                  <LogoLoader size={16} label={null} />
                   Gerando…
                 </>
               ) : (

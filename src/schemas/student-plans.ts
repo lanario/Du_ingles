@@ -7,6 +7,13 @@ export type PlanInterval = (typeof PLAN_INTERVALS)[number];
 export const PLAN_ACCENTS = ["gold", "navy", "emerald", "violet"] as const;
 export type PlanAccent = (typeof PLAN_ACCENTS)[number];
 
+/** Nível comercial. `null`/ausente = plano avulso, fora da grade de níveis. */
+export const PLAN_TIERS = ["standard", "premium", "elite"] as const;
+export type PlanTier = (typeof PLAN_TIERS)[number];
+
+export const PLAN_WEEKLY_FREQUENCIES = [1, 2, 3] as const;
+export type PlanWeeklyFrequency = (typeof PLAN_WEEKLY_FREQUENCIES)[number];
+
 /**
  * O formulário envia preço como o admin digita: "249,90", "R$ 1.200",
  * "89.90". Normalizar aqui (e não no componente) mantém uma única definição
@@ -108,6 +115,24 @@ export const studentPlanSchema = z.object({
 
   lessonsPerMonth: optionalInt(1, 400, "Informe um número válido."),
   minutesPerLesson: optionalInt(10, 480, "Entre 10 e 480 minutos."),
+  tier: z
+    .enum(PLAN_TIERS)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
+  weeklyFrequency: z
+    .string()
+    .trim()
+    .optional()
+    .transform((raw, ctx) => {
+      if (!raw) return undefined;
+      const value = Number(raw);
+      if (!PLAN_WEEKLY_FREQUENCIES.includes(value as PlanWeeklyFrequency)) {
+        ctx.addIssue({ code: "custom", message: "Escolha 1x, 2x ou 3x por semana." });
+        return z.NEVER;
+      }
+      return value as PlanWeeklyFrequency;
+    }),
   level: z
     .enum(CEFR_LEVELS as unknown as [string, ...string[]])
     .optional()
@@ -151,6 +176,8 @@ export function planFieldsFromFormData(formData: FormData) {
     trialDays: formData.get("trialDays"),
     lessonsPerMonth: formData.get("lessonsPerMonth"),
     minutesPerLesson: formData.get("minutesPerLesson"),
+    tier: formData.get("tier"),
+    weeklyFrequency: formData.get("weeklyFrequency"),
     level: formData.get("level"),
     seatLimit: formData.get("seatLimit"),
     accent: formData.get("accent") || "gold",

@@ -19,8 +19,9 @@ import {
 } from "react";
 import gsap from "gsap";
 import { AnimatePresence, motion } from "framer-motion";
-import { LockIcon, SendIcon, SpinnerIcon } from "@/components/ui/icons";
+import { LockIcon, SendIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 const MAX_LENGTH = 5000;
 const MAX_ROWS_PX = 168;
@@ -160,7 +161,7 @@ export function ChatComposer({
           )}
         >
           {sending ? (
-            <SpinnerIcon className="h-4.5 w-4.5 animate-spin" />
+            <LogoLoader size={18} label={null} />
           ) : (
             <SendIcon className="h-4.5 w-4.5" />
           )}

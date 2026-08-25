@@ -3,13 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import {
-  BellIcon,
-  CheckIcon,
-  CloseIcon,
-  EyeIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons";
+import { BellIcon, CheckIcon, CloseIcon, EyeIcon } from "@/components/ui/icons";
 import type { NotificationItem } from "@/repositories/notifications";
 import {
   fullTimestamp,
@@ -18,6 +12,7 @@ import {
   visualFor,
   type NotificationTone,
 } from "@/lib/notifications";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export type NotificationFilter = "all" | "unread";
 
@@ -198,7 +193,7 @@ export function NotificationPanel({
               className="flex flex-none items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-navy-700 transition-colors hover:border-navy-300 hover:bg-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:opacity-60"
             >
               {markingAll ? (
-                <SpinnerIcon className="h-3.5 w-3.5 animate-spin" />
+                <LogoLoader size={14} label={null} />
               ) : (
                 <CheckIcon className="h-3.5 w-3.5" />
               )}

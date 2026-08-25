@@ -11,6 +11,7 @@ import { setUserPasswordAction } from "@/actions/admin/users";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
+import { LogoLoader } from "@/components/ui/logo-loader";
 
 export function SetPasswordForm({
   userId,
@@ -97,7 +98,14 @@ export function SetPasswordForm({
           disabled={isPending}
           className="rounded-md bg-admin-accent px-4 py-2 text-sm font-medium text-admin-accent-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {isPending ? "Salvando…" : "Definir senha"}
+          {isPending ? (
+            <span className="inline-flex items-center gap-2">
+              <LogoLoader size={16} label={null} />
+              Salvando…
+            </span>
+          ) : (
+            "Definir senha"
+          )}
         </button>
         <button
           type="button"

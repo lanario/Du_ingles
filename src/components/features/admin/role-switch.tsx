@@ -4,7 +4,7 @@ import { useId, useRef, useState, useTransition } from "react";
 import { enterViewAsModeAction, exitViewAsModeAction } from "@/actions/admin/view-as";
 import { cn } from "@/lib/utils";
 
-export type AwayRole = "teacher" | "student";
+export type AwayRole = "student";
 
 interface RoleSwitchProps {
   /** Lado em que o switch está agora: "admin" (painel) ou "away" (pré-visualizando professor/aluno). */

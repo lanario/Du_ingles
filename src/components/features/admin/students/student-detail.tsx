@@ -36,13 +36,33 @@ interface StudentDetailProps {
   /** Muda a cada abertura; remonta o conteúdo para as animações rodarem de novo. */
   session: number;
   onMove: () => void;
+  /**
+   * Sem gestão (área do professor), o painel é uma ficha de consulta: some o
+   * ciclo de vida da conta, a troca de senha, a edição cadastral e o botão de
+   * mover de turma — tudo isso é coordenação.
+   */
+  canManage?: boolean;
 }
 
-export function StudentDetail({ open, onClose, user, student, session, onMove }: StudentDetailProps) {
+export function StudentDetail({
+  open,
+  onClose,
+  user,
+  student,
+  session,
+  onMove,
+  canManage = true,
+}: StudentDetailProps) {
   return (
     <SidePanel open={open} onClose={onClose} title={user?.fullName ?? "Aluno"} subtitle={user?.email} wide>
       {user && student && (
-        <StudentDetailContent key={session} user={user} student={student} onMove={onMove} />
+        <StudentDetailContent
+          key={session}
+          user={user}
+          student={student}
+          onMove={onMove}
+          canManage={canManage}
+        />
       )}
     </SidePanel>
   );
@@ -52,10 +72,12 @@ function StudentDetailContent({
   user,
   student,
   onMove,
+  canManage,
 }: {
   user: UserDetailData;
   student: Student;
   onMove: () => void;
+  canManage: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   const guardianEmail = user.studentProfile?.guardianEmail ?? null;
@@ -82,14 +104,18 @@ function StudentDetailContent({
           }
         />
 
-        <DetailSection title="Ações">
-          <UserLifecycleActions user={user} />
-        </DetailSection>
+        {canManage && (
+          <DetailSection title="Ações">
+            <UserLifecycleActions user={user} />
+          </DetailSection>
+        )}
 
         <DetailSection title="Turma">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-admin-border px-3.5 py-3">
             <GroupPill name={student.groupName} level={student.groupLevel} />
-            <DetailButton icon={SwapIcon} label="Mover" tone="accent" onClick={onMove} />
+            {canManage && (
+              <DetailButton icon={SwapIcon} label="Mover" tone="accent" onClick={onMove} />
+            )}
           </div>
         </DetailSection>
 
@@ -108,7 +134,7 @@ function StudentDetailContent({
           </DetailSection>
         )}
 
-        {user.role !== "admin" && (
+        {canManage && user.role !== "admin" && (
           <DetailSection title="Senha">
             <SetPasswordForm userId={user.id} userName={user.fullName.split(" ")[0] ?? "o aluno"} />
           </DetailSection>
@@ -128,9 +154,11 @@ function StudentDetailContent({
           </div>
         </DetailSection>
 
-        <DetailSection title="Dados cadastrais">
-          <EditUserForm user={user} />
-        </DetailSection>
+        {canManage && (
+          <DetailSection title="Dados cadastrais">
+            <EditUserForm user={user} />
+          </DetailSection>
+        )}
       </DetailBody>
     </motion.div>
   );

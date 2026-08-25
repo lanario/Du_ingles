@@ -13,11 +13,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { motion, useReducedMotion } from "framer-motion";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { onOpenClick } from "@/components/ui/detail-panel";
 import { CalendarIcon, PencilIcon, PowerIcon, UserIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useArea } from "@/components/features/admin/area-context";
 import {
   CoursePill,
   EmptyGroupPill,
@@ -28,6 +30,7 @@ import {
   TeacherPill,
 } from "./groups-visuals";
 import { occupancyLabel, occupancyTone, periodLabel, type Group } from "./groups-utils";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 interface GroupCardProps {
   group: Group;
@@ -39,20 +42,27 @@ interface GroupCardProps {
 
 export function GroupCard({ group, busy, onOpen, onEdit, onToggleActive }: GroupCardProps) {
   const reduceMotion = useReducedMotion();
+  const { base, canManageGroups } = useArea();
   const [menuOpen, setMenuOpen] = useState(false);
   const tone = occupancyTone(group);
   const period = periodLabel(group);
 
+  // Arquivar tira a turma da operação da escola inteira — decisão de
+  // coordenação. O professor edita a própria turma, mas não a arquiva.
   const actions: ActionMenuItem[] = [
     { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
     { label: "Editar turma", icon: PencilIcon, tone: "accent", onSelect: onEdit },
-    {
-      label: group.isActive ? "Arquivar turma" : "Reativar turma",
-      icon: PowerIcon,
-      tone: group.isActive ? "danger" : "accent",
-      separated: true,
-      onSelect: onToggleActive,
-    },
+    ...(canManageGroups
+      ? [
+          {
+            label: group.isActive ? "Arquivar turma" : "Reativar turma",
+            icon: PowerIcon,
+            tone: (group.isActive ? "danger" : "accent") as ActionMenuItem["tone"],
+            separated: true,
+            onSelect: onToggleActive,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -71,10 +81,11 @@ export function GroupCard({ group, busy, onOpen, onEdit, onToggleActive }: Group
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-20px_rgba(11,26,51,0.4)]",
         "hover:border-gold-300",
         menuOpen && "z-20",
-        busy && "opacity-60",
+        busy && "relative pointer-events-none",
         !group.isActive && "opacity-75",
       )}
     >
+      {busy && <LoadingVeil label={null} size={40} className="rounded-2xl" />}
       <span
         aria-hidden
         className="tone-glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
@@ -104,7 +115,7 @@ export function GroupCard({ group, busy, onOpen, onEdit, onToggleActive }: Group
         <div className="min-w-0 flex-1">
           <h3 title={group.name} className="text-[15px] font-semibold leading-snug">
             <Link
-              href={`/admin/turmas/${group.id}`}
+              href={`${base}/turmas/${group.id}` as Route}
               className="block max-w-full truncate text-admin-foreground transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               {group.name}

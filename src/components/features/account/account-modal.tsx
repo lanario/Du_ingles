@@ -6,8 +6,6 @@
  * layout (mesma query que já alimentava o menu), então não há fetch ao abrir.
  */
 
-import Link from "next/link";
-import type { Route } from "next";
 import { Dialog } from "@/components/ui/dialog";
 import { AvatarUploader } from "@/components/features/account/avatar-uploader";
 import { ProfileForm } from "@/components/features/account/profile-form";
@@ -24,7 +22,7 @@ interface AccountModalProps {
   profile: MyProfile | null;
   avatarUrl: string | null;
   theme: AccountTheme;
-  securityHref: Route;
+  onOpenSecurity: () => void;
 }
 
 export function AccountModal({
@@ -33,7 +31,7 @@ export function AccountModal({
   profile,
   avatarUrl,
   theme,
-  securityHref,
+  onOpenSecurity,
 }: AccountModalProps) {
   const classes = accountClasses(theme);
 
@@ -57,16 +55,16 @@ export function AccountModal({
 
           <p className={classes.muted}>
             Senha e {theme === "admin" ? "acesso ficam" : "sessões ficam"} em{" "}
-            <Link
-              href={securityHref}
-              onClick={onClose}
+            <button
+              type="button"
+              onClick={onOpenSecurity}
               className={cn(
-                "font-medium underline",
+                "font-medium underline underline-offset-2",
                 theme === "app" && "text-navy-900",
               )}
             >
               Segurança
-            </Link>
+            </button>
             .
           </p>
         </div>

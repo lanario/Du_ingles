@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { LessonImage, LessonTextAlign, LessonTextStyle } from "./extensions";
 import { insertImageFiles, isSupportedImage } from "./image-upload";
 import { Ribbon } from "./ribbon";
+import { LoadingVeil } from "@/components/ui/logo-loader";
 
 /**
  * A folha. Um documento tipo processador de texto: régua fixa no topo,
@@ -154,7 +155,9 @@ export function LessonCanvas({
 
   if (!editor) {
     return (
-      <div className="min-h-[520px] animate-pulse rounded-2xl border border-admin-border bg-admin-muted" />
+      <div className="relative min-h-[520px] rounded-2xl border border-admin-border bg-admin-surface">
+        <LoadingVeil label="Abrindo o editor…" size={72} className="rounded-2xl" />
+      </div>
     );
   }
 

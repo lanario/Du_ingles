@@ -7,6 +7,7 @@ export interface EnrollmentListItem {
   studentId: string;
   studentName: string;
   studentEmail: string;
+  studentAvatarUrl: string | null;
   status: string;
 }
 
@@ -28,7 +29,7 @@ export async function listGroupEnrollments(
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("enrollments")
-    .select("id, status, student:student_id(id, full_name, email)")
+    .select("id, status, student:student_id(id, full_name, email, avatar_url)")
     .eq("group_id", groupId)
     .order("enrolled_at", { ascending: false });
 
@@ -39,6 +40,7 @@ export async function listGroupEnrollments(
     studentId: row.student?.id ?? "",
     studentName: row.student?.full_name ?? "—",
     studentEmail: row.student?.email ?? "",
+    studentAvatarUrl: row.student?.avatar_url ? `/api/avatars/${row.student.avatar_url}` : null,
     status: row.status,
   }));
 }
@@ -165,7 +167,9 @@ async function activateEnrollment(
       .from("enrollments")
       .update({ status: "active", enrolled_at: new Date().toISOString() })
       .eq("id", previous.id);
-    return error ? { success: false, message: "Falha ao matricular." } : { success: true };
+    return error
+      ? { success: false, message: "Falha ao matricular." }
+      : { success: true };
   }
 
   const { error } = await admin.from("enrollments").insert({
@@ -197,7 +201,7 @@ export async function listEnrollmentsForGroups(
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("enrollments")
-    .select("id, status, group_id, student:student_id(id, full_name, email)")
+    .select("id, status, group_id, student:student_id(id, full_name, email, avatar_url)")
     .in("group_id", groupIds)
     .order("enrolled_at", { ascending: false });
 
@@ -210,6 +214,7 @@ export async function listEnrollmentsForGroups(
       studentId: row.student?.id ?? "",
       studentName: row.student?.full_name ?? "—",
       studentEmail: row.student?.email ?? "",
+      studentAvatarUrl: row.student?.avatar_url ? `/api/avatars/${row.student.avatar_url}` : null,
       status: row.status,
     });
   }
@@ -242,6 +247,49 @@ export async function listStudentEnrollments(
     status: row.status,
     enrolledAt: row.enrolled_at,
   }));
+}
+
+export interface ClassmateItem {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+/**
+ * Colegas de turma — só nome e foto, nunca e-mail ou id de matrícula: a tela
+ * do aluno é de leitura e não precisa identificar ninguém além do rosto.
+ *
+ * Usa o client admin porque a RLS `enrollments_select_self` limita o aluno às
+ * próprias matrículas; a autorização fica no chamador, que só pede as turmas
+ * em que o próprio aluno está matriculado.
+ */
+export async function listGroupClassmates(
+  groupIds: string[],
+): Promise<Record<string, ClassmateItem[]>> {
+  if (groupIds.length === 0) return {};
+
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("enrollments")
+    .select("group_id, student:student_id(id, full_name, avatar_url)")
+    .in("group_id", groupIds)
+    .eq("status", "active");
+
+  if (error || !data) return {};
+
+  const byGroup: Record<string, ClassmateItem[]> = {};
+  for (const row of data) {
+    if (!row.student) continue;
+    (byGroup[row.group_id] ??= []).push({
+      id: row.student.id,
+      name: row.student.full_name ?? "—",
+      avatarUrl: row.student.avatar_url ? `/api/avatars/${row.student.avatar_url}` : null,
+    });
+  }
+  for (const list of Object.values(byGroup)) {
+    list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }
+  return byGroup;
 }
 
 /**
@@ -337,4 +385,24 @@ export async function unenrollStudent(enrollmentId: string): Promise<boolean> {
     .update({ status: "cancelled" })
     .eq("id", enrollmentId);
   return !error;
+}
+
+/**
+ * O aluno está matriculado em alguma turma deste professor? É o recorte de
+ * "meus alunos" na área do professor: ele lê a ficha de quem ele leciona, e
+ * de mais ninguém da escola.
+ */
+export async function isStudentOfTeacher(
+  studentId: string,
+  teacherId: string,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("enrollments")
+    .select("id, group:group_id!inner(teacher_id)")
+    .eq("student_id", studentId)
+    .eq("status", "active")
+    .eq("group.teacher_id", teacherId)
+    .limit(1);
+  return (data ?? []).length > 0;
 }
