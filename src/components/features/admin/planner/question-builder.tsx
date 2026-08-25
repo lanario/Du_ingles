@@ -21,9 +21,10 @@ import {
   optionLabel,
   type QuestionType,
 } from "@/lib/assignments/exercises";
+import { parseQuestions, type ParsedQuestion } from "@/lib/assignments/parse-questions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { CheckIcon, CopyIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 /** Todos os campos coexistem no rascunho para o professor poder trocar o tipo
@@ -40,9 +41,13 @@ interface Draft {
   accepted: string[];
 }
 
+function newId(): string {
+  return `q_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+}
+
 function newDraft(type: QuestionType): Draft {
   return {
-    id: `q_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`,
+    id: newId(),
     type,
     prompt: "",
     points: 1,
@@ -51,6 +56,11 @@ function newDraft(type: QuestionType): Draft {
     correctBool: true,
     accepted: [""],
   };
+}
+
+/** Questão lida do texto colado vira rascunho comum — daí em diante é tudo editável. */
+function draftFromParsed(parsed: ParsedQuestion): Draft {
+  return { id: newId(), ...parsed };
 }
 
 function serialize(drafts: Draft[]): string {
@@ -82,8 +92,26 @@ const PLACEHOLDER: Record<QuestionType, string> = {
   long_text: "Ex.: Describe your last vacation using the Present Perfect.",
 };
 
+const PASTE_EXAMPLE = `1. Which sentence is in the Present Perfect?
+a) I went to London.
+b) I have been to London.
+c) I go to London.
+Resposta: B
+
+2. She ___ (live) in Brazil since 2019. (2 pontos)
+Resposta: has lived / 's lived
+
+3. 'I have been to London' is Present Perfect.
+Resposta: verdadeiro
+
+4. Describe your last vacation using the Present Perfect.`;
+
 export function QuestionBuilder({ name = "questions" }: { name?: string }) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [pasting, setPasting] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+
+  const parsed = useMemo(() => parseQuestions(pasteText), [pasteText]);
 
   const totalPoints = useMemo(
     () => drafts.reduce((sum, d) => sum + (Number.isFinite(d.points) ? d.points : 0), 0),
@@ -100,6 +128,13 @@ export function QuestionBuilder({ name = "questions" }: { name?: string }) {
 
   function remove(id: string) {
     setDrafts((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  function importPasted() {
+    if (parsed.length === 0) return;
+    setDrafts((prev) => [...prev, ...parsed.map(draftFromParsed)]);
+    setPasteText("");
+    setPasting(false);
   }
 
   function move(index: number, delta: number) {
@@ -121,11 +156,10 @@ export function QuestionBuilder({ name = "questions" }: { name?: string }) {
         <Label className="text-admin-foreground">Exercício digital</Label>
         {drafts.length > 0 && (
           <p className="text-xs text-admin-foreground/55">
-            {drafts.length} quest{drafts.length === 1 ? "ão" : "ões"} · {totalPoints} ponto
+            {drafts.length} quest{drafts.length === 1 ? "ão" : "ões"} · {totalPoints}{" "}
+            ponto
             {totalPoints === 1 ? "" : "s"} ·{" "}
-            {autoCount === 0
-              ? "correção manual"
-              : `${autoCount} com correção automática`}
+            {autoCount === 0 ? "correção manual" : `${autoCount} com correção automática`}
           </p>
         )}
       </div>
@@ -133,7 +167,8 @@ export function QuestionBuilder({ name = "questions" }: { name?: string }) {
       {drafts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-admin-border bg-admin-background px-4 py-5 text-sm text-admin-foreground/55">
           Sem questões, a tarefa chega ao aluno como instruções e um campo de resposta
-          livre. Adicione questões para que ele responda dentro do app.
+          livre. Adicione questões uma a uma — ou cole a lista pronta e deixe o app
+          separar enunciado, alternativas e gabarito.
         </p>
       ) : (
         <ol className="space-y-3">
@@ -151,7 +186,83 @@ export function QuestionBuilder({ name = "questions" }: { name?: string }) {
         </ol>
       )}
 
+      {pasting && (
+        <div className="rounded-xl border border-gold-300 bg-gold-50/60 p-3.5">
+          <p className="text-sm font-medium text-admin-foreground">
+            Cole as questões prontas
+          </p>
+          <p className="mt-1 text-xs text-admin-foreground/60">
+            Numere as questões (1., 2., …), escreva as alternativas como{" "}
+            <code className="font-mono text-gold-700">a)</code>,{" "}
+            <code className="font-mono text-gold-700">b)</code> e marque o gabarito com
+            uma linha <code className="font-mono text-gold-700">Resposta: B</code> — ou um{" "}
+            <code className="font-mono text-gold-700">*</code> na alternativa certa.
+            Lacunas com <code className="font-mono text-gold-700">{BLANK_TOKEN}</code>,
+            pontos entre parênteses.
+          </p>
+
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            rows={9}
+            autoFocus
+            placeholder={PASTE_EXAMPLE}
+            aria-label="Texto das questões para colar"
+            className="mt-2.5 w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 font-mono text-xs leading-relaxed text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+          />
+
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-admin-foreground/60">
+              {pasteText.trim().length === 0
+                ? "Cole o texto para ver o que foi reconhecido."
+                : parsed.length === 0
+                  ? "Nada reconhecido ainda — confira a numeração das questões."
+                  : `${parsed.length} quest${parsed.length === 1 ? "ão reconhecida" : "ões reconhecidas"}: ` +
+                    parsed
+                      .map((q) => QUESTION_TYPE_LABEL[q.type].toLowerCase())
+                      .join(", ")}
+            </p>
+            <div className="flex flex-none gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setPasting(false);
+                  setPasteText("");
+                }}
+                className="rounded-lg border border-admin-border bg-admin-surface px-2.5 py-1.5 text-xs font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={importPasted}
+                disabled={parsed.length === 0}
+                className="rounded-lg bg-navy-900 px-2.5 py-1.5 text-xs font-semibold text-gold-400 transition-colors hover:bg-navy-800 disabled:pointer-events-none disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+              >
+                {parsed.length > 1
+                  ? `Adicionar ${parsed.length} questões`
+                  : "Adicionar questão"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => setPasting((open) => !open)}
+          aria-expanded={pasting}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
+            pasting
+              ? "border-gold-400 bg-gold-100 text-admin-foreground"
+              : "border-admin-border bg-admin-background text-admin-foreground/75 hover:border-gold-400 hover:bg-gold-50 hover:text-admin-foreground",
+          )}
+        >
+          <CopyIcon className="h-3.5 w-3.5" />
+          Colar questões
+        </button>
         {QUESTION_TYPES.map((type) => (
           <button
             key={type}
@@ -243,8 +354,8 @@ function QuestionCard({
 
       {draft.type === "fill_blank" && (
         <p className="mt-1 text-xs text-admin-foreground/50">
-          Escreva <code className="font-mono text-gold-700">{BLANK_TOKEN}</code> no lugar da
-          lacuna.
+          Escreva <code className="font-mono text-gold-700">{BLANK_TOKEN}</code> no lugar
+          da lacuna.
         </p>
       )}
 
