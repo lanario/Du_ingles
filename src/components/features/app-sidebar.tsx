@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
@@ -395,7 +395,7 @@ function Sidebar({
                     const active = isActive(pathname, item.href);
                     const Icon = item.icon;
                     return (
-                      <Link
+                      <NavLink
                         key={item.href}
                         href={item.href}
                         aria-current={active ? "page" : undefined}
@@ -441,7 +441,7 @@ function Sidebar({
                         >
                           {item.label}
                         </span>
-                      </Link>
+                      </NavLink>
                     );
                   })}
                 </div>
@@ -614,7 +614,7 @@ function NavMobile({
                         const active = isActive(pathname, item.href);
                         const Icon = item.icon;
                         return (
-                          <Link
+                          <NavLink
                             key={item.href}
                             href={item.href}
                             aria-current={active ? "page" : undefined}
@@ -639,7 +639,7 @@ function NavMobile({
                               aria-hidden
                             />
                             {item.label}
-                          </Link>
+                          </NavLink>
                         );
                       })}
                     </div>

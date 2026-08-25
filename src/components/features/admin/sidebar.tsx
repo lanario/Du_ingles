@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
@@ -472,7 +472,7 @@ function AdminRail({
                   {section.items.map((item) => {
                     const active = isActive(item.href);
                     return (
-                      <Link
+                      <NavLink
                         key={item.href}
                         href={item.href}
                         aria-current={active ? "page" : undefined}
@@ -518,7 +518,7 @@ function AdminRail({
                         >
                           {item.label}
                         </span>
-                      </Link>
+                      </NavLink>
                     );
                   })}
                 </div>
@@ -696,7 +696,7 @@ function AdminNavMobile({
                       {section.items.map((item) => {
                         const active = isActivePath(pathname, item.href, rootHref);
                         return (
-                          <Link
+                          <NavLink
                             key={item.href}
                             href={item.href}
                             aria-current={active ? "page" : undefined}
@@ -724,7 +724,7 @@ function AdminNavMobile({
                               <NavIcon name={item.icon} />
                             </span>
                             {item.label}
-                          </Link>
+                          </NavLink>
                         );
                       })}
                     </div>

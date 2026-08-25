@@ -25,14 +25,6 @@ export interface SessionContext {
   avatarUrl: string | null;
 }
 
-function decodeJwtClaims(accessToken: string): Record<string, unknown> {
-  const payload = accessToken.split(".")[1];
-  if (!payload) return {};
-  const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-  return JSON.parse(atob(padded)) as Record<string, unknown>;
-}
-
 /**
  * `cache()` do React deduplica a chamada dentro do mesmo render pass —
  * sem isso, cada componente que checa a sessão dispara um round-trip novo
@@ -40,28 +32,32 @@ function decodeJwtClaims(accessToken: string): Record<string, unknown> {
  */
 export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
   const supabase = await createServerSupabaseClient();
-  // getUser() revalida a assinatura do JWT contra o servidor de auth.
-  // getSession() NÃO faz essa revalidação — nunca usar no servidor.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  /**
+   * `getClaims()` valida a assinatura do JWT contra a chave pública do
+   * projeto (JWKS em cache no processo) — mesma garantia do `getUser()`, que
+   * ia até o servidor de auth a cada render, sem o round-trip. Nunca
+   * `getSession()` sozinho: aquele lê o cookie e acredita nele. Em projeto
+   * ainda com segredo simétrico (HS256) a biblioteca cai de volta no
+   * `getUser()` por dentro, então a troca não afrouxa nada; ligar as
+   * *signing keys* assimétricas no Supabase é o que a converte em latência
+   * zero.
+   */
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims ?? null;
+  if (!claims?.sub) return null;
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const claims = session ? decodeJwtClaims(session.access_token) : {};
+  const userId = String(claims.sub);
+  const userEmail = typeof claims["email"] === "string" ? claims["email"] : "";
 
   // `profiles` é a fonte da verdade do papel — não o JWT. A claim `app_role`
   // só existe se o `custom_access_token_hook` estiver ligado nas Auth Hooks do
   // projeto, e mesmo ligado ela só muda na renovação do token: promover
-  // alguém a admin ficaria invisível até o refresh. Ler o perfil não custa
-  // round-trip novo (a query de `must_change_password` já acontecia aqui);
-  // as claims ficam só como fallback caso a linha não exista.
+  // alguém a admin ficaria invisível até o refresh. As claims ficam só como
+  // fallback caso a linha não exista.
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, organization_id, must_change_password, full_name, avatar_url")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   const claimRole = typeof claims["app_role"] === "string" ? claims["app_role"] : null;
@@ -86,14 +82,14 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   }
 
   return {
-    userId: user.id,
-    email: user.email ?? "",
+    userId,
+    email: userEmail,
     realRole,
     effectiveRole,
     isViewAs,
     organizationId,
     mustChangePassword: profile?.must_change_password ?? false,
-    fullName: profile?.full_name || (user.email ?? "").split("@")[0] || "Minha conta",
+    fullName: profile?.full_name || userEmail.split("@")[0] || "Minha conta",
     avatarUrl: profile?.avatar_url ? `/api/avatars/${profile.avatar_url}` : null,
   };
 });
@@ -109,10 +105,17 @@ export function isAdmin(ctx: SessionContext): boolean {
  *
  * Admin passa sempre — trocar de contexto é uma lente sobre a interface, não
  * um rebaixamento de privilégio.
+ *
+ * A senha provisória também é barrada aqui. Antes quem barrava era o
+ * middleware, com uma consulta a `profiles` por request só para ler
+ * `must_change_password`; a linha já vem inteira no `getSessionContext`, então
+ * o mesmo bloqueio sai de graça no render — e passa a valer para todas as
+ * rotas do aluno, que nunca estiveram na lista de prefixos do middleware.
  */
 export async function requireRole(allowed: AppRole[]): Promise<SessionContext> {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
+  if (ctx.mustChangePassword) redirect("/definir-senha");
   if (
     !isAdmin(ctx) &&
     !allowed.includes(ctx.effectiveRole) &&

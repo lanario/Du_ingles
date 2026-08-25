@@ -1138,10 +1138,25 @@ body {
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    padding: 3rem 11%;
+    padding: 3rem 8%;
     text-align: center;
     background: none;
     color: var(--app-shell-foreground);
+  }
+
+  /*
+   * O conteúdo mora na parte gorda do navy. A curva é a borda de um círculo:
+   * ela fecha para dentro conforme desce — no rodapé do painel já comeu uns
+   * 100px a mais que no topo —, então o lado que encosta nela leva o triplo de
+   * respiro. Com padding simétrico a última linha do painel (os números)
+   * termina por baixo da face branca.
+   */
+  .auth-card-panel--left {
+    padding-right: 25%;
+  }
+
+  .auth-card-panel--right {
+    padding-left: 25%;
   }
 
   .auth-card-panel--left,
@@ -1643,5 +1658,27 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .du-veil {
     animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Carregamento de rota — atraso antes de aparecer
+
+   O `loading.tsx` entra no instante do clique, e com o prefetch por intenção
+   (`NavLink`) a maioria das trocas de tela se resolve em bem menos de 200ms.
+   Pintar o esqueleto e o véu da marca nessa janela produz um flash que LÊ como
+   lentidão mesmo quando a navegação foi instantânea — a tela pisca duas vezes
+   em vez de trocar uma. Com o atraso, quem chega rápido não vê loader nenhum;
+   quem demora vê a marca surgir como sempre, sem perder nada.
+--------------------------------------------------------------------------- */
+.du-page-loader {
+  animation: du-veil-in 160ms ease-out 220ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sem o fade, mas o atraso continua: ele existe para não piscar, não para
+     enfeitar. */
+  .du-page-loader {
+    animation: du-veil-in 1ms linear 220ms both;
   }
 }

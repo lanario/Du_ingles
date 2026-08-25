@@ -14,18 +14,6 @@ const PROTECTED_PREFIXES = [
   FORCED_PASSWORD_PATH,
 ];
 
-function decodeJwtClaims(accessToken: string): Record<string, unknown> {
-  const payload = accessToken.split(".")[1];
-  if (!payload) return {};
-  try {
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    return JSON.parse(atob(padded)) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}
-
 function roleHomePath(role: AppRole): string {
   if (role === "admin") return "/admin";
   if (role === "teacher") return "/professor";
@@ -33,28 +21,19 @@ function roleHomePath(role: AppRole): string {
 }
 
 /**
- * Mesma regra do `getSessionContext`: `profiles.role` manda, a claim
- * `app_role` é só fallback. A claim depende do `custom_access_token_hook`
- * estar ligado nas Auth Hooks do projeto e só se atualiza na renovação do
- * token — confiar nela sozinha derruba um admin em `/403` no próprio painel.
+ * O middleware roda em TODA navegação — inclusive nos requests RSC de uma
+ * troca de rota do lado do cliente. Cada round-trip aqui entra inteiro no
+ * tempo até o primeiro byte, antes de o Next sequer começar a renderizar, e
+ * se multiplica pelo número de usuários simultâneos. Por isso ele não lê mais
+ * o banco: quem decide papel e senha provisória é `requireRole`
+ * (`src/lib/auth/session.ts`), que já carrega a linha de `profiles` no render
+ * e é a fronteira de autorização de verdade — metade das rotas do aluno
+ * (`/tarefas`, `/turmas`, `/biblioteca`…) nunca esteve em
+ * `PROTECTED_PREFIXES` e sempre dependeu dele.
+ *
+ * O que sobra aqui é o barato: CSP com nonce, renovação do cookie de sessão
+ * e o corte grosso de quem não está autenticado.
  */
-async function resolveRole(
-  supabase: ReturnType<typeof createServerClient>,
-  userId: string,
-): Promise<AppRole> {
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
-  const profileRole = (data as { role?: AppRole } | null)?.role;
-  if (profileRole) return profileRole;
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const claims = session ? decodeJwtClaims(session.access_token) : {};
-  return (
-    typeof claims["app_role"] === "string" ? claims["app_role"] : "student"
-  ) as AppRole;
-}
-
 export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   // O Fast Refresh do `next dev` injeta o runtime via `eval()` (devtool
@@ -81,6 +60,26 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
 
+  const pathname = request.nextUrl.pathname;
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const redirectTo = (path: string) => {
+    const target = NextResponse.redirect(new URL(path, request.url));
+    target.headers.set("Content-Security-Policy", csp);
+    return target;
+  };
+
+  /**
+   * Visitante anônimo na vitrine: sem cookie `sb-*` não há sessão para
+   * renovar nem identidade para conferir, e falar com o Supabase só para
+   * ouvir "ninguém" custaria um round-trip em cada request da landing.
+   */
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.startsWith("sb-"));
+  if (!hasAuthCookie) {
+    return isProtected ? redirectTo("/login") : response;
+  }
+
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -103,57 +102,65 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  /**
+   * `getClaims()` confere a assinatura do JWT com a chave pública do projeto
+   * dentro do próprio edge (JWKS em cache), sem ida ao servidor de auth —
+   * mesma garantia do `getUser()` por uma fração do custo. Em projeto ainda
+   * com segredo simétrico (HS256) a própria biblioteca cai de volta no
+   * `getUser()`, então trocar aqui nunca é menos seguro; para colher o ganho,
+   * ligue as *signing keys* assimétricas no painel do Supabase. A renovação
+   * do cookie continua acontecendo: `getClaims()` passa pelo `getSession()`,
+   * que refresca o token vencido e dispara o `setAll` acima.
+   */
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims ?? null;
 
-  const pathname = request.nextUrl.pathname;
-  const redirectTo = (path: string) => {
-    const target = NextResponse.redirect(new URL(path, request.url));
-    target.headers.set("Content-Security-Policy", csp);
-    return target;
-  };
+  if (isProtected && !claims) {
+    return redirectTo("/login");
+  }
 
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const claimRole =
+    claims && typeof claims["app_role"] === "string"
+      ? (claims["app_role"] as AppRole)
+      : null;
 
-  if (isProtected) {
-    if (!user) {
-      return redirectTo("/login");
-    }
-
-    const appRole = await resolveRole(supabase, user.id);
-
-    if (pathname !== FORCED_PASSWORD_PATH) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("must_change_password")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.must_change_password) {
-        return redirectTo(FORCED_PASSWORD_PATH);
-      }
-    }
-
-    if (pathname.startsWith(ADMIN_PREFIX) && appRole !== "admin") {
+  if (isProtected && claimRole) {
+    /**
+     * Só cortamos quando a claim EXISTE e diverge. Ela depende do
+     * `custom_access_token_hook` estar ligado nas Auth Hooks e só se atualiza
+     * na renovação do token — tratar a ausência como "aluno" derrubaria um
+     * admin em `/403` dentro do próprio painel. Sem claim, quem decide é o
+     * `requireRole` do layout, que lê `profiles`.
+     */
+    if (pathname.startsWith(ADMIN_PREFIX) && claimRole !== "admin") {
       return redirectTo("/403");
     }
-
     // A área do professor é dele e da coordenação (que cai no próprio painel
     // pelo layout) — aluno nenhum entra aqui.
     if (
       pathname.startsWith(TEACHER_PREFIX) &&
-      appRole !== "teacher" &&
-      appRole !== "admin"
+      claimRole !== "teacher" &&
+      claimRole !== "admin"
     ) {
       return redirectTo("/403");
     }
-  } else if (user && PUBLIC_PATHS.includes(pathname)) {
+  }
+
+  if (!isProtected && claims && PUBLIC_PATHS.includes(pathname)) {
     // Usuário já autenticado batendo em /login etc. — manda para o painel
     // correto. Se ainda precisar trocar a senha, a rota protegida seguinte
     // vai interceptar e mandar para /definir-senha.
-    const appRole = await resolveRole(supabase, user.id);
-    return redirectTo(roleHomePath(appRole));
+    if (claimRole) return redirectTo(roleHomePath(claimRole));
+
+    // Sem a claim sobra o banco — caminho raro (só quem já entrou volta ao
+    // /login), então o round-trip aqui não pesa na navegação do dia a dia.
+    const { data } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", String(claims.sub))
+      .single();
+    const role = ((data as { role?: AppRole } | null)?.role ?? "student") as AppRole;
+    return redirectTo(roleHomePath(role));
   }
 
   return response;
@@ -161,6 +168,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /**
+     * `/api` fica de fora: cada route handler já autentica por conta própria
+     * e o CSP não tem efeito sobre uma resposta JSON — o middleware ali só
+     * adicionava latência a upload de avatar, PDF de relatório e webhook do
+     * Stripe.
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf)$).*)",
   ],
 };

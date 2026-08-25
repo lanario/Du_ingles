@@ -190,7 +190,11 @@ export function PageLoader({
   className,
 }: PageLoaderProps) {
   return (
-    <div className={cn("relative w-full", className)} style={{ minHeight }} aria-busy>
+    <div
+      className={cn("du-page-loader relative w-full", className)}
+      style={{ minHeight }}
+      aria-busy
+    >
       <div className="animate-pulse space-y-4 pt-2" aria-hidden>
         <div className="h-8 w-64 max-w-[70%] rounded-lg bg-foreground/5" />
         <div className="h-4 w-96 max-w-full rounded bg-foreground/5" />

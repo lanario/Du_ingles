@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth/session";
-import {
-  AdminSidebar,
-  type AdminNavSection,
-} from "@/components/features/admin/sidebar";
+import { AdminSidebar, type AdminNavSection } from "@/components/features/admin/sidebar";
 import {
   listNotifications,
   countUnreadNotifications,
@@ -40,13 +37,12 @@ const TEACHER_NAV_SECTIONS: AdminNavSection[] = [
   },
 ];
 
-export default async function TeacherLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
+  // Mesmo corte do `requireRole` (esta área não passa por ele): quem ainda
+  // está com a senha do convite não entra em tela nenhuma.
+  if (ctx.mustChangePassword) redirect("/definir-senha");
   // O admin coordena pelo próprio painel — mandá-lo de volta evita duas
   // portas para a mesma tela (e um "voltar" que alterna entre elas).
   if (ctx.realRole === "admin") redirect("/admin");
