@@ -2,7 +2,7 @@
 
 /**
  * Área de planos de alunos: estado do Connect no topo, indicadores de receita,
- * barra de ferramentas fixa, e as duas visualizações (cartões e lista) — o
+ * barra de ferramentas, e as duas visualizações (cartões e lista) — o
  * mesmo modelo já usado em Usuários, Alunos e Turmas, com preço e assinantes
  * no lugar de lotação.
  *
@@ -12,8 +12,8 @@
  *
  * Divisão das duas libs de animação, como no resto do painel: Framer Motion
  * cuida do ciclo de vida do React (entrada dos cartões, layout, abas, hover) e
- * GSAP/ScrollTrigger cuida do que depende da rolagem (barra que gruda no topo,
- * fio de progresso da lista, count-up dos indicadores).
+ * GSAP/ScrollTrigger cuida do que depende da rolagem (fio de progresso da
+ * lista, count-up dos indicadores).
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -24,7 +24,7 @@ import {
   syncPlanAction,
 } from "@/actions/admin/student-plans";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
-import { useListProgress, useStickyBar } from "@/components/motion/list-motion";
+import { useListProgress } from "@/components/motion/list-motion";
 import { useNarrowScreen, useViewMode } from "@/components/motion/use-view-mode";
 import { Select } from "@/components/ui/select";
 import {
@@ -95,7 +95,6 @@ export function PlansView({
 
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const { sentinelRef, barRef } = useStickyBar<HTMLDivElement>();
   const lineRef = useListProgress(listRef);
 
   const canPublish = Boolean(account?.chargesEnabled);
@@ -233,15 +232,12 @@ export function PlansView({
         </div>
       )}
 
-      <div ref={sentinelRef} aria-hidden className="mt-6 h-px" />
+      <div aria-hidden className="mt-6 h-px" />
 
       <div
-        ref={barRef}
-        data-stuck="false"
         className={cn(
-          "sticky top-0 z-30 -mx-4 mb-4 md:top-16 md:-mx-6 flex flex-wrap items-center gap-2 border-b border-transparent px-4 py-3 md:px-6 sm:mb-5 sm:gap-3",
-          "bg-[color-mix(in_srgb,var(--admin-background)_88%,transparent)] backdrop-blur-md transition-[border-color,box-shadow] duration-300",
-          "data-[stuck=true]:border-admin-border data-[stuck=true]:shadow-[0_18px_30px_-28px_rgba(11,26,51,0.35)]",
+          "relative z-10 -mx-4 mb-4 md:-mx-6 flex flex-wrap items-center gap-2 border-b border-admin-border px-4 py-3 md:px-6 sm:mb-5 sm:gap-3",
+          "bg-admin-background",
         )}
       >
         <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]">
