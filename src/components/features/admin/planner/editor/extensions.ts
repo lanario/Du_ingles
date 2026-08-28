@@ -96,7 +96,9 @@ export const LessonTextAlign = Extension.create({
             default: null,
             parseHTML: (element) => element.style.textAlign || null,
             renderHTML: (attributes) =>
-              attributes.textAlign ? { style: `text-align: ${attributes.textAlign}` } : {},
+              attributes.textAlign
+                ? { style: `text-align: ${attributes.textAlign}` }
+                : {},
           },
         },
       },
@@ -117,17 +119,24 @@ export const LessonTextAlign = Extension.create({
   },
 });
 
+/** Deslocamento vindo do HTML: valor ilegível vale zero, nunca `NaN`. */
+function toOffset(value: string | null): number {
+  const parsed = Number.parseFloat(value ?? "");
+  return Number.isFinite(parsed) ? Math.round(parsed) : 0;
+}
+
 /**
- * Imagem redimensionável. `width` guarda a largura em pixels escolhida com o
- * mouse e `align` decide de que lado ela flutua — os dois viajam no documento,
- * então a aula abre exatamente como foi montada, inclusive no PDF e na tela
- * do aluno.
+ * Imagem redimensionável e móvel. `width` guarda a largura em pixels escolhida
+ * com o mouse, `align` decide de que lado ela ancora e `offsetX`/`offsetY`
+ * guardam o quanto ela foi arrastada a partir dessa âncora — os quatro viajam
+ * no documento, então a aula abre exatamente como foi montada, inclusive na
+ * tela do aluno.
  */
 export const LessonImage = Image.extend({
   // Sem arraste nativo do nó: ele competia com o redimensionamento pelos
   // cantos — o navegador iniciava um drag-and-drop no meio do arrasto, o nó
-  // era reinserido e a largura voltava ao valor anterior. Mover a imagem
-  // continua possível por recortar e colar.
+  // era reinserido e a largura voltava ao valor anterior. Quem move a imagem
+  // é o node view, com deslocamento próprio (`offsetX`/`offsetY`).
   draggable: false,
 
   addAttributes() {
@@ -146,6 +155,24 @@ export const LessonImage = Image.extend({
         default: "center",
         parseHTML: (element) => element.getAttribute("data-align") ?? "center",
         renderHTML: (attributes) => ({ "data-align": attributes.align ?? "center" }),
+      },
+      /**
+       * Deslocamento livre a partir da âncora do alinhamento, em pixels. Ele
+       * vira um `translate` no node view — e não uma margem — de propósito: a
+       * figura anda pela folha sem empurrar o texto em volta, que é o que se
+       * espera ao arrastar uma imagem com o mouse.
+       */
+      offsetX: {
+        default: 0,
+        parseHTML: (element) => toOffset(element.getAttribute("data-offset-x")),
+        renderHTML: (attributes) =>
+          attributes.offsetX ? { "data-offset-x": String(attributes.offsetX) } : {},
+      },
+      offsetY: {
+        default: 0,
+        parseHTML: (element) => toOffset(element.getAttribute("data-offset-y")),
+        renderHTML: (attributes) =>
+          attributes.offsetY ? { "data-offset-y": String(attributes.offsetY) } : {},
       },
       /** Só existe enquanto o upload está no ar; nunca vai para o HTML. */
       uploadId: { default: null, rendered: false },

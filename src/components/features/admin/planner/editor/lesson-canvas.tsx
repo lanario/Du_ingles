@@ -1,12 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  EditorContent,
-  useEditor,
-  type Editor,
-  type JSONContent,
-} from "@tiptap/react";
+import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
@@ -39,8 +34,14 @@ export interface LessonCanvasProps {
   /** Pasta das imagens no Storage: `plano-<id>` ou `aula-<id>`. */
   scope: string;
   placeholder?: string;
-  /** Modo apresentação: tipografia maior e sem barra de ferramentas. */
+  /** Modo apresentação: tipografia maior, sem cromo em volta da folha. */
   presenting?: boolean;
+  /**
+   * Régua de ferramentas. Por padrão ela aparece quando a folha é editável e
+   * não está sendo apresentada — na apresentação o professor ainda escreve,
+   * mas com a tela limpa. Passe `true` para trazê-la de volta ali.
+   */
+  showToolbar?: boolean;
   /**
    * Folha ocupando toda a altura do contêiner (ateliê e sala de aula) — quem
    * limita a altura é a tela que usa o canvas. Fora daí a folha cresce com o
@@ -57,6 +58,7 @@ export function LessonCanvas({
   scope,
   placeholder = "Escreva a aula… cole imagens direto aqui (Ctrl+V).",
   presenting = false,
+  showToolbar,
   fill = false,
   onReady,
 }: LessonCanvasProps) {
@@ -68,6 +70,11 @@ export function LessonCanvas({
   // ref é o que garante que a colagem use a instância atual do editor, e não
   // a closure do primeiro render (quando `editor` ainda é null).
   const handleFilesRef = useRef<((files: File[]) => Promise<void>) | null>(null);
+
+  // Último documento que esta instância viu — escrito por ela (onUpdate) ou
+  // recebido de fora (efeito de sincronia). É o que evita o vaivém entre duas
+  // folhas montadas ao mesmo tempo.
+  const lastSyncedRef = useRef<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -115,7 +122,11 @@ export function LessonCanvas({
         return true;
       },
     },
-    onUpdate: ({ editor: instance }) => onChange?.(instance.getJSON()),
+    onUpdate: ({ editor: instance }) => {
+      const json = instance.getJSON();
+      lastSyncedRef.current = JSON.stringify(json);
+      onChange?.(json);
+    },
   });
 
   const handleFiles = useCallback(
@@ -147,6 +158,23 @@ export function LessonCanvas({
     editor.setEditable(editable);
   }, [editor, editable]);
 
+  /**
+   * Duas folhas podem estar montadas ao mesmo tempo — a do ateliê e a da
+   * apresentação por cima dela. O que se escreve numa precisa chegar na outra,
+   * senão fechar a apresentação descarta o que acabou de ser digitado. O
+   * `setContent` só roda quando o documento que vem de fora é realmente
+   * diferente do que esta instância tem, e sem emitir update, para as duas não
+   * ficarem se escrevendo em laço.
+   */
+  useEffect(() => {
+    if (!editor) return;
+    const incoming = JSON.stringify(content);
+    if (incoming === lastSyncedRef.current) return;
+    lastSyncedRef.current = incoming;
+    if (incoming === JSON.stringify(editor.getJSON())) return;
+    editor.commands.setContent(content, { emitUpdate: false });
+  }, [editor, content]);
+
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(null), 6000);
@@ -164,7 +192,7 @@ export function LessonCanvas({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-admin-border bg-white shadow-[var(--shadow-card)] transition-shadow",
+        "lesson-card relative overflow-hidden rounded-2xl border border-admin-border bg-white shadow-[var(--shadow-card)] transition-shadow",
         fill && !presenting && "flex h-full min-h-0 flex-col",
         dragActive && "ring-2 ring-gold-500 ring-offset-2 ring-offset-admin-background",
       )}
@@ -181,7 +209,7 @@ export function LessonCanvas({
       }}
       onDrop={() => setDragActive(false)}
     >
-      {editable && !presenting && (
+      {editable && (showToolbar ?? !presenting) && (
         <Ribbon editor={editor} onPickImage={() => fileInputRef.current?.click()} />
       )}
 
@@ -285,7 +313,10 @@ export function LessonCanvas({
 
       {editable && !presenting && (
         <div className="flex items-center justify-between border-t border-admin-border/70 px-5 py-2 text-[11px] text-admin-foreground/50">
-          <span>Cole imagens com Ctrl+V · arraste os cantos para redimensionar</span>
+          <span>
+            Cole imagens com Ctrl+V · arraste a imagem para movê-la, os cantos para
+            redimensionar
+          </span>
           <span className="tabular">
             {editor.storage.characterCount.words()} palavras ·{" "}
             {editor.storage.characterCount.characters()} caracteres

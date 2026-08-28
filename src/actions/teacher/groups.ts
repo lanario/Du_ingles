@@ -2,12 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { isAdmin, requireRole } from "@/lib/auth/session";
+import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
-import {
-  createGroup,
-  isGroupOwnedByTeacher,
-  updateGroup,
-} from "@/repositories/groups";
+import { createGroup, isGroupOwnedByTeacher, updateGroup } from "@/repositories/groups";
 import {
   enrollStudent,
   getActiveEnrollmentForStudent,
@@ -122,9 +119,26 @@ export async function updateGroupAction(
     action: "GROUP_UPDATE",
     entityType: "group",
     entityId: groupId,
+    // Ids no primeiro nível de propósito: é assim que a auditoria os troca
+    // por nomes na leitura (`collectMetadataIds` não desce em objetos).
+    ...(result.handover
+      ? {
+          metadata: {
+            newTeacherId: input.teacherId ?? null,
+            previousTeacherId: result.handover.previousTeacherId,
+            handedOverSessions: result.handover.sessions,
+          },
+        }
+      : {}),
   });
 
   revalidatePath("/turmas");
+  // A turma mudou de dono: as aulas futuras saíram de uma agenda e entraram
+  // na outra, então as duas telas de agenda estão servindo cache velho.
+  if (result.handover) {
+    revalidateStaffPath("/planejador");
+    revalidateStaffPath("/agenda");
+  }
   return ok(undefined as never);
 }
 

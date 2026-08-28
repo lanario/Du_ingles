@@ -313,7 +313,7 @@ export function Ribbon({ editor, onPickImage }: RibbonProps) {
     <div
       role="toolbar"
       aria-label="Ferramentas de edição"
-      className="sticky top-0 z-20 flex flex-wrap items-center gap-0.5 rounded-t-2xl border-b border-admin-border bg-white/92 px-2.5 py-2 backdrop-blur-md"
+      className="lesson-ribbon sticky top-0 z-20 flex flex-wrap items-center gap-0.5 rounded-t-2xl border-b border-admin-border bg-white/92 px-2.5 py-2 backdrop-blur-md"
     >
       <ToolButton
         label="Desfazer"
@@ -523,8 +523,7 @@ export function Ribbon({ editor, onPickImage }: RibbonProps) {
                 }}
                 className={cn(
                   "h-7 w-7 rounded-full border border-black/10 transition-transform hover:scale-110",
-                  state.highlight === color.value &&
-                    "ring-2 ring-navy-900 ring-offset-2",
+                  state.highlight === color.value && "ring-2 ring-navy-900 ring-offset-2",
                 )}
                 style={{ background: color.value }}
               />

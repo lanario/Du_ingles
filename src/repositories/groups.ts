@@ -227,21 +227,94 @@ export async function createGroup(
   }
 
   // Gera as sessões das próximas 4 semanas imediatamente — não espera o
-  // cron das 03:00 (critério de conclusão da Fase 4).
-  await admin.rpc("generate_recurring_sessions", { p_group_id: data.id });
+  // cron das 03:00 (critério de conclusão da Fase 4). É o que põe a turma na
+  // agenda do professor no mesmo instante em que ela é criada, então uma
+  // falha aqui não pode passar em silêncio.
+  const { error: generateError } = await admin.rpc("generate_recurring_sessions", {
+    p_group_id: data.id,
+  });
+  if (generateError) {
+    console.error(
+      "[groups] turma criada, mas as sessões não foram geradas:",
+      generateError.message,
+    );
+  }
 
   return { success: true, groupId: data.id };
+}
+
+/**
+ * Passa para o novo responsável as aulas que ainda vão acontecer.
+ *
+ * `class_sessions.teacher_id` é uma cópia do responsável da turma, feita na
+ * geração — e é ela, não a coluna da turma, que a agenda do professor lê
+ * (`/planejador` filtra as sessões por `teacherId`). Sem esta passagem de
+ * bastão, reatribuir a turma deixava a agenda do novo professor vazia e as
+ * aulas paradas na agenda de quem já não responde pela turma.
+ *
+ * O corte é o presente: o que já aconteceu fica com quem deu a aula — chamada,
+ * registro e PDF apontam para aquela pessoa, e reescrever isso seria falsear
+ * histórico. Aula em andamento também fica: quem abriu a sala termina.
+ *
+ * Devolve quantas mudaram de dono, ou `null` se a atualização falhou.
+ */
+async function handOverFutureSessions(
+  groupId: string,
+  teacherId: string,
+): Promise<number | null> {
+  const admin = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await admin
+    .from("class_sessions")
+    .update({ teacher_id: teacherId, updated_at: now })
+    .eq("group_id", groupId)
+    .eq("status", "scheduled")
+    .gte("scheduled_at", now)
+    .neq("teacher_id", teacherId)
+    .select("id");
+
+  if (error) {
+    console.error("[groups] falha ao passar as aulas futuras:", error.message);
+    return null;
+  }
+  return data?.length ?? 0;
+}
+
+/** Turma que nunca gerou sessão nenhuma — nem futura, nem histórico. */
+async function hasNoSessions(groupId: string): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { count, error } = await admin
+    .from("class_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId);
+  return !error && (count ?? 0) === 0;
 }
 
 /**
  * Edição de turma. Regerar as sessões só quando a grade muda: `schedule`
  * ausente significa "não mexi nos horários", e regerar à toa apagaria/
  * recriaria sessões já vinculadas a planos de aula e presenças.
+ *
+ * Trocar o responsável é diferente de mudar a grade: os horários continuam os
+ * mesmos, só mudam de dono. Por isso a reatribuição passa as aulas futuras
+ * para o novo professor em vez de regerar a série.
  */
-export async function updateGroup(
-  input: UpdateGroupInput,
-): Promise<{ success: boolean; message?: string }> {
+export async function updateGroup(input: UpdateGroupInput): Promise<{
+  success: boolean;
+  message?: string;
+  /** Preenchido só quando o responsável mudou — alimenta o log de auditoria. */
+  handover?: { previousTeacherId: string | null; sessions: number };
+}> {
   const admin = createAdminSupabaseClient();
+
+  // O responsável anterior tem que ser lido ANTES da escrita: é a comparação
+  // que diz se as aulas já geradas precisam trocar de dono.
+  const { data: before } = await admin
+    .from("groups")
+    .select("teacher_id")
+    .eq("id", input.id)
+    .maybeSingle();
 
   const { error } = await admin
     .from("groups")
@@ -264,7 +337,33 @@ export async function updateGroup(
     await admin.rpc("generate_recurring_sessions", { p_group_id: input.id });
   }
 
-  return { success: true };
+  const changedTeacher =
+    Boolean(input.teacherId) && before?.teacher_id !== input.teacherId;
+  if (!changedTeacher || !input.teacherId) return { success: true };
+
+  const moved = await handOverFutureSessions(input.id, input.teacherId);
+  if (moved === null) {
+    return {
+      success: false,
+      message:
+        "A turma foi salva, mas as aulas futuras continuam com o professor anterior. Salve novamente para concluir a passagem.",
+    };
+  }
+
+  /**
+   * Turma sem sessão nenhuma: a agenda do novo professor ficaria vazia mesmo
+   * com a grade preenchida. Gerar aqui é seguro justamente porque não há nada
+   * para sobrescrever — e a série já nasce com o novo responsável, que é o que
+   * ficou gravado na turma alguns comandos acima.
+   */
+  if (moved === 0 && !input.schedule && (await hasNoSessions(input.id))) {
+    await admin.rpc("generate_recurring_sessions", { p_group_id: input.id });
+  }
+
+  return {
+    success: true,
+    handover: { previousTeacherId: before?.teacher_id ?? null, sessions: moved },
+  };
 }
 
 /**

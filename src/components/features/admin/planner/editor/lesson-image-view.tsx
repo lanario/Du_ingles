@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils";
 import type { LessonAlign } from "./extensions";
 
 const MIN_WIDTH = 96;
+/** Abaixo disto o gesto ainda é um clique — arrastar só começa depois. */
+const MOVE_THRESHOLD = 4;
+/** Folga que a imagem pode sair da coluna de texto, para cada lado. */
+const FREE_PLAY_X = 160;
+const LIMIT_Y = 1400;
+
 const HANDLES = [
   { corner: "nw", className: "-left-1.5 -top-1.5 cursor-nwse-resize" },
   { corner: "ne", className: "-right-1.5 -top-1.5 cursor-nesw-resize" },
@@ -20,26 +26,41 @@ const ALIGN_OPTIONS: { value: LessonAlign; label: string; glyph: string }[] = [
   { value: "right", label: "Alinhar à direita", glyph: "⬔" },
 ];
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 /**
- * Imagem do canvas. Redimensionar acontece no DOM durante o arrasto (uma
- * transação do ProseMirror por pixel derrubaria o histórico de desfazer) e
- * só vira atributo do documento quando o mouse solta.
+ * Imagem do canvas. Redimensionar e mover acontecem no DOM durante o arrasto
+ * (uma transação do ProseMirror por pixel derrubaria o histórico de desfazer)
+ * e só viram atributo do documento quando o ponteiro solta.
+ *
+ * Mover é um `translate` a partir da âncora do alinhamento: a figura anda pela
+ * folha sem empurrar o texto — é uma imagem colada em cima do papel, não um
+ * bloco disputando espaço com o parágrafo.
  */
 export function LessonImageView(props: ReactNodeViewProps) {
-  const { node, updateAttributes, deleteNode, selected, editor } = props;
+  const { node, updateAttributes, deleteNode, selected, editor, getPos } = props;
   const attrs = node.attrs as {
     src: string;
     alt: string | null;
     title: string | null;
     width: number | null;
     align: LessonAlign;
+    offsetX: number | null;
+    offsetY: number | null;
     uploadId: string | null;
   };
 
   const figureRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [liveWidth, setLiveWidth] = useState<number | null>(attrs.width);
+  const [liveOffset, setLiveOffset] = useState({
+    x: attrs.offsetX ?? 0,
+    y: attrs.offsetY ?? 0,
+  });
 
   // Só sincroniza quando o documento traz uma largura de verdade: um `null`
   // vindo de um redesenho do nó não pode apagar o tamanho recém-arrastado.
@@ -47,8 +68,25 @@ export function LessonImageView(props: ReactNodeViewProps) {
     if (typeof attrs.width === "number") setLiveWidth(attrs.width);
   }, [attrs.width]);
 
+  // O deslocamento tem `0` como padrão no schema, então o valor que vem do
+  // documento é sempre um número — dá para espelhar direto.
+  useEffect(() => {
+    setLiveOffset({ x: attrs.offsetX ?? 0, y: attrs.offsetY ?? 0 });
+  }, [attrs.offsetX, attrs.offsetY]);
+
   const uploading = Boolean(attrs.uploadId);
   const editable = editor.isEditable;
+
+  /** Seleciona o nó já no clique, para os punhos e a barrinha aparecerem. */
+  const selectNode = useCallback(() => {
+    const pos = getPos();
+    if (typeof pos !== "number") return;
+    try {
+      editor.commands.setNodeSelection(pos);
+    } catch {
+      /* posição obsoleta entre transações: o ProseMirror seleciona sozinho */
+    }
+  }, [editor, getPos]);
 
   /**
    * Redimensionar com o ponteiro CAPTURADO pelo punho. Sem a captura, o
@@ -88,7 +126,7 @@ export function LessonImageView(props: ReactNodeViewProps) {
       const onMove = (moveEvent: PointerEvent) => {
         moveEvent.preventDefault();
         const delta = (moveEvent.clientX - startX) * (growsLeft ? -1 : 1);
-        next = Math.round(Math.min(Math.max(startWidth + delta, MIN_WIDTH), maxWidth));
+        next = Math.round(clamp(startWidth + delta, MIN_WIDTH, maxWidth));
         if (frame) return;
         frame = window.requestAnimationFrame(() => {
           frame = 0;
@@ -123,7 +161,100 @@ export function LessonImageView(props: ReactNodeViewProps) {
     [editable, updateAttributes],
   );
 
+  /**
+   * Mover. Os listeners moram na janela, e não no elemento, porque o punho ✥
+   * some assim que o arrasto começa (a barrinha se esconde para não tampar a
+   * imagem); a captura fica na figura, que sobrevive ao gesto inteiro.
+   */
+  const startMove = useCallback(
+    (origin: { clientX: number; clientY: number; pointerId: number }) => {
+      if (!editable) return;
+
+      const figure = figureRef.current;
+      if (!figure) return;
+
+      const baseX = attrs.offsetX ?? 0;
+      const baseY = attrs.offsetY ?? 0;
+      const wrapperWidth = figure.parentElement?.getBoundingClientRect().width ?? 900;
+      const figureWidth = figure.getBoundingClientRect().width;
+      // A imagem passeia pelo espaço que sobra da coluna, mais uma folga para
+      // cada lado — o bastante para escapar do texto sem sumir atrás da borda
+      // da folha, que corta o que passa dela.
+      const limitX = Math.max((wrapperWidth - figureWidth) / 2, 0) + FREE_PLAY_X;
+
+      let next = { x: baseX, y: baseY };
+      let started = false;
+      let frame = 0;
+
+      const onMove = (moveEvent: PointerEvent) => {
+        if (moveEvent.pointerId !== origin.pointerId) return;
+        const dx = moveEvent.clientX - origin.clientX;
+        const dy = moveEvent.clientY - origin.clientY;
+
+        // O arrasto só nasce depois do limiar: sem isso, um clique com a mão
+        // trêmula viraria um deslocamento de dois pixels no documento.
+        if (!started) {
+          if (Math.hypot(dx, dy) < MOVE_THRESHOLD) return;
+          started = true;
+          setMoving(true);
+          try {
+            figure.setPointerCapture(origin.pointerId);
+          } catch {
+            /* segue sem captura */
+          }
+        }
+
+        moveEvent.preventDefault();
+        next = {
+          x: Math.round(clamp(baseX + dx, -limitX, limitX)),
+          y: Math.round(clamp(baseY + dy, -LIMIT_Y, LIMIT_Y)),
+        };
+        if (frame) return;
+        frame = window.requestAnimationFrame(() => {
+          frame = 0;
+          figure.style.transform = `translate(${next.x}px, ${next.y}px)`;
+          setLiveOffset(next);
+        });
+      };
+
+      const finish = (endEvent: PointerEvent) => {
+        if (endEvent.pointerId !== origin.pointerId) return;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", finish);
+        if (frame) window.cancelAnimationFrame(frame);
+        if (figure.hasPointerCapture(origin.pointerId)) {
+          figure.releasePointerCapture(origin.pointerId);
+        }
+        if (!started) return;
+
+        setMoving(false);
+        setLiveOffset(next);
+        updateAttributes({ offsetX: next.x, offsetY: next.y });
+      };
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", finish);
+      window.addEventListener("pointercancel", finish);
+    },
+    [attrs.offsetX, attrs.offsetY, editable, updateAttributes],
+  );
+
+  /**
+   * Arrastar pelo corpo da imagem só vale para o mouse. No toque, esse mesmo
+   * gesto é rolar a folha — quem move no tablet usa o punho ✥ da barrinha, que
+   * declara `touch-action: none` só para si.
+   */
+  function handleFigurePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (!editable || event.button !== 0) return;
+    if (event.pointerType !== "mouse") return;
+    if ((event.target as HTMLElement).closest("[data-image-control]")) return;
+    selectNode();
+    startMove(event);
+  }
+
   const active = selected && editable;
+  const displaced = liveOffset.x !== 0 || liveOffset.y !== 0;
 
   return (
     <NodeViewWrapper
@@ -140,8 +271,20 @@ export function LessonImageView(props: ReactNodeViewProps) {
         ref={figureRef}
         draggable={false}
         onDragStart={(event) => event.preventDefault()}
+        onPointerDown={handleFigurePointerDown}
+        style={{
+          transform: displaced
+            ? `translate(${liveOffset.x}px, ${liveOffset.y}px)`
+            : undefined,
+          willChange: moving ? "transform" : undefined,
+        }}
         className={cn(
           "relative inline-block max-w-full rounded-xl transition-shadow",
+          // Imagem deslocada passa por cima do texto, não por baixo: ela foi
+          // posta ali de propósito.
+          displaced && "z-10",
+          moving && "z-20 shadow-[var(--shadow-card-hover)]",
+          editable && !dragging && (moving ? "cursor-grabbing" : "cursor-grab"),
           active && "ring-2 ring-gold-500 ring-offset-2 ring-offset-white",
         )}
       >
@@ -156,7 +299,7 @@ export function LessonImageView(props: ReactNodeViewProps) {
           className={cn(
             "block h-auto max-w-full rounded-xl",
             uploading && "opacity-60",
-            dragging && "select-none",
+            (dragging || moving) && "select-none",
           )}
         />
 
@@ -167,15 +310,34 @@ export function LessonImageView(props: ReactNodeViewProps) {
         )}
 
         <AnimatePresence>
-          {active && !dragging && (
+          {active && !dragging && !moving && (
             <motion.div
               initial={{ opacity: 0, y: 6, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 4, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 420, damping: 30 }}
               contentEditable={false}
+              data-image-control
               className="absolute -top-11 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-admin-border bg-white/95 px-1.5 py-1 shadow-[var(--shadow-card-hover)] backdrop-blur"
             >
+              <button
+                type="button"
+                aria-label="Arrastar para mover a imagem"
+                title="Arraste para mover a imagem"
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  startMove(event);
+                }}
+                style={{ touchAction: "none" }}
+                className="grid h-7 w-7 cursor-grab place-items-center rounded-full text-sm text-admin-foreground/60 transition-colors hover:bg-admin-muted active:cursor-grabbing"
+              >
+                <span aria-hidden>✥</span>
+              </button>
+
+              <span className="mx-1 h-4 w-px bg-admin-border" aria-hidden />
+
               {ALIGN_OPTIONS.map((option) => (
                 <button
                   key={option.value}
@@ -204,6 +366,17 @@ export function LessonImageView(props: ReactNodeViewProps) {
                 Tamanho original
               </button>
 
+              {displaced && (
+                <button
+                  type="button"
+                  title="Devolver a imagem ao lugar de origem"
+                  onClick={() => updateAttributes({ offsetX: 0, offsetY: 0 })}
+                  className="rounded-full px-2 py-1 text-[11px] font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted"
+                >
+                  Voltar ao lugar
+                </button>
+              )}
+
               <button
                 type="button"
                 aria-label="Remover imagem"
@@ -217,11 +390,13 @@ export function LessonImageView(props: ReactNodeViewProps) {
         </AnimatePresence>
 
         {active &&
+          !moving &&
           HANDLES.map((handle) => (
             <span
               key={handle.corner}
               role="presentation"
               draggable={false}
+              data-image-control
               onDragStart={(event) => event.preventDefault()}
               onPointerDown={(event) => startResize(event, handle.corner)}
               style={{ touchAction: "none" }}
@@ -235,6 +410,14 @@ export function LessonImageView(props: ReactNodeViewProps) {
         {dragging && liveWidth && (
           <span className="absolute bottom-2 right-2 rounded-md bg-navy-900/85 px-2 py-0.5 text-[11px] font-medium tabular text-white">
             {liveWidth}px
+          </span>
+        )}
+
+        {moving && (
+          <span className="absolute bottom-2 right-2 rounded-md bg-navy-900/85 px-2 py-0.5 text-[11px] font-medium tabular text-white">
+            {liveOffset.x >= 0 ? "+" : ""}
+            {liveOffset.x} · {liveOffset.y >= 0 ? "+" : ""}
+            {liveOffset.y}
           </span>
         )}
       </div>

@@ -807,6 +807,22 @@ body {
 }
 
 /*
+ * Na apresentação quem rola é a tela inteira, não a folha — então o cartão
+ * precisa deixar de ser uma caixa de rolagem própria, senão a régua (quando o
+ * professor a chama para escrever ao vivo) gruda no topo de uma caixa que
+ * ninguém rola e some junto com o texto. Sem `overflow: hidden` ela passa a
+ * grudar na tela, logo abaixo da barra do modo apresentação.
+ */
+.lesson-stage .lesson-card {
+  overflow: visible;
+}
+
+.lesson-stage .lesson-ribbon {
+  top: 3.75rem;
+  border-radius: 0.75rem;
+}
+
+/*
  * Cards com holofote (planos). O ponteiro é a única fonte de luz da seção:
  * `--glow-x`/`--glow-y` são escritos uma única vez em `:root` e, como todos
  * os gradientes usam `background-attachment: fixed`, os coordenadas valem

@@ -236,6 +236,15 @@ const CATALOG: Record<string, Descriptor> = {
         return `arquivou ${withName("a", "turma", ctx.target)}`;
       if (ctx.metadata.isActive === true)
         return `reativou ${withName("a", "turma", ctx.target)}`;
+      if (ctx.metadata.newTeacherId) {
+        const novo = named(ctx, "newTeacherId") ?? "outro professor";
+        const aulas = Number(ctx.metadata.handedOverSessions ?? 0);
+        const carga =
+          aulas === 0
+            ? "sem aulas futuras a passar"
+            : `${aulas} ${aulas === 1 ? "aula futura passou junto" : "aulas futuras passaram junto"}`;
+        return `passou ${withName("a", "turma", ctx.target)} para ${novo} — ${carga}`;
+      }
       return base;
     },
   },

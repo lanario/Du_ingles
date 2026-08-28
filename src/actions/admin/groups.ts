@@ -5,7 +5,12 @@ import { isAdmin, requireRole } from "@/lib/auth/session";
 import { canTouchGroup, requireStaff } from "@/lib/auth/staff";
 import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
-import { createGroup, getGroupById, setGroupActive, updateGroup } from "@/repositories/groups";
+import {
+  createGroup,
+  getGroupById,
+  setGroupActive,
+  updateGroup,
+} from "@/repositories/groups";
 import { enrollStudent, unenrollStudent } from "@/repositories/enrollments";
 import { createGroupSchema, updateGroupSchema } from "@/schemas/groups";
 import { createEnrollmentSchema } from "@/schemas/enrollments";
@@ -176,10 +181,27 @@ export async function updateGroupAction(
     action: "GROUP_UPDATE",
     entityType: "group",
     entityId: parsed.data.id,
+    // Ids no primeiro nível de propósito: é assim que a auditoria os troca
+    // por nomes na leitura (`collectMetadataIds` não desce em objetos).
+    ...(result.handover
+      ? {
+          metadata: {
+            newTeacherId: input.teacherId ?? null,
+            previousTeacherId: result.handover.previousTeacherId,
+            handedOverSessions: result.handover.sessions,
+          },
+        }
+      : {}),
   });
 
   revalidateStaffPath("/turmas");
   revalidateStaffPath(`/turmas/${parsed.data.id}`);
+  // A turma mudou de dono: as aulas futuras saíram de uma agenda e entraram
+  // na outra, então as duas telas de agenda estão servindo cache velho.
+  if (result.handover) {
+    revalidateStaffPath("/planejador");
+    revalidateStaffPath("/agenda");
+  }
   return ok(undefined as never);
 }
 
@@ -201,7 +223,8 @@ export async function removeScheduleEntryAction(
   if (!group) return fail("NOT_FOUND", "Turma não encontrada.");
 
   const schedule = group.schedule.filter(
-    (e) => !(e.weekday === entry.weekday && e.start === entry.start && e.end === entry.end),
+    (e) =>
+      !(e.weekday === entry.weekday && e.start === entry.start && e.end === entry.end),
   );
   if (schedule.length === group.schedule.length) {
     return fail("NOT_FOUND", "Horário não encontrado.");

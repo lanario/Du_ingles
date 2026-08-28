@@ -71,6 +71,12 @@ export function LessonStudio({
     (plan.content as JSONContent) ?? { type: "doc", content: [] },
   );
   const [presenting, setPresenting] = useState(false);
+  /**
+   * Régua dentro da apresentação. Começa escondida — a tela está projetada
+   * para a turma —, mas a aula continua editável: o professor escreve por cima
+   * do que preparou e, quando precisa de cor, tabela ou imagem, chama a régua.
+   */
+  const [presentToolbar, setPresentToolbar] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -121,12 +127,23 @@ export function LessonStudio({
     };
   }, [reduceMotion]);
 
+  /**
+   * Fechar a apresentação salva na hora: o que foi escrito com a turma na
+   * frente não pode ficar pendurado no temporizador do autosave enquanto o
+   * professor já fechou o notebook.
+   */
+  const closePresenting = useCallback(() => {
+    setPresenting(false);
+    setPresentToolbar(false);
+    if (!readOnly) void flush();
+  }, [flush, readOnly]);
+
   // Sair da apresentação com Escape — o professor está com a tela projetada,
   // não com a mão no mouse.
   useEffect(() => {
     if (!presenting) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setPresenting(false);
+      if (event.key === "Escape") closePresenting();
     }
     document.addEventListener("keydown", onKeyDown);
     const { overflow } = document.body.style;
@@ -135,7 +152,7 @@ export function LessonStudio({
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = overflow;
     };
-  }, [presenting]);
+  }, [presenting, closePresenting]);
 
   function handleChange(next: JSONContent) {
     setContent(next);
@@ -260,8 +277,12 @@ export function LessonStudio({
               <li className="flex gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold-500" />
                 <span>
-                  Clique na imagem e arraste os cantos para redimensionar; a barrinha
-                  acima dela alinha à esquerda, ao centro ou à direita.
+                  <strong className="font-medium text-admin-foreground">
+                    Arraste a imagem
+                  </strong>{" "}
+                  para movê-la pela folha, para os lados ou para cima e para baixo; os
+                  cantos redimensionam e a barrinha acima dela alinha, devolve ao lugar ou
+                  remove.
                 </span>
               </li>
               <li className="flex gap-2">
@@ -275,7 +296,8 @@ export function LessonStudio({
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold-500" />
                 <span>
                   Tudo é salvo automaticamente — <em>Apresentar</em> mostra a aula em tela
-                  cheia, do jeito que o aluno vê.
+                  cheia, do jeito que o aluno vê, e continua editável: escreva por cima e
+                  chame a régua em <em>Ferramentas</em>.
                 </span>
               </li>
             </ul>
@@ -323,10 +345,7 @@ export function LessonStudio({
                           </span>
                         </span>
                         <span
-                          className={cn(
-                            "h-1.5 w-1.5 shrink-0 rounded-full",
-                            status.dot,
-                          )}
+                          className={cn("h-1.5 w-1.5 shrink-0 rounded-full", status.dot)}
                           title={status.label}
                         />
                       </Link>
@@ -348,23 +367,51 @@ export function LessonStudio({
             transition={{ duration: reduceMotion ? 0 : 0.25 }}
             className="lesson-stage fixed inset-0 z-50 overflow-y-auto bg-white"
           >
-            <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-admin-border bg-white/90 px-6 py-3 backdrop-blur">
+            {/* Acima da régua da folha (z-20), que gruda logo abaixo desta barra. */}
+            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-admin-border bg-white/90 px-6 py-3 backdrop-blur">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-admin-foreground">
                   {plan.title}
                 </p>
                 <p className="text-[11px] text-admin-foreground/50">
-                  Modo apresentação · Esc para sair
+                  {readOnly
+                    ? "Modo apresentação · Esc para sair"
+                    : "Modo apresentação · dá para escrever na folha · Esc para sair"}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setPresenting(false)}
-                aria-label="Sair da apresentação"
-                className="ml-auto grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
+
+              <div className="ml-auto flex items-center gap-2">
+                {!readOnly && (
+                  <>
+                    <span className="hidden sm:block">
+                      <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPresentToolbar((open) => !open)}
+                      aria-pressed={presentToolbar}
+                      className={cn(
+                        "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
+                        presentToolbar
+                          ? "border-navy-900 bg-navy-900 text-white"
+                          : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted hover:text-admin-foreground",
+                      )}
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Ferramentas</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={closePresenting}
+                  aria-label="Sair da apresentação"
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <motion.div
@@ -375,8 +422,10 @@ export function LessonStudio({
             >
               <LessonCanvas
                 content={content}
-                editable={false}
+                onChange={readOnly ? undefined : handleChange}
+                editable={!readOnly}
                 presenting
+                showToolbar={presentToolbar}
                 scope={`plano-${plan.id}`}
               />
             </motion.div>

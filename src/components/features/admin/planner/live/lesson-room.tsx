@@ -29,7 +29,7 @@ import { AutosaveIndicator } from "@/components/features/live-session/autosave-i
 import { DownloadPdfButton } from "@/components/features/library/download-pdf-button";
 import { useAutosave } from "@/hooks/use-autosave";
 import { Select } from "@/components/ui/select";
-import { ArrowLeftIcon, CloseIcon, EyeIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, CloseIcon, EyeIcon, PencilIcon } from "@/components/ui/icons";
 import type { Route } from "next";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
@@ -100,8 +100,9 @@ function RoomHeader({
             </h1>
           </div>
           <p className="truncate text-xs text-admin-foreground/50">
-            {session.groupName} · {session.teacherName} · {formatWeekday(session.scheduledAt)},{" "}
-            {formatDay(session.scheduledAt)} às {formatTime(session.scheduledAt)}
+            {session.groupName} · {session.teacherName} ·{" "}
+            {formatWeekday(session.scheduledAt)}, {formatDay(session.scheduledAt)} às{" "}
+            {formatTime(session.scheduledAt)}
           </p>
         </div>
 
@@ -239,6 +240,11 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
   const [teacherNotes, setTeacherNotes] = useState(live.teacherNotes ?? "");
   const [homework, setHomework] = useState(live.homework ?? "");
   const [projecting, setProjecting] = useState(false);
+  /**
+   * Régua dentro da projeção. Começa escondida — a tela está no telão —, mas a
+   * folha continua editável: é durante a aula que o professor escreve nela.
+   */
+  const [projectToolbar, setProjectToolbar] = useState(false);
   const [lockWarning, setLockWarning] = useState(false);
   const [ending, setEnding] = useState(false);
 
@@ -282,10 +288,20 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
     return () => window.clearInterval(timer);
   }, [session.id]);
 
+  /**
+   * Fechar a projeção salva na hora: o que foi escrito com a turma na frente
+   * não pode ficar pendurado no temporizador do autosave.
+   */
+  const closeProjection = useCallback(() => {
+    setProjecting(false);
+    setProjectToolbar(false);
+    void flush();
+  }, [flush]);
+
   useEffect(() => {
     if (!projecting) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setProjecting(false);
+      if (event.key === "Escape") closeProjection();
     }
     document.addEventListener("keydown", onKeyDown);
     const { overflow } = document.body.style;
@@ -294,7 +310,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = overflow;
     };
-  }, [projecting]);
+  }, [projecting, closeProjection]);
 
   function update(patch: Partial<SavePayload>) {
     const next = { ...latest.current, ...patch };
@@ -327,7 +343,10 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
             <span className="hidden sm:block">
               <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
             </span>
-            <LessonClock startedAt={live.startedAt} durationMinutes={live.durationMinutes} />
+            <LessonClock
+              startedAt={live.startedAt}
+              durationMinutes={live.durationMinutes}
+            />
             <button
               type="button"
               onClick={() => setProjecting(true)}
@@ -416,31 +435,55 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
             transition={{ duration: reduceMotion ? 0 : 0.25 }}
             className="lesson-stage fixed inset-0 z-50 overflow-y-auto bg-white"
           >
-            <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-admin-border bg-white/90 px-6 py-3 backdrop-blur">
+            {/* Acima da régua da folha (z-20), que gruda logo abaixo desta barra. */}
+            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-admin-border bg-white/90 px-6 py-3 backdrop-blur">
               <span className="live-dot relative inline-block h-2.5 w-2.5 rounded-full bg-[var(--success)]" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-admin-foreground">
                   {session.title} · {session.groupName}
                 </p>
                 <p className="text-[11px] text-admin-foreground/50">
-                  Modo projeção · Esc para sair
+                  Modo projeção · dá para escrever na folha · Esc para sair
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setProjecting(false)}
-                aria-label="Sair da projeção"
-                className="ml-auto grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
+
+              <div className="ml-auto flex items-center gap-2">
+                <span className="hidden sm:block">
+                  <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setProjectToolbar((open) => !open)}
+                  aria-pressed={projectToolbar}
+                  className={cn(
+                    "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
+                    projectToolbar
+                      ? "border-navy-900 bg-navy-900 text-white"
+                      : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted hover:text-admin-foreground",
+                  )}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Ferramentas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeProjection}
+                  aria-label="Sair da projeção"
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-8">
               <LessonCanvas
                 content={content}
-                editable={false}
+                onChange={(next) => update({ content: next })}
                 presenting
+                showToolbar={projectToolbar}
                 scope={`aula-${session.id}`}
               />
             </div>
@@ -588,7 +631,15 @@ function LessonClock({
       )}
     >
       <svg viewBox="0 0 30 30" className="h-6 w-6 -rotate-90" aria-hidden>
-        <circle cx="15" cy="15" r="13" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2.5" />
+        <circle
+          cx="15"
+          cy="15"
+          r="13"
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.2"
+          strokeWidth="2.5"
+        />
         <circle
           ref={arcRef}
           cx="15"
