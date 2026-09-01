@@ -82,7 +82,11 @@ export function SchedulePanel({
     >
       <form action={formAction} className="flex min-h-full flex-col" noValidate>
         <div className="flex-1 space-y-5 px-4 py-5 sm:px-6">
-          {state && !state.success && !state.error.fields && (
+          {/* O banner aparece em TODA falha, inclusive nas de validação. Um
+              erro num campo que não está na tela (o professor, escondido
+              atrás do "trocar") não tem onde se mostrar inline — sem isto o
+              clique em "Agendar aula" não fazia nada e não dizia nada. */}
+          {state && !state.success && (
             <FormBanner tone="error">{state.error.message}</FormBanner>
           )}
 
@@ -184,6 +188,7 @@ export function SchedulePanel({
                     </option>
                   ))}
                 </Select>
+                <FieldError messages={fields?.["teacherId"]} />
               </div>
             )}
           </div>

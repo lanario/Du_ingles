@@ -1,9 +1,10 @@
 "use client";
 
-import { Extension, Mark, mergeAttributes } from "@tiptap/core";
+import { Extension, Mark, Node, mergeAttributes } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { LessonImageView } from "./lesson-image-view";
+import { LessonTextBoxView } from "./lesson-text-box-view";
 
 /**
  * Extensões próprias do canvas de aula. Os pacotes oficiais de cor, tamanho e
@@ -20,6 +21,9 @@ declare module "@tiptap/core" {
     };
     lessonTextAlign: {
       setTextAlign: (align: LessonAlign) => ReturnType;
+    };
+    lessonTextBox: {
+      insertTextBox: () => ReturnType;
     };
   }
 }
@@ -126,6 +130,29 @@ function toOffset(value: string | null): number {
 }
 
 /**
+ * Objeto SOLTO na folha: ele não reserva linha nenhuma no fluxo do texto.
+ *
+ * Uma figura no fluxo empurra o parágrafo para baixo — é o comportamento certo
+ * para uma imagem que ilustra o trecho. Mas assim que ela é arrastada para o
+ * lado, a linha que ela ocupava continua lá, vazia, e a folha fica com um
+ * buraco no meio do texto. Solto, o nó vira uma casca de altura zero e a
+ * figura passa a flutuar por cima do papel: o texto se fecha em volta como se
+ * ela não estivesse ali, que é o que se espera de uma imagem colada na folha.
+ */
+const freeAttribute = {
+  default: false,
+  parseHTML: (element: HTMLElement) => element.getAttribute("data-free") === "true",
+  renderHTML: (attributes: Record<string, unknown>) =>
+    attributes["free"] ? { "data-free": "true" } : {},
+};
+
+/** Largura em pixels — do atributo `width` ou do estilo inline. */
+function toWidth(element: HTMLElement): number | null {
+  const value = element.getAttribute("width") ?? element.style.width;
+  return value ? Number.parseInt(value, 10) || null : null;
+}
+
+/**
  * Imagem redimensionável e móvel. `width` guarda a largura em pixels escolhida
  * com o mouse, `align` decide de que lado ela ancora e `offsetX`/`offsetY`
  * guardam o quanto ela foi arrastada a partir dessa âncora — os quatro viajam
@@ -144,13 +171,11 @@ export const LessonImage = Image.extend({
       ...this.parent?.(),
       width: {
         default: null,
-        parseHTML: (element) => {
-          const value = element.getAttribute("width") ?? element.style.width;
-          return value ? Number.parseInt(value, 10) || null : null;
-        },
+        parseHTML: (element) => toWidth(element),
         renderHTML: (attributes) =>
           attributes.width ? { width: String(attributes.width) } : {},
       },
+      free: freeAttribute,
       align: {
         default: "center",
         parseHTML: (element) => element.getAttribute("data-align") ?? "center",
@@ -183,3 +208,94 @@ export const LessonImage = Image.extend({
     return ReactNodeViewRenderer(LessonImageView);
   },
 }).configure({ inline: false, allowBase64: true });
+
+export type LessonBoxTone = "card" | "note" | "plain";
+
+export const BOX_TONES: { value: LessonBoxTone; label: string }[] = [
+  { value: "card", label: "Cartão" },
+  { value: "note", label: "Recado" },
+  { value: "plain", label: "Sem moldura" },
+];
+
+/**
+ * Caixa de texto: um bloco de texto que mora POR CIMA da folha, do tamanho e
+ * no lugar que o professor quiser — para escrever ao lado de uma imagem,
+ * legendar uma figura ou montar duas colunas sem tabela.
+ *
+ * Ela nasce solta (`free`), pelo mesmo motivo da imagem arrastada: uma caixa
+ * que empurrasse o texto para baixo seria só um parágrafo com borda. Por
+ * dentro é um documento comum (`block+`), então título, lista e negrito
+ * funcionam ali como funcionam na folha; `isolating` mantém o Backspace na
+ * primeira linha dentro da caixa em vez de dissolvê-la no parágrafo de cima.
+ */
+export const LessonTextBox = Node.create({
+  name: "textBox",
+  group: "block",
+  content: "block+",
+  defining: true,
+  isolating: true,
+  draggable: false,
+  selectable: false,
+
+  addAttributes() {
+    return {
+      width: {
+        default: 260,
+        parseHTML: (element) => toWidth(element) ?? 260,
+        renderHTML: (attributes) =>
+          attributes.width ? { width: String(attributes.width) } : {},
+      },
+      align: {
+        default: "left",
+        parseHTML: (element) => element.getAttribute("data-align") ?? "left",
+        renderHTML: (attributes) => ({ "data-align": attributes.align ?? "left" }),
+      },
+      tone: {
+        default: "card",
+        parseHTML: (element) => element.getAttribute("data-tone") ?? "card",
+        renderHTML: (attributes) => ({ "data-tone": attributes.tone ?? "card" }),
+      },
+      offsetX: {
+        default: 0,
+        parseHTML: (element) => toOffset(element.getAttribute("data-offset-x")),
+        renderHTML: (attributes) =>
+          attributes.offsetX ? { "data-offset-x": String(attributes.offsetX) } : {},
+      },
+      offsetY: {
+        default: 0,
+        parseHTML: (element) => toOffset(element.getAttribute("data-offset-y")),
+        renderHTML: (attributes) =>
+          attributes.offsetY ? { "data-offset-y": String(attributes.offsetY) } : {},
+      },
+      free: { ...freeAttribute, default: true },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-text-box]" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["div", mergeAttributes(HTMLAttributes, { "data-text-box": "" }), 0];
+  },
+
+  addCommands() {
+    return {
+      insertTextBox:
+        () =>
+        ({ chain }) =>
+          chain()
+            .focus()
+            .insertContent({
+              type: "textBox",
+              attrs: { width: 260, align: "left", tone: "card", free: true },
+              content: [{ type: "paragraph" }],
+            })
+            .run(),
+    };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(LessonTextBoxView);
+  },
+});

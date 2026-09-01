@@ -7,13 +7,18 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
-import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import { EditorToolbar } from "@/components/features/lesson-plans/editor-toolbar";
+import {
+  LessonImage,
+  LessonTextAlign,
+  LessonTextBox,
+  LessonTextStyle,
+} from "@/components/features/admin/planner/editor/extensions";
 
 interface TiptapEditorProps {
   content: JSONContent;
@@ -35,7 +40,17 @@ export function TiptapEditor({ content, onChange, editable = true }: TiptapEdito
       TableRow,
       TableHeader,
       TableCell,
-      Image,
+      /**
+       * As MESMAS extensões do canvas do planejador — a aula é a mesma linha
+       * do banco, aberta ora por aqui, ora por lá. Um esquema menor deste
+       * lado não "ignoraria" o que ele não conhece: o ProseMirror descarta o
+       * nó desconhecido ao abrir, e o autosave seguinte grava o documento já
+       * sem ele. Imagem posicionada e caixa de texto sumiriam sozinhas.
+       */
+      LessonTextStyle,
+      LessonTextAlign,
+      LessonImage,
+      LessonTextBox,
       Link.configure({ openOnClick: false, autolink: true }),
       TaskList,
       TaskItem.configure({ nested: true }),

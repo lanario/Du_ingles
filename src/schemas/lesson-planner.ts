@@ -8,18 +8,25 @@ import { CEFR_LEVELS } from "@/types/domain";
  * em vez de virem implícitos de quem está logado.
  */
 
+/**
+ * Campo opcional vindo de formulário. `formData.get(nome)` devolve `null` —
+ * e não `undefined` — quando o input não está montado na tela, que é o caso
+ * normal de um campo escondido atrás de um "trocar". Um `.optional()` sozinho
+ * recusa esse `null` ("expected string, received null") e reprova o
+ * formulário inteiro por um campo que o usuário nem viu; daí `.nullish()`.
+ */
 const optionalText = (max: number) =>
   z
     .string()
     .trim()
     .max(max)
-    .optional()
+    .nullish()
     .transform((value) => value || undefined);
 
 const optionalUuid = z
   .string()
   .trim()
-  .optional()
+  .nullish()
   .transform((value) => value || undefined)
   .pipe(z.string().uuid().optional());
 

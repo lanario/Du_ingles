@@ -109,6 +109,13 @@ const ICONS = {
       <path d="M3 10h18M3 15h18M9 4.5v15M15 4.5v15" />
     </Icon>
   ),
+  textBox: (
+    <Icon>
+      <rect x="2.5" y="6" width="12" height="12" rx="2" />
+      <path d="M5.5 9.5h6M5.5 12.5h6M5.5 15.5h3.5" />
+      <path d="M18 6.5v11M21.5 6.5v11" opacity="0.45" />
+    </Icon>
+  ),
   link: (
     <Icon>
       <path d="M10.5 13.5a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 0 0-5.7-5.7l-1.2 1.2" />
@@ -583,6 +590,12 @@ export function Ribbon({ editor, onPickImage }: RibbonProps) {
 
       <ToolButton label="Inserir imagem" onClick={onPickImage}>
         {ICONS.image}
+      </ToolButton>
+      <ToolButton
+        label="Caixa de texto — flutua sobre a folha, para escrever ao lado de uma imagem"
+        onClick={() => editor.chain().focus().insertTextBox().run()}
+      >
+        {ICONS.textBox}
       </ToolButton>
       <ToolButton
         label="Inserir tabela"

@@ -39,6 +39,20 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   hr: { borderBottom: "1pt solid #e2e8f0", marginVertical: 10 },
+  /**
+   * Caixa de texto. Na tela ela flutua ao lado de uma figura; no PDF vira um
+   * bloco na ordem em que está no documento — a paginação do react-pdf é um
+   * fluxo, e uma caixa posicionada por coordenada atropelaria o texto na
+   * primeira quebra de página. O que se preserva é a moldura, que é o que
+   * marca aquele trecho como um aparte.
+   */
+  textBox: {
+    border: "0.5pt solid #cbd5e1",
+    backgroundColor: "#f8fafc",
+    borderRadius: 4,
+    padding: 8,
+    marginBottom: 8,
+  },
   table: { display: "flex", width: "100%", marginBottom: 8 },
   tableRow: { flexDirection: "row" },
   tableCell: {
@@ -169,6 +183,13 @@ export function renderNode(node: JSONContent, key: number | string): React.React
     case "blockquote":
       return (
         <View key={key} style={styles.blockquote}>
+          {node.content?.map((n, i) => renderNode(n, i))}
+        </View>
+      );
+
+    case "textBox":
+      return (
+        <View key={key} style={styles.textBox}>
           {node.content?.map((n, i) => renderNode(n, i))}
         </View>
       );

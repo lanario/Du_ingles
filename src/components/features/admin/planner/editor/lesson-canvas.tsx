@@ -15,7 +15,12 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { LessonImage, LessonTextAlign, LessonTextStyle } from "./extensions";
+import {
+  LessonImage,
+  LessonTextAlign,
+  LessonTextBox,
+  LessonTextStyle,
+} from "./extensions";
 import { insertImageFiles, isSupportedImage } from "./image-upload";
 import { Ribbon } from "./ribbon";
 import { LoadingVeil } from "@/components/ui/logo-loader";
@@ -94,6 +99,7 @@ export function LessonCanvas({
       LessonTextStyle,
       LessonTextAlign,
       LessonImage,
+      LessonTextBox,
     ],
     content,
     editable,
@@ -314,8 +320,9 @@ export function LessonCanvas({
       {editable && !presenting && (
         <div className="flex items-center justify-between border-t border-admin-border/70 px-5 py-2 text-[11px] text-admin-foreground/50">
           <span>
-            Cole imagens com Ctrl+V · arraste a imagem para movê-la, os cantos para
-            redimensionar
+            Cole imagens com Ctrl+V · arraste para mover, os cantos para redimensionar
+            · a imagem solta e a caixa de texto flutuam sobre a folha, sem ocupar
+            linha do texto
           </span>
           <span className="tabular">
             {editor.storage.characterCount.words()} palavras ·{" "}

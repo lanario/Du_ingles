@@ -5,13 +5,9 @@ import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { LessonAlign } from "./extensions";
+import { clamp, freeAnchorStyle, freeTransform, useFreeMove } from "./free-placement";
 
 const MIN_WIDTH = 96;
-/** Abaixo disto o gesto ainda é um clique — arrastar só começa depois. */
-const MOVE_THRESHOLD = 4;
-/** Folga que a imagem pode sair da coluna de texto, para cada lado. */
-const FREE_PLAY_X = 160;
-const LIMIT_Y = 1400;
 
 const HANDLES = [
   { corner: "nw", className: "-left-1.5 -top-1.5 cursor-nwse-resize" },
@@ -26,18 +22,16 @@ const ALIGN_OPTIONS: { value: LessonAlign; label: string; glyph: string }[] = [
   { value: "right", label: "Alinhar à direita", glyph: "⬔" },
 ];
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
 /**
  * Imagem do canvas. Redimensionar e mover acontecem no DOM durante o arrasto
  * (uma transação do ProseMirror por pixel derrubaria o histórico de desfazer)
  * e só viram atributo do documento quando o ponteiro solta.
  *
- * Mover é um `translate` a partir da âncora do alinhamento: a figura anda pela
- * folha sem empurrar o texto — é uma imagem colada em cima do papel, não um
- * bloco disputando espaço com o parágrafo.
+ * Arrastar a imagem a SOLTA na folha (`free`): a linha que ela ocupava no
+ * texto some junto, senão sobraria um buraco do tamanho da figura no meio do
+ * parágrafo. Solta, ela flutua por cima do papel e o texto se fecha em volta
+ * como se ela não estivesse ali — que é o que se espera ao empurrar uma
+ * imagem com o mouse. O botão "No texto" devolve a figura ao fluxo.
  */
 export function LessonImageView(props: ReactNodeViewProps) {
   const { node, updateAttributes, deleteNode, selected, editor, getPos } = props;
@@ -49,18 +43,18 @@ export function LessonImageView(props: ReactNodeViewProps) {
     align: LessonAlign;
     offsetX: number | null;
     offsetY: number | null;
+    free: boolean;
     uploadId: string | null;
   };
 
   const figureRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [moving, setMoving] = useState(false);
   const [liveWidth, setLiveWidth] = useState<number | null>(attrs.width);
-  const [liveOffset, setLiveOffset] = useState({
-    x: attrs.offsetX ?? 0,
-    y: attrs.offsetY ?? 0,
-  });
+
+  const free = Boolean(attrs.free);
+  const uploading = Boolean(attrs.uploadId);
+  const editable = editor.isEditable;
 
   // Só sincroniza quando o documento traz uma largura de verdade: um `null`
   // vindo de um redesenho do nó não pode apagar o tamanho recém-arrastado.
@@ -68,14 +62,32 @@ export function LessonImageView(props: ReactNodeViewProps) {
     if (typeof attrs.width === "number") setLiveWidth(attrs.width);
   }, [attrs.width]);
 
-  // O deslocamento tem `0` como padrão no schema, então o valor que vem do
-  // documento é sempre um número — dá para espelhar direto.
-  useEffect(() => {
-    setLiveOffset({ x: attrs.offsetX ?? 0, y: attrs.offsetY ?? 0 });
-  }, [attrs.offsetX, attrs.offsetY]);
+  /**
+   * Ao soltar o arrasto a figura vira "solta" de vez. A troca não mexe um
+   * pixel na posição dela — a âncora do modo solto nasce exatamente onde o
+   * bloco começava —, só devolve ao texto a altura que ela reservava.
+   */
+  const commitMove = useCallback(
+    (offset: { x: number; y: number }) => {
+      updateAttributes({ offsetX: offset.x, offsetY: offset.y, free: true });
+    },
+    [updateAttributes],
+  );
 
-  const uploading = Boolean(attrs.uploadId);
-  const editable = editor.isEditable;
+  const {
+    moving,
+    offset: liveOffset,
+    setOffset,
+    startMove,
+  } = useFreeMove({
+    targetRef: figureRef,
+    align: attrs.align,
+    free,
+    offsetX: attrs.offsetX ?? 0,
+    offsetY: attrs.offsetY ?? 0,
+    editable,
+    onCommit: commitMove,
+  });
 
   /** Seleciona o nó já no clique, para os punhos e a barrinha aparecerem. */
   const selectNode = useCallback(() => {
@@ -162,85 +174,6 @@ export function LessonImageView(props: ReactNodeViewProps) {
   );
 
   /**
-   * Mover. Os listeners moram na janela, e não no elemento, porque o punho ✥
-   * some assim que o arrasto começa (a barrinha se esconde para não tampar a
-   * imagem); a captura fica na figura, que sobrevive ao gesto inteiro.
-   */
-  const startMove = useCallback(
-    (origin: { clientX: number; clientY: number; pointerId: number }) => {
-      if (!editable) return;
-
-      const figure = figureRef.current;
-      if (!figure) return;
-
-      const baseX = attrs.offsetX ?? 0;
-      const baseY = attrs.offsetY ?? 0;
-      const wrapperWidth = figure.parentElement?.getBoundingClientRect().width ?? 900;
-      const figureWidth = figure.getBoundingClientRect().width;
-      // A imagem passeia pelo espaço que sobra da coluna, mais uma folga para
-      // cada lado — o bastante para escapar do texto sem sumir atrás da borda
-      // da folha, que corta o que passa dela.
-      const limitX = Math.max((wrapperWidth - figureWidth) / 2, 0) + FREE_PLAY_X;
-
-      let next = { x: baseX, y: baseY };
-      let started = false;
-      let frame = 0;
-
-      const onMove = (moveEvent: PointerEvent) => {
-        if (moveEvent.pointerId !== origin.pointerId) return;
-        const dx = moveEvent.clientX - origin.clientX;
-        const dy = moveEvent.clientY - origin.clientY;
-
-        // O arrasto só nasce depois do limiar: sem isso, um clique com a mão
-        // trêmula viraria um deslocamento de dois pixels no documento.
-        if (!started) {
-          if (Math.hypot(dx, dy) < MOVE_THRESHOLD) return;
-          started = true;
-          setMoving(true);
-          try {
-            figure.setPointerCapture(origin.pointerId);
-          } catch {
-            /* segue sem captura */
-          }
-        }
-
-        moveEvent.preventDefault();
-        next = {
-          x: Math.round(clamp(baseX + dx, -limitX, limitX)),
-          y: Math.round(clamp(baseY + dy, -LIMIT_Y, LIMIT_Y)),
-        };
-        if (frame) return;
-        frame = window.requestAnimationFrame(() => {
-          frame = 0;
-          figure.style.transform = `translate(${next.x}px, ${next.y}px)`;
-          setLiveOffset(next);
-        });
-      };
-
-      const finish = (endEvent: PointerEvent) => {
-        if (endEvent.pointerId !== origin.pointerId) return;
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", finish);
-        window.removeEventListener("pointercancel", finish);
-        if (frame) window.cancelAnimationFrame(frame);
-        if (figure.hasPointerCapture(origin.pointerId)) {
-          figure.releasePointerCapture(origin.pointerId);
-        }
-        if (!started) return;
-
-        setMoving(false);
-        setLiveOffset(next);
-        updateAttributes({ offsetX: next.x, offsetY: next.y });
-      };
-
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", finish);
-      window.addEventListener("pointercancel", finish);
-    },
-    [attrs.offsetX, attrs.offsetY, editable, updateAttributes],
-  );
-
-  /**
    * Arrastar pelo corpo da imagem só vale para o mouse. No toque, esse mesmo
    * gesto é rolar a folha — quem move no tablet usa o punho ✥ da barrinha, que
    * declara `touch-action: none` só para si.
@@ -260,11 +193,17 @@ export function LessonImageView(props: ReactNodeViewProps) {
     <NodeViewWrapper
       as="div"
       data-align={attrs.align}
+      data-free={free || undefined}
       className={cn(
-        "lesson-image my-4 flex w-full",
-        attrs.align === "left" && "justify-start",
-        attrs.align === "right" && "justify-end",
-        (!attrs.align || attrs.align === "center") && "justify-center",
+        "lesson-image",
+        free
+          ? "lesson-free-anchor mt-4"
+          : cn(
+              "my-4 flex w-full",
+              attrs.align === "left" && "justify-start",
+              attrs.align === "right" && "justify-end",
+              (!attrs.align || attrs.align === "center") && "justify-center",
+            ),
       )}
     >
       <div
@@ -273,16 +212,17 @@ export function LessonImageView(props: ReactNodeViewProps) {
         onDragStart={(event) => event.preventDefault()}
         onPointerDown={handleFigurePointerDown}
         style={{
-          transform: displaced
-            ? `translate(${liveOffset.x}px, ${liveOffset.y}px)`
-            : undefined,
+          ...(free ? freeAnchorStyle(attrs.align) : null),
+          transform: freeTransform(attrs.align, liveOffset, free),
           willChange: moving ? "transform" : undefined,
         }}
         className={cn(
-          "relative inline-block max-w-full rounded-xl transition-shadow",
-          // Imagem deslocada passa por cima do texto, não por baixo: ela foi
-          // posta ali de propósito.
-          displaced && "z-10",
+          "inline-block max-w-full rounded-xl transition-shadow",
+          // Solta, a imagem passa por cima do texto, não por baixo: ela foi
+          // posta ali de propósito. `lesson-free-object` já é `absolute` — daí
+          // o `relative` só entrar no outro caso, para os punhos e a barrinha
+          // continuarem tendo a figura como referência nos dois modos.
+          free ? "lesson-free-object" : "relative",
           moving && "z-20 shadow-[var(--shadow-card-hover)]",
           editable && !dragging && (moving ? "cursor-grabbing" : "cursor-grab"),
           active && "ring-2 ring-gold-500 ring-offset-2 ring-offset-white",
@@ -318,7 +258,7 @@ export function LessonImageView(props: ReactNodeViewProps) {
               transition={{ type: "spring", stiffness: 420, damping: 30 }}
               contentEditable={false}
               data-image-control
-              className="absolute -top-11 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-admin-border bg-white/95 px-1.5 py-1 shadow-[var(--shadow-card-hover)] backdrop-blur"
+              className="absolute -top-11 left-1/2 z-30 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-admin-border bg-white/95 px-1.5 py-1 shadow-[var(--shadow-card-hover)] backdrop-blur"
             >
               <button
                 type="button"
@@ -358,6 +298,33 @@ export function LessonImageView(props: ReactNodeViewProps) {
 
               <span className="mx-1 h-4 w-px bg-admin-border" aria-hidden />
 
+              {/* Solta x no texto: é a diferença entre a figura flutuar sobre
+                  o papel e ela reservar a própria linha no parágrafo. */}
+              <button
+                type="button"
+                aria-pressed={free}
+                title={
+                  free
+                    ? "A imagem flutua sobre o texto — clique para devolvê-la ao parágrafo"
+                    : "A imagem ocupa uma linha do texto — clique para soltá-la na folha"
+                }
+                onClick={() =>
+                  updateAttributes(
+                    free
+                      ? { free: false, offsetX: 0, offsetY: 0 }
+                      : { free: true },
+                  )
+                }
+                className={cn(
+                  "rounded-full px-2 py-1 text-[11px] font-medium transition-colors",
+                  free
+                    ? "bg-navy-900 text-white"
+                    : "text-admin-foreground/70 hover:bg-admin-muted",
+                )}
+              >
+                {free ? "Solta" : "No texto"}
+              </button>
+
               <button
                 type="button"
                 onClick={() => updateAttributes({ width: null })}
@@ -370,7 +337,10 @@ export function LessonImageView(props: ReactNodeViewProps) {
                 <button
                   type="button"
                   title="Devolver a imagem ao lugar de origem"
-                  onClick={() => updateAttributes({ offsetX: 0, offsetY: 0 })}
+                  onClick={() => {
+                    setOffset({ x: 0, y: 0 });
+                    updateAttributes({ offsetX: 0, offsetY: 0 });
+                  }}
                   className="rounded-full px-2 py-1 text-[11px] font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted"
                 >
                   Voltar ao lugar

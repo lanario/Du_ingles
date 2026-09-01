@@ -799,6 +799,66 @@ body {
   outline: none;
 }
 
+/*
+ * Objetos SOLTOS na folha (imagem arrastada e caixa de texto).
+ *
+ * O nó continua no documento, na posição em que foi inserido — o que muda é
+ * que ele deixa de reservar altura: a "âncora" tem altura zero e o objeto
+ * flutua a partir dela, por cima do papel. Sem isso, mover uma figura para o
+ * lado deixava um buraco do tamanho dela no meio do parágrafo. A âncora
+ * mantém a margem de cima (é a mesma do bloco no fluxo, então soltar o objeto
+ * não o desloca um pixel na vertical) e zera a de baixo, que só existia para
+ * separá-lo do texto seguinte.
+ */
+/*
+ * Fora do escopo de `.lesson-sheet` de propósito: o mesmo documento é aberto
+ * também pelo editor da sala de aula ao vivo, que não usa a classe da folha —
+ * e um objeto solto que só se descolasse numa das duas telas seria pior do
+ * que não ter o recurso.
+ */
+.lesson-free-anchor {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 0;
+  margin-bottom: 0;
+}
+
+.lesson-free-object {
+  position: absolute;
+  top: 0;
+  z-index: 10;
+}
+
+/*
+ * Caixa de texto. Por dentro ela é um documento comum, mas com o compasso de
+ * uma legenda: sem a margem de 0.85em entre blocos, que foi calibrada para a
+ * coluna inteira e afastaria demais duas linhas dentro de uma caixa estreita.
+ */
+.lesson-text-box-body > * + * {
+  margin-top: 0.4em;
+}
+
+.lesson-text-box-body {
+  font-size: 0.95em;
+  line-height: 1.6;
+}
+
+.lesson-text-box-body h1,
+.lesson-text-box-body h2,
+.lesson-text-box-body h3 {
+  margin-top: 0.3em;
+}
+
+/* Placeholder do Tiptap dentro da caixa recém-criada. */
+.lesson-text-box-body p.is-empty:only-child::before {
+  content: "Escreva aqui…";
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 /* Papel do modo apresentação: a folha ocupa a tela toda, sem cromo em volta. */
 .lesson-stage .lesson-paper,
 .lesson-stage .lesson-paper-fill {
