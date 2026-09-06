@@ -148,8 +148,12 @@ export function TurmasView({
   // O painel de detalhe segue a lista: depois de salvar ou arquivar, a turma
   // aberta tem que refletir o dado novo, não o snapshot de quando abriu.
   useEffect(() => {
-    setDetail((current) => (current ? (groups.find((g) => g.id === current.id) ?? null) : null));
-    setEditing((current) => (current ? (groups.find((g) => g.id === current.id) ?? null) : null));
+    setDetail((current) =>
+      current ? (groups.find((g) => g.id === current.id) ?? null) : null,
+    );
+    setEditing((current) =>
+      current ? (groups.find((g) => g.id === current.id) ?? null) : null,
+    );
   }, [groups]);
 
   const totals = useMemo(() => {
@@ -179,7 +183,8 @@ export function TurmasView({
 
   const levelBuckets = useMemo(() => {
     const counts = new Map<CefrLevel, number>();
-    for (const group of inTeacher) counts.set(group.level, (counts.get(group.level) ?? 0) + 1);
+    for (const group of inTeacher)
+      counts.set(group.level, (counts.get(group.level) ?? 0) + 1);
     return CEFR_LEVELS_ORDER.filter((level) => counts.has(level)).map((level) => ({
       level,
       count: counts.get(level) ?? 0,
@@ -245,7 +250,11 @@ export function TurmasView({
         <dl className="flex flex-wrap gap-2">
           <Indicator label="Turmas" value={totals.total} />
           <Indicator label="Ativas" value={totals.active} tone="var(--success)" />
-          <Indicator label="Matriculados" value={totals.students} tone="var(--navy-500)" />
+          <Indicator
+            label="Matriculados"
+            value={totals.students}
+            tone="var(--navy-500)"
+          />
           <Indicator label="Vagas livres" value={totals.seats} tone="var(--gold-600)" />
         </dl>
       </div>
@@ -302,7 +311,10 @@ export function TurmasView({
           "data-[stuck=true]:border-admin-border data-[stuck=true]:shadow-[0_18px_30px_-28px_rgba(11,26,51,0.35)]",
         )}
       >
-        <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
+        >
           <span
             ref={lineRef}
             className="block h-full w-full origin-left bg-gradient-to-r from-navy-700 to-gold-500"
@@ -505,7 +517,10 @@ export function TurmasView({
         ) : page === "agenda" ? (
           <GroupsWeekAgenda groups={filtered} rosters={rosters} onEdit={openEdit} />
         ) : mode === "cards" ? (
-          <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <motion.div
+            layout
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          >
             <AnimatePresence mode="popLayout" initial={false}>
               {filtered.map((group) => (
                 <GroupCard
@@ -589,7 +604,15 @@ export function TurmasView({
   );
 }
 
-function Indicator({ label, value, tone }: { label: string; value: number; tone?: string }) {
+function Indicator({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: string;
+}) {
   return (
     <div className="rounded-xl border border-admin-border bg-admin-surface px-3.5 py-2">
       <dt className="text-[10px] font-medium uppercase tracking-wide text-admin-foreground/50">
@@ -636,7 +659,9 @@ function ViewModeButton({
           aria-hidden
           className="absolute inset-0 rounded-lg bg-admin-muted"
           transition={
-            reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 38 }
+            reduceMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 480, damping: 38 }
           }
         />
       )}
@@ -645,7 +670,13 @@ function ViewModeButton({
   );
 }
 
-function SecondaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+function SecondaryButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

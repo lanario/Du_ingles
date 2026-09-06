@@ -72,8 +72,8 @@ export function RecordingPanel({
         </a>
       ) : (
         <p className="mt-1 text-[11px] leading-relaxed text-admin-foreground/50">
-          Cole o link que o Google Meet gerou. Ele aparece na biblioteca da turma —
-          quem faltou assiste por lá.
+          Cole o link que o Google Meet gerou. Ele aparece na biblioteca da turma — quem
+          faltou assiste por lá.
         </p>
       )}
 

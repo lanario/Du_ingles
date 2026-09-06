@@ -47,7 +47,8 @@ export default async function ProfessorPlanoDeAulaPage({ params }: PageProps) {
       <LessonStudio
         plan={plan}
         sessions={sessions.filter(
-          (session) => session.lessonPlanId === plan.id && session.teacherId === ctx.userId,
+          (session) =>
+            session.lessonPlanId === plan.id && session.teacherId === ctx.userId,
         )}
         groups={allGroups.filter((group) => group.teacherId === ctx.userId)}
         teachers={teachers.filter((user) => user.id === ctx.userId)}

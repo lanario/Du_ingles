@@ -91,7 +91,12 @@ export function EditGroupPanel({
       wide
     >
       {group && (
-        <form key={group.id} action={formAction} className="flex min-h-full flex-col" noValidate>
+        <form
+          key={group.id}
+          action={formAction}
+          className="flex min-h-full flex-col"
+          noValidate
+        >
           <input type="hidden" name="id" value={group.id} />
           <input type="hidden" name="level" value={level} />
 
@@ -162,7 +167,9 @@ export function EditGroupPanel({
             </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium text-admin-foreground">Nível (CEFR)</legend>
+              <legend className="text-sm font-medium text-admin-foreground">
+                Nível (CEFR)
+              </legend>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {CEFR_LEVELS.map((item) => (
                   <button
@@ -180,7 +187,9 @@ export function EditGroupPanel({
                     )}
                   >
                     <span className="text-sm font-semibold">{item}</span>
-                    <span className="text-[10px] leading-tight opacity-70">{LEVEL_HINT[item]}</span>
+                    <span className="text-[10px] leading-tight opacity-70">
+                      {LEVEL_HINT[item]}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -248,11 +257,14 @@ export function EditGroupPanel({
                 <>
                   <ScheduleBuilder tone="admin" initial={group.schedule} />
                   <p className="text-xs text-admin-foreground/55">
-                    Ao salvar, as sessões futuras desta turma são regeradas a partir da nova grade.
+                    Ao salvar, as sessões futuras desta turma são regeradas a partir da
+                    nova grade.
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-admin-foreground/65">{scheduleSummary(group.schedule)}</p>
+                <p className="text-sm text-admin-foreground/65">
+                  {scheduleSummary(group.schedule)}
+                </p>
               )}
               <FieldError messages={fields?.["schedule"]} />
             </div>
@@ -265,10 +277,12 @@ export function EditGroupPanel({
                 className="mt-0.5 h-4 w-4 accent-[var(--gold-600)]"
               />
               <span>
-                <span className="block text-sm font-medium text-admin-foreground">Turma ativa</span>
+                <span className="block text-sm font-medium text-admin-foreground">
+                  Turma ativa
+                </span>
                 <span className="mt-0.5 block text-xs text-admin-foreground/55">
-                  Turmas arquivadas somem da operação do dia a dia, mas mantêm histórico, matrículas
-                  e sessões já registradas.
+                  Turmas arquivadas somem da operação do dia a dia, mas mantêm histórico,
+                  matrículas e sessões já registradas.
                 </span>
               </span>
             </label>

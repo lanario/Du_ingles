@@ -124,16 +124,13 @@ export const sessionRecordingSchema = z.object({
     .string()
     .trim()
     .max(2048, "Link muito longo.")
-    .refine(
-      (value) => {
-        if (value.length === 0) return true;
-        try {
-          return new URL(value).protocol === "https:";
-        } catch {
-          return false;
-        }
-      },
-      "Cole um link https válido — o endereço que o Google Meet gerou para a gravação.",
-    ),
+    .refine((value) => {
+      if (value.length === 0) return true;
+      try {
+        return new URL(value).protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "Cole um link https válido — o endereço que o Google Meet gerou para a gravação."),
 });
 export type SessionRecordingInput = z.infer<typeof sessionRecordingSchema>;

@@ -340,7 +340,9 @@ export function notifySessionCancelled(input: {
         type: "session_cancelled",
         title: "Aula cancelada",
         body: `${input.title}${groupName ? ` · ${groupName}` : ""} — ${whenLabel(input.scheduledAt)} — não vai acontecer.`,
-        link: isStaff(recipient.role) ? `${base(recipient.role)}/planejador` : "/dashboard",
+        link: isStaff(recipient.role)
+          ? `${base(recipient.role)}/planejador`
+          : "/dashboard",
       }),
     });
   });
@@ -459,8 +461,8 @@ export function notifyEnrollmentChange(input: {
   fromGroupId?: string | null;
 }): void {
   schedule(async () => {
-    const groupIds = [input.toGroupId, input.fromGroupId].filter(
-      (id): id is string => Boolean(id),
+    const groupIds = [input.toGroupId, input.fromGroupId].filter((id): id is string =>
+      Boolean(id),
     );
     const [groups, student] = await Promise.all([
       audience.groupRefs(groupIds),
@@ -533,7 +535,10 @@ export function notifyEnrollmentChange(input: {
           };
         }
         return {
-          type: input.kind === "transferred" ? "enrollment_transferred" : "enrollment_created",
+          type:
+            input.kind === "transferred"
+              ? "enrollment_transferred"
+              : "enrollment_created",
           title: "Novo aluno na turma",
           body: `${studentName} entrou em ${to?.name ?? "uma turma"}${
             input.kind === "transferred" && from ? ` (veio de ${from.name})` : ""
@@ -570,7 +575,9 @@ export function notifyGroupCreated(input: {
       build: (recipient) => ({
         type: "group_created",
         title:
-          recipient.id === group.teacherId ? "Você é o responsável por uma turma" : "Turma criada",
+          recipient.id === group.teacherId
+            ? "Você é o responsável por uma turma"
+            : "Turma criada",
         body: `${group.name} foi criada e já aparece na agenda.`,
         link: groupLink(recipient.role, group.id),
       }),
@@ -659,7 +666,9 @@ export function notifyGroupScheduleChanged(input: {
         type: "group_schedule_changed",
         title: "Horário da turma mudou",
         body: `A grade de ${group.name} foi alterada — confira os próximos encontros.`,
-        link: isStaff(recipient.role) ? `${base(recipient.role)}/planejador` : "/dashboard",
+        link: isStaff(recipient.role)
+          ? `${base(recipient.role)}/planejador`
+          : "/dashboard",
       }),
     });
   });
@@ -777,9 +786,9 @@ export function notifyGroupChangeRequest(input: {
     const [teacher, admins, groups] = await Promise.all([
       audience.groupTeacher(input.toGroupId),
       audience.orgAdmins(input.organizationId),
-      audience.groupRefs([input.toGroupId, input.fromGroupId].filter(
-        (id): id is string => Boolean(id),
-      )),
+      audience.groupRefs(
+        [input.toGroupId, input.fromGroupId].filter((id): id is string => Boolean(id)),
+      ),
     ]);
     const group = groups.get(input.toGroupId);
     const fromGroupName = input.fromGroupId ? groups.get(input.fromGroupId)?.name : null;
@@ -1058,7 +1067,8 @@ export function notifyInvoiceOutcome(input: {
       audience.resolveRecipients([input.studentId]),
       audience.orgAdmins(input.organizationId),
     ]);
-    const amount = input.amountCents != null ? money.format(input.amountCents / 100) : null;
+    const amount =
+      input.amountCents != null ? money.format(input.amountCents / 100) : null;
     const name = input.studentName ?? student[0]?.name ?? "Um aluno";
     const plan = input.planName ? ` (${input.planName})` : "";
 

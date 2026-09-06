@@ -40,7 +40,13 @@ interface GroupCardProps {
   onToggleActive: () => void;
 }
 
-export function GroupCard({ group, busy, onOpen, onEdit, onToggleActive }: GroupCardProps) {
+export function GroupCard({
+  group,
+  busy,
+  onOpen,
+  onEdit,
+  onToggleActive,
+}: GroupCardProps) {
   const reduceMotion = useReducedMotion();
   const { base, canManageGroups } = useArea();
   const [menuOpen, setMenuOpen] = useState(false);

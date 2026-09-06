@@ -16,7 +16,12 @@ import Link from "next/link";
 import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { removeScheduleEntryAction } from "@/actions/admin/groups";
-import { CalendarIcon, GraduationIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
+import {
+  CalendarIcon,
+  GraduationIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
 import { WEEKDAY_LONG, type Group } from "./groups-utils";
@@ -63,14 +68,20 @@ export function GroupsWeekAgenda({ groups, rosters, onEdit }: GroupsWeekAgendaPr
     <div className="flex gap-4 overflow-x-auto pb-2">
       {WEEK_ORDER.map((day) => {
         const slots: Slot[] = groups
-          .flatMap((group) => group.schedule.filter((entry) => entry.weekday === day).map((entry) => ({ group, entry })))
+          .flatMap((group) =>
+            group.schedule
+              .filter((entry) => entry.weekday === day)
+              .map((entry) => ({ group, entry })),
+          )
           .sort((a, b) => a.entry.start.localeCompare(b.entry.start));
 
         return (
           <div key={day} className="flex w-64 shrink-0 flex-col">
             <div className="flex items-center gap-2 rounded-t-2xl border border-b-0 border-admin-border bg-admin-surface px-3.5 py-3">
               <CalendarIcon className="h-4 w-4 text-admin-foreground/50" />
-              <h3 className="text-sm font-semibold text-admin-foreground">{weekdayLabel(day)}</h3>
+              <h3 className="text-sm font-semibold text-admin-foreground">
+                {weekdayLabel(day)}
+              </h3>
             </div>
 
             <div className="flex-1 space-y-2.5 rounded-b-2xl border border-admin-border bg-admin-background/40 p-2.5">
@@ -206,7 +217,9 @@ function SlotCard({
             </li>
           ))}
           {hidden > 0 && (
-            <li className="text-xs text-admin-foreground/45">+{hidden} aluno{hidden === 1 ? "" : "s"}</li>
+            <li className="text-xs text-admin-foreground/45">
+              +{hidden} aluno{hidden === 1 ? "" : "s"}
+            </li>
           )}
         </ul>
       )}

@@ -18,10 +18,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  createAgendaEventAction,
-  updateAgendaEventAction,
-} from "@/actions/admin/agenda";
+import { createAgendaEventAction, updateAgendaEventAction } from "@/actions/admin/agenda";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -265,7 +262,9 @@ function EventForm({
                     : "border-border text-foreground/70 hover:bg-muted",
                 )}
               >
-                {minutes >= 60 ? minutesLabel(minutes).replace(":", "h") : `${minutes} min`}
+                {minutes >= 60
+                  ? minutesLabel(minutes).replace(":", "h")
+                  : `${minutes} min`}
               </button>
             ))}
           </div>

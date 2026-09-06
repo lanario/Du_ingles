@@ -5,10 +5,7 @@ import { getSessionContext } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit";
-import {
-  notifyChatMessage,
-  notifyChatPostingChanged,
-} from "@/lib/notifications/events";
+import { notifyChatMessage, notifyChatPostingChanged } from "@/lib/notifications/events";
 import { sendMessageSchema, togglePostingSchema } from "@/schemas/messaging";
 import {
   canModerateChat,

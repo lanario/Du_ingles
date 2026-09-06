@@ -73,7 +73,9 @@ function Content({
   }
 
   const busy = saving !== null;
-  const eligible = groups.filter((group) => group.isActive || group.id === currentGroupId);
+  const eligible = groups.filter(
+    (group) => group.isActive || group.id === currentGroupId,
+  );
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -99,10 +101,15 @@ function Content({
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 id="mover-turma-titulo" className="text-base font-semibold text-admin-foreground">
+            <h2
+              id="mover-turma-titulo"
+              className="text-base font-semibold text-admin-foreground"
+            >
               Mover para turma
             </h2>
-            <p className="mt-1 truncate text-sm text-admin-foreground/60">{student.fullName}</p>
+            <p className="mt-1 truncate text-sm text-admin-foreground/60">
+              {student.fullName}
+            </p>
           </div>
           <button
             type="button"
@@ -184,10 +191,14 @@ function GroupOption({
         disabled && !current && "opacity-60",
       )}
     >
-      <GroupsIcon className={cn("h-4 w-4 shrink-0", current ? "text-gold-600" : "opacity-60")} />
+      <GroupsIcon
+        className={cn("h-4 w-4 shrink-0", current ? "text-gold-600" : "opacity-60")}
+      />
       <span className="min-w-0 flex-1">
         <span className="block truncate">{name}</span>
-        {detail && <span className="block text-xs text-admin-foreground/45">{detail}</span>}
+        {detail && (
+          <span className="block text-xs text-admin-foreground/45">{detail}</span>
+        )}
       </span>
       {loading ? (
         <LogoLoader size={14} label={null} className="text-gold-600" />

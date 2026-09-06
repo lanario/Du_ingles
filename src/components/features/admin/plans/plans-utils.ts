@@ -33,7 +33,11 @@ export function formatMoney(cents: number, currency = "brl"): string {
  * Preço partido em inteiro e centavos, para o cartão desenhar os centavos
  * menores — a leitura do valor fica no número grande, não no `,00`.
  */
-export function splitMoney(cents: number): { symbol: string; whole: string; fraction: string } {
+export function splitMoney(cents: number): {
+  symbol: string;
+  whole: string;
+  fraction: string;
+} {
   const whole = Math.floor(cents / 100);
   const fraction = String(cents % 100).padStart(2, "0");
   return {

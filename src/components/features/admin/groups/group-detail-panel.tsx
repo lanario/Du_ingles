@@ -27,12 +27,7 @@ import {
 import type { Route } from "next";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
-import {
-  GroupStatusPill,
-  LevelPill,
-  OccupancyRing,
-  TeacherPill,
-} from "./groups-visuals";
+import { GroupStatusPill, LevelPill, OccupancyRing, TeacherPill } from "./groups-visuals";
 import {
   WEEKDAY_LONG,
   formatMinutes,
@@ -97,7 +92,12 @@ export function GroupDetailPanel({
               href={`${base}/turmas/${group.id}` as Route}
               tone="accent"
             />
-            <DetailButton icon={PencilIcon} label="Editar" onClick={onEdit} disabled={busy} />
+            <DetailButton
+              icon={PencilIcon}
+              label="Editar"
+              onClick={onEdit}
+              disabled={busy}
+            />
             {canManageGroups && (
               <DetailButton
                 icon={PowerIcon}
@@ -112,7 +112,8 @@ export function GroupDetailPanel({
           <DetailSection title="Grade semanal">
             {group.schedule.length === 0 ? (
               <p className="rounded-xl border border-dashed border-admin-border px-4 py-6 text-center text-sm text-admin-foreground/50">
-                Nenhum horário definido — sem grade, o sistema não gera as sessões da turma.
+                Nenhum horário definido — sem grade, o sistema não gera as sessões da
+                turma.
               </p>
             ) : (
               <ul className="overflow-hidden rounded-xl border border-admin-border">
@@ -122,7 +123,11 @@ export function GroupDetailPanel({
                       key={`${entry.weekday}-${entry.start}-${index}`}
                       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.28, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{
+                        duration: 0.28,
+                        delay: index * 0.04,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
                       className={cn(
                         "flex items-center justify-between gap-3 border-b border-admin-border px-3.5 py-2.5 text-sm last:border-0",
                         "bg-admin-surface",
@@ -151,7 +156,11 @@ export function GroupDetailPanel({
           </DetailSection>
 
           <DetailSection title="Dados da turma">
-            <DetailRow icon={UserIcon} label="Professor responsável" value={group.teacherName} />
+            <DetailRow
+              icon={UserIcon}
+              label="Professor responsável"
+              value={group.teacherName}
+            />
             <DetailRow icon={GraduationIcon} label="Curso" value={group.courseName} />
             <DetailRow icon={GroupsIcon} label="Nível (CEFR)" value={group.level} />
             <DetailRow

@@ -50,8 +50,12 @@ export async function listStudents(organizationId: string): Promise<StudentListI
         .eq("status", "active"),
     ]);
 
-  const profileInfoById = new Map((studentProfiles ?? []).map((row) => [row.profile_id, row]));
-  const enrollmentByStudent = new Map((enrollments ?? []).map((row) => [row.student_id, row]));
+  const profileInfoById = new Map(
+    (studentProfiles ?? []).map((row) => [row.profile_id, row]),
+  );
+  const enrollmentByStudent = new Map(
+    (enrollments ?? []).map((row) => [row.student_id, row]),
+  );
 
   return (profiles ?? []).map((row) => {
     const studentProfile = profileInfoById.get(row.id);
@@ -66,7 +70,9 @@ export async function listStudents(organizationId: string): Promise<StudentListI
       createdAt: row.created_at,
       currentLevel: studentProfile?.current_level ?? "A1",
       guardianName: studentProfile?.guardian_name ?? null,
-      enrollment: enrollment ? { enrollmentId: enrollment.id, groupId: enrollment.group_id } : null,
+      enrollment: enrollment
+        ? { enrollmentId: enrollment.id, groupId: enrollment.group_id }
+        : null,
     };
   });
 }

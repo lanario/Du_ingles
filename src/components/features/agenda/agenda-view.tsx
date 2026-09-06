@@ -125,7 +125,8 @@ export function AgendaView({
       if (saved.view) setView(saved.view);
       if (saved.hiddenGroups) setHiddenGroups(new Set(saved.hiddenGroups));
       if (saved.hiddenKinds) setHiddenKinds(new Set(saved.hiddenKinds));
-      if (typeof saved.showSchoolWide === "boolean") setShowSchoolWide(saved.showSchoolWide);
+      if (typeof saved.showSchoolWide === "boolean")
+        setShowSchoolWide(saved.showSchoolWide);
     } catch {
       // Preferência corrompida ou storage bloqueado: a agenda abre no padrão.
     }
@@ -258,9 +259,7 @@ export function AgendaView({
    * puxar o mês ou a lista para o meio esconderia justamente o começo deles.
    */
   const scrollToNowOffset =
-    (view === "dia" || view === "semana") &&
-    today >= needed.from &&
-    today <= needed.to
+    (view === "dia" || view === "semana") && today >= needed.from && today <= needed.to
       ? Math.max(0, (nowMinutes() - bounds.start) * PIXELS_PER_MINUTE)
       : null;
   useScrollToNow(scrollerRef, scrollToNowOffset, [view, cursor]);
@@ -307,7 +306,8 @@ export function AgendaView({
   const soloGroup = (id: string) =>
     setHiddenGroups((current) => {
       const others = data.groups.filter((group) => group.id !== id).map((g) => g.id);
-      const isolated = current.size === others.length && others.every((g) => current.has(g));
+      const isolated =
+        current.size === others.length && others.every((g) => current.has(g));
       return isolated ? new Set() : new Set(others);
     });
 
@@ -381,9 +381,7 @@ export function AgendaView({
           {canCreate && (
             <button
               type="button"
-              onClick={() =>
-                startCreate({ day: cursor, time: "19:00", groupId: null })
-              }
+              onClick={() => startCreate({ day: cursor, time: "19:00", groupId: null })}
               className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--agenda-primary)] px-3 text-sm font-semibold text-[var(--agenda-primary-fg)] transition-opacity hover:opacity-90"
             >
               <PlusIcon className="h-4 w-4" />
@@ -521,7 +519,12 @@ export function AgendaView({
           const entry = find(visible, item);
           setSelected(null);
           if (!entry) return;
-          setDraft({ item, day: entry.day, time: entry.startLabel, groupId: item.groupId });
+          setDraft({
+            item,
+            day: entry.day,
+            time: entry.startLabel,
+            groupId: item.groupId,
+          });
         }}
       />
 
@@ -657,7 +660,8 @@ function FilterPanel({
                     )}
                     style={{
                       borderColor: tone,
-                      backgroundColor: active && kind !== "preview" ? tone : "transparent",
+                      backgroundColor:
+                        active && kind !== "preview" ? tone : "transparent",
                     }}
                   />
                   <span className="truncate">{KIND_LABEL[kind]}</span>
@@ -669,8 +673,8 @@ function FilterPanel({
       </section>
 
       <p className="mt-auto border-t border-[var(--agenda-border)] px-3 py-3 text-[11px] leading-relaxed text-[var(--agenda-muted-fg)]">
-        Linha pontilhada é <strong className="font-semibold">prévia da grade</strong>:
-        a aula que a turma tende a ter nessa data, ainda não marcada.
+        Linha pontilhada é <strong className="font-semibold">prévia da grade</strong>: a
+        aula que a turma tende a ter nessa data, ainda não marcada.
       </p>
     </div>
   );

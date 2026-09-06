@@ -164,8 +164,8 @@ export function PlanDetailPanel({
                 </a>
               </div>
               <p className="mt-2 text-[11px] leading-snug text-admin-foreground/45">
-                Quem abrir o link precisa informar o mesmo e-mail cadastrado na
-                plataforma — é por ele que a assinatura é vinculada ao aluno.
+                Quem abrir o link precisa informar o mesmo e-mail cadastrado na plataforma
+                — é por ele que a assinatura é vinculada ao aluno.
               </p>
             </div>
           ) : (
@@ -228,7 +228,9 @@ export function PlanDetailPanel({
             value={plan.stripeProductId}
             mono
             action={
-              plan.stripeProductId ? <CopyLinkButton url={plan.stripeProductId} label="" /> : null
+              plan.stripeProductId ? (
+                <CopyLinkButton url={plan.stripeProductId} label="" />
+              ) : null
             }
           />
           <DetailRow
@@ -237,7 +239,9 @@ export function PlanDetailPanel({
             value={plan.stripePriceId}
             mono
             action={
-              plan.stripePriceId ? <CopyLinkButton url={plan.stripePriceId} label="" /> : null
+              plan.stripePriceId ? (
+                <CopyLinkButton url={plan.stripePriceId} label="" />
+              ) : null
             }
           />
           <DetailRow

@@ -33,7 +33,12 @@ function firstName(fullName: string): string {
  * convite para link e mensagem nunca saírem de fontes diferentes — o
  * painel só exibe o que recebe.
  */
-function buildMessage(fullName: string, role: AppRole, url: string, expiresAt: string): string {
+function buildMessage(
+  fullName: string,
+  role: AppRole,
+  url: string,
+  expiresAt: string,
+): string {
   const expires = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",

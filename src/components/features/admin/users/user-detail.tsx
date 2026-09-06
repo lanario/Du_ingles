@@ -14,12 +14,23 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { CalendarIcon, MailIcon, UserIcon } from "@/components/ui/icons";
 import { SidePanel } from "@/components/ui/side-panel";
-import { DetailBody, DetailHeader, DetailRow, DetailSection } from "@/components/ui/detail-panel";
+import {
+  DetailBody,
+  DetailHeader,
+  DetailRow,
+  DetailSection,
+} from "@/components/ui/detail-panel";
 import { ChangeRoleForm } from "./change-role-form";
 import { EditUserForm } from "./edit-user-form";
 import { SetPasswordForm } from "./set-password-form";
 import { UserLifecycleActions } from "./user-lifecycle-actions";
-import { PendingPasswordPill, RolePill, StatusPill, UserAvatar, CopyButton } from "./users-visuals";
+import {
+  PendingPasswordPill,
+  RolePill,
+  StatusPill,
+  UserAvatar,
+  CopyButton,
+} from "./users-visuals";
 import { formatDate } from "./users-utils";
 import type { UserDetail as UserDetailData } from "@/repositories/users";
 
@@ -33,7 +44,13 @@ interface UserDetailProps {
 
 export function UserDetail({ open, onClose, user, session }: UserDetailProps) {
   return (
-    <SidePanel open={open} onClose={onClose} title={user?.fullName ?? "Usuário"} subtitle={user?.email} wide>
+    <SidePanel
+      open={open}
+      onClose={onClose}
+      title={user?.fullName ?? "Usuário"}
+      subtitle={user?.email}
+      wide
+    >
       {user && <UserDetailContent key={session} user={user} />}
     </SidePanel>
   );
@@ -78,7 +95,10 @@ function UserDetailContent({ user }: { user: UserDetailData }) {
 
         {user.role !== "admin" && (
           <DetailSection title="Senha">
-            <SetPasswordForm userId={user.id} userName={user.fullName.split(" ")[0] ?? "o usuário"} />
+            <SetPasswordForm
+              userId={user.id}
+              userName={user.fullName.split(" ")[0] ?? "o usuário"}
+            />
           </DetailSection>
         )}
 
@@ -89,7 +109,12 @@ function UserDetailContent({ user }: { user: UserDetailData }) {
               label="E-mail"
               value={user.email}
               href={`mailto:${user.email}`}
-              action={<CopyButton value={user.email} label={`Copiar e-mail de ${user.fullName}`} />}
+              action={
+                <CopyButton
+                  value={user.email}
+                  label={`Copiar e-mail de ${user.fullName}`}
+                />
+              }
             />
             <DetailRow icon={UserIcon} label="Telefone" value={user.phone} />
             <DetailRow

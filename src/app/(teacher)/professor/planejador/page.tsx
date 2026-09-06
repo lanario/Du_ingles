@@ -56,7 +56,11 @@ export default async function ProfessorPlanejadorPage({ searchParams }: PageProp
         assignments={assignments.filter((item) => myGroupIds.has(item.groupId))}
         editableAuthorId={ctx.userId}
         openCreate={nova !== undefined}
-        initialTab={tab && VALID_TABS.has(tab) ? (tab as "atelie" | "agenda" | "tarefas") : undefined}
+        initialTab={
+          tab && VALID_TABS.has(tab)
+            ? (tab as "atelie" | "agenda" | "tarefas")
+            : undefined
+        }
         initialFolderKey={folderKeyFromParam(pasta, folders)}
       />
     </AreaProvider>

@@ -98,7 +98,8 @@ export async function dispatchNotifications(input: DispatchInput): Promise<numbe
     const rows: Array<{ recipientId: string; draft: NotificationDraft }> = [];
 
     for (const recipient of input.recipients) {
-      if (!recipient?.id || excluded.has(recipient.id) || seen.has(recipient.id)) continue;
+      if (!recipient?.id || excluded.has(recipient.id) || seen.has(recipient.id))
+        continue;
       seen.add(recipient.id);
 
       const draft = input.build(recipient);

@@ -136,7 +136,8 @@ export function PlansShowcase({
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Três passos: o nível de acompanhamento, o ritmo das aulas em grupo e o
-          compromisso que faz mais sentido pra você. Pode trocar ou cancelar quando quiser.
+          compromisso que faz mais sentido pra você. Pode trocar ou cancelar quando
+          quiser.
         </p>
       </header>
 
@@ -159,7 +160,11 @@ export function PlansShowcase({
         )}
       </AnimatePresence>
 
-      <CurrentPlan subscription={subscription} readOnly={readOnly} onManage={openPortal} />
+      <CurrentPlan
+        subscription={subscription}
+        readOnly={readOnly}
+        onManage={openPortal}
+      />
 
       {plans.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border px-6 py-14 text-center">
@@ -221,7 +226,9 @@ function StepHeader({
       </span>
       <div className="min-w-0">
         <h2 className="text-base font-semibold text-foreground sm:text-lg">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-[13px] text-muted-foreground">{subtitle}</p>}
+        {subtitle && (
+          <p className="mt-0.5 text-[13px] text-muted-foreground">{subtitle}</p>
+        )}
       </div>
       <span className="ml-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
     </div>
@@ -250,11 +257,17 @@ function TierBuilder({
     [plans],
   );
   const availableFrequencies = useMemo(
-    () => WEEKLY_FREQUENCIES.filter((freq) => plans.some((plan) => plan.weeklyFrequency === freq)),
+    () =>
+      WEEKLY_FREQUENCIES.filter((freq) =>
+        plans.some((plan) => plan.weeklyFrequency === freq),
+      ),
     [plans],
   );
   const availableCommitments = useMemo(
-    () => COMMITMENT_INTERVALS.filter((iv) => plans.some((plan) => plan.billingInterval === iv)),
+    () =>
+      COMMITMENT_INTERVALS.filter((iv) =>
+        plans.some((plan) => plan.billingInterval === iv),
+      ),
     [plans],
   );
 
@@ -263,7 +276,10 @@ function TierBuilder({
   const [interval, setInterval] = useState<CommitmentInterval | null>(null);
 
   const matched = useMemo(
-    () => (tier && frequency && interval ? findTierPlan(plans, tier, frequency, interval) : null),
+    () =>
+      tier && frequency && interval
+        ? findTierPlan(plans, tier, frequency, interval)
+        : null,
     [plans, tier, frequency, interval],
   );
 
@@ -423,7 +439,8 @@ function TierCard({
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
       className="group relative flex flex-col overflow-hidden rounded-2xl p-5 text-left transition-shadow duration-300"
       style={{
-        background: "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 45%, var(--navy-800) 100%)",
+        background:
+          "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 45%, var(--navy-800) 100%)",
         boxShadow: selected
           ? `inset 0 0 0 2px ${tone}, 0 20px 46px -20px rgba(5,15,34,0.7)`
           : "inset 0 0 0 1px color-mix(in srgb, var(--navy-600) 32%, transparent), 0 12px 30px -20px rgba(5,15,34,0.5)",
@@ -433,7 +450,9 @@ function TierCard({
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 -top-px h-px"
-          style={{ background: `linear-gradient(90deg, transparent, ${tone}, transparent)` }}
+          style={{
+            background: `linear-gradient(90deg, transparent, ${tone}, transparent)`,
+          }}
         />
       )}
 
@@ -447,14 +466,23 @@ function TierCard({
           )}
           style={selected ? { backgroundColor: tone } : undefined}
         >
-          {selected && <CheckIcon className="h-3.5 w-3.5" style={{ color: "var(--navy-950)" }} strokeWidth={3} />}
+          {selected && (
+            <CheckIcon
+              className="h-3.5 w-3.5"
+              style={{ color: "var(--navy-950)" }}
+              strokeWidth={3}
+            />
+          )}
         </span>
       </div>
 
       <p className="mt-1 text-[13px] font-medium" style={{ color: tone }}>
         {TIER_TAGLINE[tier]}
       </p>
-      <p className="mt-3 text-[13px] leading-relaxed" style={{ color: "var(--navy-300)" }}>
+      <p
+        className="mt-3 text-[13px] leading-relaxed"
+        style={{ color: "var(--navy-300)" }}
+      >
         {TIER_DESCRIPTION[tier]}
       </p>
     </motion.button>
@@ -498,7 +526,13 @@ function FrequencyCard({
       )}
       <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
         {FREQUENCY_LABEL[frequency]}
-        {selected && <CheckIcon className="h-3.5 w-3.5" style={{ color: "var(--gold-600)" }} strokeWidth={3} />}
+        {selected && (
+          <CheckIcon
+            className="h-3.5 w-3.5"
+            style={{ color: "var(--gold-600)" }}
+            strokeWidth={3}
+          />
+        )}
       </span>
       <span className="text-[11px] font-medium text-muted-foreground">
         {FREQUENCY_TITLE[frequency]}
@@ -526,7 +560,8 @@ function CommitmentCard({
   const reduceMotion = useReducedMotion();
   const cents = commitmentPriceCents(tier, frequency, interval);
   const savings = commitmentSavingsCents(tier, frequency, interval);
-  const monthly = interval === "month" ? cents : Math.round(cents / (interval === "semester" ? 6 : 12));
+  const monthly =
+    interval === "month" ? cents : Math.round(cents / (interval === "semester" ? 6 : 12));
 
   return (
     <motion.button
@@ -545,13 +580,21 @@ function CommitmentCard({
     >
       <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
         {COMMITMENT_LABEL[interval]}
-        {selected && <CheckIcon className="h-3.5 w-3.5" style={{ color: "var(--gold-600)" }} strokeWidth={3} />}
+        {selected && (
+          <CheckIcon
+            className="h-3.5 w-3.5"
+            style={{ color: "var(--gold-600)" }}
+            strokeWidth={3}
+          />
+        )}
       </span>
       <span className="text-[11px] font-medium text-muted-foreground">
         {COMMITMENT_TITLE[interval]}
       </span>
       <span className="mt-0.5 flex items-baseline gap-1 tabular">
-        <span className="text-sm font-semibold text-foreground">{formatMoney(monthly)}</span>
+        <span className="text-sm font-semibold text-foreground">
+          {formatMoney(monthly)}
+        </span>
         <span className="text-[11px] text-muted-foreground">/mês</span>
       </span>
       {savings > 0 && (
@@ -606,14 +649,17 @@ function ResultCard({
         layout
         className="relative flex flex-col overflow-hidden rounded-2xl p-6 sm:p-7"
         style={{
-          background: "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-800) 100%)",
+          background:
+            "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-800) 100%)",
           boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${tone} 32%, transparent), 0 26px 60px -20px rgba(5,15,34,0.7)`,
         }}
       >
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 -top-px h-px"
-          style={{ background: `linear-gradient(90deg, transparent, ${tone}, transparent)` }}
+          style={{
+            background: `linear-gradient(90deg, transparent, ${tone}, transparent)`,
+          }}
         />
 
         <div className="relative flex flex-wrap items-start justify-between gap-3">
@@ -651,7 +697,10 @@ function ResultCard({
               value={Number(whole.replace(/\D/g, ""))}
               className="text-[46px] font-bold tracking-tight text-white"
             />
-            <span className="text-lg font-semibold tabular" style={{ color: "var(--navy-300)" }}>
+            <span
+              className="text-lg font-semibold tabular"
+              style={{ color: "var(--navy-300)" }}
+            >
               ,{fraction}
             </span>
             <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
@@ -659,7 +708,10 @@ function ResultCard({
             </span>
           </p>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]" style={{ color: "var(--navy-300)" }}>
+          <div
+            className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]"
+            style={{ color: "var(--navy-300)" }}
+          >
             {monthly !== null && <span>≈ {formatMoney(monthly, plan.currency)}/mês</span>}
             {savings > 0 && (
               <span className="font-semibold text-[color:var(--success)]">
@@ -677,7 +729,10 @@ function ResultCard({
         {plan.features.length > 0 && (
           <ul className="relative grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
             {plan.features.map((feature) => (
-              <li key={feature} className="flex items-start gap-2.5 text-[13px] leading-snug">
+              <li
+                key={feature}
+                className="flex items-start gap-2.5 text-[13px] leading-snug"
+              >
                 <CheckIcon
                   aria-hidden
                   className="mt-0.5 h-4 w-4 shrink-0"
@@ -712,15 +767,21 @@ function ResultCard({
                 ? {
                     background: "color-mix(in srgb, var(--navy-600) 40%, transparent)",
                     color: "var(--navy-300)",
-                    border: "1px solid color-mix(in srgb, var(--navy-500) 28%, transparent)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--navy-500) 28%, transparent)",
                   }
                 : soldOut
                   ? {
                       background: "color-mix(in srgb, var(--navy-600) 20%, transparent)",
                       color: "var(--navy-300)",
-                      border: "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
                     }
-                  : { background: tone, color: "var(--navy-950)", border: `1px solid ${tone}` }
+                  : {
+                      background: tone,
+                      color: "var(--navy-950)",
+                      border: `1px solid ${tone}`,
+                    }
             }
           >
             {pending && <LogoLoader size={16} label={null} />}
@@ -817,7 +878,9 @@ function LoosePlansGrid({
   return (
     <section className="mt-12">
       <div className="flex items-baseline gap-3">
-        <h2 className="text-base font-semibold text-foreground sm:text-lg">Outros planos</h2>
+        <h2 className="text-base font-semibold text-foreground sm:text-lg">
+          Outros planos
+        </h2>
         <span className="text-[13px] text-muted-foreground">Fora da grade de níveis</span>
         <span className="ml-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" />
       </div>
@@ -897,7 +960,9 @@ function LoosePlanCard({
           <span
             style={{
               color: plan.isFeatured ? "var(--navy-950)" : tone,
-              backgroundColor: plan.isFeatured ? tone : `color-mix(in srgb, ${tone} 16%, transparent)`,
+              backgroundColor: plan.isFeatured
+                ? tone
+                : `color-mix(in srgb, ${tone} 16%, transparent)`,
             }}
             className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
           >
@@ -908,7 +973,10 @@ function LoosePlanCard({
 
       <h3 className="truncate text-xl font-bold text-white">{plan.name}</h3>
       {plan.headline && (
-        <p className="mt-1.5 text-[13px] leading-snug" style={{ color: "var(--navy-300)" }}>
+        <p
+          className="mt-1.5 text-[13px] leading-snug"
+          style={{ color: "var(--navy-300)" }}
+        >
           {plan.headline}
         </p>
       )}
@@ -918,8 +986,13 @@ function LoosePlanCard({
           <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
             {symbol}
           </span>
-          <span className="text-[44px] font-bold tabular tracking-tight text-white">{whole}</span>
-          <span className="text-lg font-semibold tabular" style={{ color: "var(--navy-300)" }}>
+          <span className="text-[44px] font-bold tabular tracking-tight text-white">
+            {whole}
+          </span>
+          <span
+            className="text-lg font-semibold tabular"
+            style={{ color: "var(--navy-300)" }}
+          >
             ,{fraction}
           </span>
         </p>
@@ -942,7 +1015,10 @@ function LoosePlanCard({
       {plan.features.length > 0 && (
         <ul className="flex-1 space-y-3">
           {plan.features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2.5 text-[13px] leading-snug">
+            <li
+              key={feature}
+              className="flex items-start gap-2.5 text-[13px] leading-snug"
+            >
               <CheckIcon
                 aria-hidden
                 className="mt-0.5 h-4 w-4 shrink-0"
@@ -976,20 +1052,27 @@ function LoosePlanCard({
               ? {
                   background: "color-mix(in srgb, var(--navy-600) 40%, transparent)",
                   color: "var(--navy-300)",
-                  border: "1px solid color-mix(in srgb, var(--navy-500) 28%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--navy-500) 28%, transparent)",
                 }
               : soldOut
                 ? {
                     background: "color-mix(in srgb, var(--navy-600) 20%, transparent)",
                     color: "var(--navy-300)",
-                    border: "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
                   }
                 : plan.isFeatured
-                  ? { background: tone, color: "var(--navy-950)", border: `1px solid ${tone}` }
+                  ? {
+                      background: tone,
+                      color: "var(--navy-950)",
+                      border: `1px solid ${tone}`,
+                    }
                   : {
                       background: "color-mix(in srgb, var(--navy-600) 40%, transparent)",
                       color: "white",
-                      border: "1px solid color-mix(in srgb, var(--navy-500) 40%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--navy-500) 40%, transparent)",
                     }
           }
         >
@@ -1173,8 +1256,8 @@ function CurrentPlan({
 
       {subscription && (
         <p className="mt-3 border-t border-border/70 pt-3 text-[12px] leading-relaxed text-muted-foreground">
-          Quer mudar de nível, de ritmo ou de horário? A coordenação ajusta com você —
-          é ela que confere vaga e turma antes da troca.
+          Quer mudar de nível, de ritmo ou de horário? A coordenação ajusta com você — é
+          ela que confere vaga e turma antes da troca.
         </p>
       )}
     </motion.section>

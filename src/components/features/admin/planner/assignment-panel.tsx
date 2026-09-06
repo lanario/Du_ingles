@@ -127,7 +127,9 @@ export function AssignmentPanel({
                 <button
                   type="button"
                   onClick={() =>
-                    setSelected(allSelected ? new Set() : new Set(groups.map((g) => g.id)))
+                    setSelected(
+                      allSelected ? new Set() : new Set(groups.map((g) => g.id)),
+                    )
                   }
                   className="text-xs font-medium text-navy-700 underline underline-offset-2"
                 >

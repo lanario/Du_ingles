@@ -33,8 +33,9 @@ export default async function ProgressoPage() {
     .map((grade) => (100 * grade.score!) / grade.maxScore!);
   const averageScore =
     gradedPercents.length > 0
-      ? Math.round((gradedPercents.reduce((sum, v) => sum + v, 0) / gradedPercents.length) * 10) /
-        10
+      ? Math.round(
+          (gradedPercents.reduce((sum, v) => sum + v, 0) / gradedPercents.length) * 10,
+        ) / 10
       : null;
 
   return (

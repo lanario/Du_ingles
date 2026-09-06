@@ -19,7 +19,13 @@ export {
   UserAvatar,
 } from "@/components/features/admin/users/users-visuals";
 
-export function LevelPill({ level, className }: { level: CefrLevel; className?: string }) {
+export function LevelPill({
+  level,
+  className,
+}: {
+  level: CefrLevel;
+  className?: string;
+}) {
   const tone = CEFR_TONE[level];
 
   return (

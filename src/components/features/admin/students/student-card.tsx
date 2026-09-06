@@ -9,7 +9,13 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { CalendarIcon, MailIcon, PowerIcon, SwapIcon, UserIcon } from "@/components/ui/icons";
+import {
+  CalendarIcon,
+  MailIcon,
+  PowerIcon,
+  SwapIcon,
+  UserIcon,
+} from "@/components/ui/icons";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { onOpenClick } from "@/components/ui/detail-panel";
 import { cn } from "@/lib/utils";
@@ -55,10 +61,26 @@ export function StudentCard({
   const actions: ActionMenuItem[] = canManage
     ? [
         { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
-        { label: "Mover de turma", icon: SwapIcon, tone: "accent", separated: true, onSelect: onMove },
+        {
+          label: "Mover de turma",
+          icon: SwapIcon,
+          tone: "accent",
+          separated: true,
+          onSelect: onMove,
+        },
         student.isActive
-          ? { label: "Desativar", icon: PowerIcon, tone: "danger", onSelect: onDeactivate }
-          : { label: "Reativar", icon: PowerIcon, tone: "accent", onSelect: onReactivate },
+          ? {
+              label: "Desativar",
+              icon: PowerIcon,
+              tone: "danger",
+              onSelect: onDeactivate,
+            }
+          : {
+              label: "Reativar",
+              icon: PowerIcon,
+              tone: "accent",
+              onSelect: onReactivate,
+            },
       ]
     : [{ label: "Ver detalhes", icon: UserIcon, onSelect: onOpen }];
 
@@ -104,7 +126,12 @@ export function StudentCard({
           <StatusPill isActive={student.isActive} />
           <GroupPill name={student.groupName} level={student.groupLevel} />
         </div>
-        <ActionMenu items={actions} disabled={busy} onOpenChange={setMenuOpen} label={`Ações de ${student.fullName}`} />
+        <ActionMenu
+          items={actions}
+          disabled={busy}
+          onOpenChange={setMenuOpen}
+          label={`Ações de ${student.fullName}`}
+        />
       </div>
 
       <div className="relative mt-3 flex flex-col items-center text-center">
@@ -115,7 +142,10 @@ export function StudentCard({
           <UserAvatar id={student.id} name={student.fullName} />
         </motion.span>
 
-        <h3 title={student.fullName} className="mt-3 w-full text-[15px] font-semibold leading-snug">
+        <h3
+          title={student.fullName}
+          className="mt-3 w-full text-[15px] font-semibold leading-snug"
+        >
           <button
             type="button"
             onClick={onOpen}
@@ -134,8 +164,13 @@ export function StudentCard({
       <ul className="relative mt-4 space-y-2.5 border-t border-admin-border pt-4 text-xs">
         <li className="flex items-center gap-2.5">
           <MailIcon className="h-3.5 w-3.5 shrink-0 text-admin-foreground/40" />
-          <span className="min-w-0 flex-1 truncate text-admin-foreground/60">{student.email}</span>
-          <CopyButton value={student.email} label={`Copiar e-mail de ${student.fullName}`} />
+          <span className="min-w-0 flex-1 truncate text-admin-foreground/60">
+            {student.email}
+          </span>
+          <CopyButton
+            value={student.email}
+            label={`Copiar e-mail de ${student.fullName}`}
+          />
         </li>
         {student.guardianName && (
           <li className="flex items-center gap-2.5">

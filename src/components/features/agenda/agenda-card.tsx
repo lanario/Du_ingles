@@ -32,9 +32,7 @@ import {
 /** Turma → cor, montado uma vez pela raiz e distribuído às vistas. */
 export type ToneMap = Map<string, string>;
 
-export function buildToneMap(
-  groups: { id: string; colorIndex: number }[],
-): ToneMap {
+export function buildToneMap(groups: { id: string; colorIndex: number }[]): ToneMap {
   return new Map(
     groups.map((group) => [
       group.id,

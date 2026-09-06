@@ -50,10 +50,26 @@ export function StudentListItem({
   const actions: ActionMenuItem[] = canManage
     ? [
         { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
-        { label: "Mover de turma", icon: SwapIcon, tone: "accent", separated: true, onSelect: onMove },
+        {
+          label: "Mover de turma",
+          icon: SwapIcon,
+          tone: "accent",
+          separated: true,
+          onSelect: onMove,
+        },
         student.isActive
-          ? { label: "Desativar", icon: PowerIcon, tone: "danger", onSelect: onDeactivate }
-          : { label: "Reativar", icon: PowerIcon, tone: "accent", onSelect: onReactivate },
+          ? {
+              label: "Desativar",
+              icon: PowerIcon,
+              tone: "danger",
+              onSelect: onDeactivate,
+            }
+          : {
+              label: "Reativar",
+              icon: PowerIcon,
+              tone: "accent",
+              onSelect: onReactivate,
+            },
       ]
     : [{ label: "Ver detalhes", icon: UserIcon, onSelect: onOpen }];
 
@@ -120,7 +136,12 @@ export function StudentListItem({
         {formatDate(student.createdAt)}
       </div>
 
-      <ActionMenu items={actions} disabled={busy} onOpenChange={setMenuOpen} label={`Ações de ${student.fullName}`} />
+      <ActionMenu
+        items={actions}
+        disabled={busy}
+        onOpenChange={setMenuOpen}
+        label={`Ações de ${student.fullName}`}
+      />
     </motion.div>
   );
 }

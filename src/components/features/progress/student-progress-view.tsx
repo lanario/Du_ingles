@@ -14,7 +14,12 @@ import {
   RevealGrid,
   RevealItem,
 } from "@/components/features/admin/dashboard/primitives";
-import { RadialGauge, PALETTE, smoothPath, prefersReducedMotion } from "@/components/features/admin/dashboard/charts";
+import {
+  RadialGauge,
+  PALETTE,
+  smoothPath,
+  prefersReducedMotion,
+} from "@/components/features/admin/dashboard/charts";
 import {
   CalendarIcon,
   CheckIcon,
@@ -26,7 +31,11 @@ import {
   TrendUpIcon,
   WalletIcon,
 } from "@/components/ui/icons";
-import type { GradedAssignmentRow, GroupProgress, NextSessionInfo } from "@/repositories/progress";
+import type {
+  GradedAssignmentRow,
+  GroupProgress,
+  NextSessionInfo,
+} from "@/repositories/progress";
 import type { CefrLevel } from "@/types/domain";
 
 if (typeof window !== "undefined") {
@@ -154,7 +163,13 @@ function ProgressHeader({
   streak,
 }: Pick<
   StudentProgressViewProps,
-  "firstName" | "fullName" | "email" | "avatarUrl" | "currentLevel" | "enrollmentDate" | "streak"
+  | "firstName"
+  | "fullName"
+  | "email"
+  | "avatarUrl"
+  | "currentLevel"
+  | "enrollmentDate"
+  | "streak"
 >) {
   const memberSince = enrollmentDate
     ? formatDate(enrollmentDate, "MMMM 'de' yyyy")
@@ -173,7 +188,9 @@ function ProgressHeader({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {email}
-            {memberSince && <span className="capitalize"> · aluno desde {memberSince}</span>}
+            {memberSince && (
+              <span className="capitalize"> · aluno desde {memberSince}</span>
+            )}
           </p>
         </div>
         <div className="flex flex-none flex-wrap items-center gap-2">
@@ -306,10 +323,18 @@ function KpiCard({
       <p
         className={cn(
           "mt-3 text-2xl font-semibold tracking-tight sm:text-3xl",
-          value === null ? "text-muted-foreground/60" : tone === "gold" ? "text-gold-700" : "text-navy-900",
+          value === null
+            ? "text-muted-foreground/60"
+            : tone === "gold"
+              ? "text-gold-700"
+              : "text-navy-900",
         )}
       >
-        {value === null ? "—" : <CountUp value={value} decimals={decimals} suffix={suffix} />}
+        {value === null ? (
+          "—"
+        ) : (
+          <CountUp value={value} decimals={decimals} suffix={suffix} />
+        )}
       </p>
       <p className="mt-0.5 text-xs text-muted-foreground">{caption}</p>
     </div>
@@ -347,7 +372,10 @@ function NextSessionCard({ session }: { session: NextSessionInfo | null }) {
               {isLive && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success">
                   <span className="relative flex h-2 w-2 flex-none">
-                    <span className="live-dot absolute inset-0 rounded-full" aria-hidden />
+                    <span
+                      className="live-dot absolute inset-0 rounded-full"
+                      aria-hidden
+                    />
                     <span className="relative h-2 w-2 rounded-full bg-success" />
                   </span>
                   Ao vivo
@@ -358,11 +386,14 @@ function NextSessionCard({ session }: { session: NextSessionInfo | null }) {
               <>
                 <p className="mt-2 truncate text-xl font-semibold">{session.title}</p>
                 <p className="mt-1 text-sm text-white/65">
-                  {session.groupName} · prof. {session.teacherName} · {session.durationMinutes} min
+                  {session.groupName} · prof. {session.teacherName} ·{" "}
+                  {session.durationMinutes} min
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-lg text-white/70">Nenhuma aula agendada por enquanto.</p>
+              <p className="mt-2 text-lg text-white/70">
+                Nenhuma aula agendada por enquanto.
+              </p>
             )}
           </div>
 
@@ -406,7 +437,9 @@ function AttendanceRow({ group, index }: { group: GroupProgress; index: number }
             prof. {group.teacherName}
           </span>
         </div>
-        <span className={cn("tabular font-medium", low ? "text-warning" : "text-navy-700")}>
+        <span
+          className={cn("tabular font-medium", low ? "text-warning" : "text-navy-700")}
+        >
           {group.attendanceRate.toFixed(0)}%
         </span>
       </div>
@@ -475,8 +508,19 @@ function GradeTrend({ grades }: { grades: GradedAssignmentRow[] }) {
 
   return (
     <div className="border-t border-border px-4 py-3">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-14 w-full" preserveAspectRatio="none">
-        <path ref={pathRef} d={d} fill="none" stroke={PALETTE.gold} strokeWidth={2.5} strokeLinecap="round" />
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="h-14 w-full"
+        preserveAspectRatio="none"
+      >
+        <path
+          ref={pathRef}
+          d={d}
+          fill="none"
+          stroke={PALETTE.gold}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
         {points.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={PALETTE.navy} />
         ))}
@@ -513,7 +557,8 @@ function GradeRow({ grade, index }: { grade: GradedAssignmentRow; index: number 
         <p className="truncate text-sm font-medium text-navy-900">{grade.title}</p>
         <p className="truncate text-xs text-muted-foreground">
           {grade.groupName}
-          {grade.gradedAt && ` · corrigida em ${formatDate(grade.gradedAt, "dd/MM/yyyy")}`}
+          {grade.gradedAt &&
+            ` · corrigida em ${formatDate(grade.gradedAt, "dd/MM/yyyy")}`}
         </p>
       </div>
       <span className={cn("tabular flex-none text-sm font-semibold", tone)}>
@@ -553,7 +598,11 @@ function PendingTaskRowView({ task, index }: { task: PendingTaskRow; index: numb
             late ? "bg-red-50 text-destructive" : "bg-gold-50 text-gold-700",
           )}
         >
-          {task.dueAt ? formatDate(task.dueAt, "dd/MM 'às' HH:mm") : late ? "Atrasada" : "Sem prazo"}
+          {task.dueAt
+            ? formatDate(task.dueAt, "dd/MM 'às' HH:mm")
+            : late
+              ? "Atrasada"
+              : "Sem prazo"}
         </span>
       </Link>
     </motion.li>
@@ -584,7 +633,10 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionInfo | n
         </h2>
         <p className="text-sm text-muted-foreground">
           Você ainda não tem um plano contratado.{" "}
-          <Link href="/planos" className="font-medium text-navy-700 underline-offset-4 hover:underline">
+          <Link
+            href="/planos"
+            className="font-medium text-navy-700 underline-offset-4 hover:underline"
+          >
             Ver planos
           </Link>
         </p>
@@ -738,7 +790,9 @@ export function StudentProgressView({
             value={overallAttendanceRate}
             decimals={0}
             suffix="%"
-            caption={overallAttendanceRate === null ? "sem aulas concluídas" : "nas suas turmas"}
+            caption={
+              overallAttendanceRate === null ? "sem aulas concluídas" : "nas suas turmas"
+            }
           />
         </RevealItem>
         <RevealItem>
@@ -748,7 +802,9 @@ export function StudentProgressView({
             value={averageScore}
             decimals={1}
             suffix="%"
-            caption={averageScore === null ? "sem correções ainda" : "das tarefas corrigidas"}
+            caption={
+              averageScore === null ? "sem correções ainda" : "das tarefas corrigidas"
+            }
             tone="gold"
           />
         </RevealItem>
@@ -801,7 +857,10 @@ export function StudentProgressView({
       <div className="grid gap-4 md:grid-cols-2">
         <Reveal>
           <section className="h-full rounded-2xl border border-border bg-background shadow-[var(--shadow-card)]">
-            <SectionHeading icon={<TaskIcon className="h-4 w-4" />} hint={`${grades.length} corrigidas`}>
+            <SectionHeading
+              icon={<TaskIcon className="h-4 w-4" />}
+              hint={`${grades.length} corrigidas`}
+            >
               Notas de tarefas
             </SectionHeading>
             {grades.length === 0 ? (
@@ -812,7 +871,11 @@ export function StudentProgressView({
               <>
                 <ul className="divide-y divide-border">
                   {grades.slice(0, 6).map((grade, index) => (
-                    <GradeRow key={`${grade.title}-${grade.groupName}-${index}`} grade={grade} index={index} />
+                    <GradeRow
+                      key={`${grade.title}-${grade.groupName}-${index}`}
+                      grade={grade}
+                      index={index}
+                    />
                   ))}
                 </ul>
                 <GradeTrend grades={grades} />

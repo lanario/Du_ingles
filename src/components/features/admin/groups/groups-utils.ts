@@ -11,8 +11,15 @@
 import type { GroupDetail } from "@/repositories/groups";
 import type { ScheduleEntry } from "@/schemas/groups";
 
-export { formatDate, initialsOf, toneOf } from "@/components/features/admin/users/users-utils";
-export { CEFR_LEVELS_ORDER, CEFR_TONE } from "@/components/features/admin/students/students-utils";
+export {
+  formatDate,
+  initialsOf,
+  toneOf,
+} from "@/components/features/admin/users/users-utils";
+export {
+  CEFR_LEVELS_ORDER,
+  CEFR_TONE,
+} from "@/components/features/admin/students/students-utils";
 
 /** A turma como a área de admin a consome — a projeção completa do repositório. */
 export type Group = GroupDetail;
@@ -44,7 +51,9 @@ export const WEEKDAY_LONG = [
 
 /** Grade semanal na ordem do calendário — o banco guarda na ordem de digitação. */
 export function sortedSchedule(schedule: ScheduleEntry[]): ScheduleEntry[] {
-  return [...schedule].sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start));
+  return [...schedule].sort(
+    (a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start),
+  );
 }
 
 /** "seg 19:00–20:30 · qua 19:00–20:30" — resumo de uma linha da grade. */
@@ -112,17 +121,15 @@ export function periodLabel(group: Group): string | null {
       year: "numeric",
     });
 
-  if (group.startDate && group.endDate) return `${format(group.startDate)} → ${format(group.endDate)}`;
+  if (group.startDate && group.endDate)
+    return `${format(group.startDate)} → ${format(group.endDate)}`;
   if (group.startDate) return `A partir de ${format(group.startDate)}`;
   if (group.endDate) return `Até ${format(group.endDate)}`;
   return null;
 }
 
 function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
 /** Busca por nome, professor, curso, nível, status ou dia da semana. */
@@ -147,10 +154,14 @@ export function sortGroups(groups: Group[], mode: SortMode): Group[] {
   if (mode === "name") {
     sorted.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   } else if (mode === "students") {
-    sorted.sort((a, b) => b.enrolledCount - a.enrolledCount || a.name.localeCompare(b.name, "pt-BR"));
+    sorted.sort(
+      (a, b) =>
+        b.enrolledCount - a.enrolledCount || a.name.localeCompare(b.name, "pt-BR"),
+    );
   } else {
     sorted.sort(
-      (a, b) => occupancyRatio(b) - occupancyRatio(a) || a.name.localeCompare(b.name, "pt-BR"),
+      (a, b) =>
+        occupancyRatio(b) - occupancyRatio(a) || a.name.localeCompare(b.name, "pt-BR"),
     );
   }
   return sorted;
@@ -169,7 +180,14 @@ export function teacherBuckets(groups: Group[]): TeacherBucket[] {
     if (!group.teacherId) continue;
     const bucket = byId.get(group.teacherId);
     if (bucket) bucket.count += 1;
-    else byId.set(group.teacherId, { id: group.teacherId, name: group.teacherName, count: 1 });
+    else
+      byId.set(group.teacherId, {
+        id: group.teacherId,
+        name: group.teacherName,
+        count: 1,
+      });
   }
-  return [...byId.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pt-BR"));
+  return [...byId.values()].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name, "pt-BR"),
+  );
 }

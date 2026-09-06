@@ -217,7 +217,9 @@ async function listSessions(
     // string montada à mão é exatamente onde um id vira injeção de filtro.
     const [own, byGroup] = await Promise.all([
       base().eq("teacher_id", ctx.userId),
-      groupIds.length > 0 ? base().in("group_id", groupIds) : Promise.resolve({ data: [] }),
+      groupIds.length > 0
+        ? base().in("group_id", groupIds)
+        : Promise.resolve({ data: [] }),
     ]);
     const merged = new Map<string, SessionRow>();
     for (const row of [

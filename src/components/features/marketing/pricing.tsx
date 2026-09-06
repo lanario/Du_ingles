@@ -37,8 +37,8 @@ export function Pricing() {
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Planos</h2>
         <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground sm:text-base">
           Três níveis de acompanhamento. Preço a partir do ritmo mais escolhido — na
-          vitrine completa dá pra ajustar ritmo e compromisso, com condição especial
-          para semestre e ano.
+          vitrine completa dá pra ajustar ritmo e compromisso, com condição especial para
+          semestre e ano.
         </p>
         <p className="mt-4 text-xs text-muted-foreground lg:hidden" aria-hidden>
           Deslize para ver os três planos →
@@ -110,16 +110,25 @@ export function Pricing() {
 
                 {/* Preço */}
                 <div className="mt-5 flex items-baseline gap-1">
-                  <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: "var(--navy-300)" }}
+                  >
                     R$
                   </span>
                   <span className="text-[44px] font-bold leading-none tracking-tight text-white">
                     {whole}
                   </span>
-                  <span className="text-lg font-semibold tabular" style={{ color: "var(--navy-300)" }}>
+                  <span
+                    className="text-lg font-semibold tabular"
+                    style={{ color: "var(--navy-300)" }}
+                  >
                     ,{fraction}
                   </span>
-                  <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: "var(--navy-300)" }}
+                  >
                     /mês
                   </span>
                 </div>

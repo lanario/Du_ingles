@@ -163,7 +163,11 @@ export function TonePill({
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
     >
       {dot && (
-        <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tone }} />
+        <span
+          aria-hidden
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: tone }}
+        />
       )}
       {children}
     </span>
@@ -228,14 +232,24 @@ export function BadgePill({ text, accent }: { text: string; accent: PlanAccent }
  * Medidor de vagas. Só aparece em plano com teto — num plano ilimitado a
  * barra estaria sempre vazia e não diria nada.
  */
-export function SeatMeter({ plan, className }: { plan: StudentPlan; className?: string }) {
+export function SeatMeter({
+  plan,
+  className,
+}: {
+  plan: StudentPlan;
+  className?: string;
+}) {
   const reduceMotion = useReducedMotion();
   const left = seatsLeft(plan);
   if (left === null) return null;
 
   const ratio = occupancyRatio(plan);
   const tone =
-    ratio >= 1 ? "var(--destructive)" : ratio >= 0.8 ? "var(--warning)" : "var(--success)";
+    ratio >= 1
+      ? "var(--destructive)"
+      : ratio >= 0.8
+        ? "var(--warning)"
+        : "var(--success)";
 
   return (
     <div className={cn("min-w-0", className)}>
@@ -253,7 +267,9 @@ export function SeatMeter({ plan, className }: { plan: StudentPlan; className?: 
           style={{ backgroundColor: tone }}
           initial={reduceMotion ? { width: `${ratio * 100}%` } : { width: 0 }}
           animate={{ width: `${ratio * 100}%` }}
-          transition={reduceMotion ? { duration: 0 } : { duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={
+            reduceMotion ? { duration: 0 } : { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
+          }
         />
       </div>
     </div>
@@ -299,7 +315,10 @@ export function FeatureList({
         >
           <span
             aria-hidden
-            style={{ color: tone, backgroundColor: `color-mix(in srgb, ${tone} 12%, #ffffff)` }}
+            style={{
+              color: tone,
+              backgroundColor: `color-mix(in srgb, ${tone} 12%, #ffffff)`,
+            }}
             className="mt-px grid h-4 w-4 shrink-0 place-items-center rounded-full"
           >
             <CheckIcon className="h-2.5 w-2.5" strokeWidth={2.6} />
@@ -367,7 +386,11 @@ export function CopyLinkButton({
         className,
       )}
     >
-      {copied ? <CheckIcon className="h-3.5 w-3.5" /> : <CopyIcon className="h-3.5 w-3.5" />}
+      {copied ? (
+        <CheckIcon className="h-3.5 w-3.5" />
+      ) : (
+        <CopyIcon className="h-3.5 w-3.5" />
+      )}
       {copied ? "Copiado!" : label}
     </button>
   );

@@ -61,8 +61,7 @@ export function NextSessionPrompt({
   );
   const [state, formAction, isPending] = useActionState(action, null);
 
-  const justEnded =
-    !!endedAt && Date.now() - new Date(endedAt).getTime() < JUST_ENDED_MS;
+  const justEnded = !!endedAt && Date.now() - new Date(endedAt).getTime() < JUST_ENDED_MS;
   const [open, setOpen] = useState(!plan.alreadyScheduled && justEnded);
   const [dismissed, setDismissed] = useState(false);
 
@@ -89,9 +88,7 @@ export function NextSessionPrompt({
   const card = admin
     ? "border-admin-border bg-admin-surface text-admin-foreground"
     : "border-border bg-background text-foreground";
-  const primary = admin
-    ? "bg-navy-900 text-white"
-    : "bg-primary text-primary-foreground";
+  const primary = admin ? "bg-navy-900 text-white" : "bg-primary text-primary-foreground";
 
   if (plan.alreadyScheduled) {
     return (
@@ -183,14 +180,24 @@ export function NextSessionPrompt({
               <Label htmlFor="next-date">
                 Data <span className="text-primary">*</span>
               </Label>
-              <DateField id="next-date" name="date" defaultValue={initial.date} required />
+              <DateField
+                id="next-date"
+                name="date"
+                defaultValue={initial.date}
+                required
+              />
               <FieldError messages={fields?.["date"]} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="next-time">
                 Horário <span className="text-primary">*</span>
               </Label>
-              <TimeField id="next-time" name="time" defaultValue={initial.time} required />
+              <TimeField
+                id="next-time"
+                name="time"
+                defaultValue={initial.time}
+                required
+              />
               <FieldError messages={fields?.["time"]} />
             </div>
           </div>

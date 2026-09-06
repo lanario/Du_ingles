@@ -18,10 +18,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  setPlanActiveAction,
-  syncPlanAction,
-} from "@/actions/admin/student-plans";
+import { setPlanActiveAction, syncPlanAction } from "@/actions/admin/student-plans";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useListProgress } from "@/components/motion/list-motion";
 import { useNarrowScreen, useViewMode } from "@/components/motion/use-view-mode";
@@ -97,8 +94,12 @@ export function PlansView({
   // Os painéis seguem a lista: depois de salvar ou arquivar, o plano aberto
   // tem que refletir o dado novo, não o snapshot de quando abriu.
   useEffect(() => {
-    setDetail((current) => (current ? (plans.find((p) => p.id === current.id) ?? null) : null));
-    setEditing((current) => (current ? (plans.find((p) => p.id === current.id) ?? null) : null));
+    setDetail((current) =>
+      current ? (plans.find((p) => p.id === current.id) ?? null) : null,
+    );
+    setEditing((current) =>
+      current ? (plans.find((p) => p.id === current.id) ?? null) : null,
+    );
   }, [plans]);
 
   // "/" foca a busca, como nas outras listas do painel.
@@ -146,7 +147,10 @@ export function PlansView({
     setFormOpen(true);
   }
 
-  async function runOnPlan(planId: string, work: () => Promise<{ success: boolean; error?: { message: string } }>) {
+  async function runOnPlan(
+    planId: string,
+    work: () => Promise<{ success: boolean; error?: { message: string } }>,
+  ) {
     setError(null);
     setBusy(planId);
     try {
@@ -182,7 +186,11 @@ export function PlansView({
 
         <dl className="flex flex-wrap gap-2">
           <Indicator label="Planos" value={plans.length} />
-          <Indicator label="Publicados" value={statusCounts.active} tone="var(--success)" />
+          <Indicator
+            label="Publicados"
+            value={statusCounts.active}
+            tone="var(--success)"
+          />
           <Indicator
             label="Assinantes"
             value={summary.activeCount}
@@ -250,7 +258,10 @@ export function PlansView({
           "bg-admin-background",
         )}
       >
-        <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
+        >
           <span
             ref={lineRef}
             className="block h-full w-full origin-left bg-gradient-to-r from-navy-700 to-gold-500"
@@ -536,7 +547,11 @@ function MiniStat({ tone, label }: { tone: string; label: string }) {
       style={{ color: tone, backgroundColor: `color-mix(in srgb, ${tone} 9%, #ffffff)` }}
       className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium"
     >
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tone }} />
+      <span
+        aria-hidden
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: tone }}
+      />
       {label}
     </span>
   );
@@ -578,9 +593,24 @@ function ViewToggle({
  */
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   const examples = [
-    { name: "Standard", price: "R$ 249,90/mês", detail: "1x por semana, em grupo", accent: "navy" as const },
-    { name: "Premium", price: "R$ 499,90/mês", detail: "2x/semana + 1 aula individual", accent: "gold" as const },
-    { name: "Elite", price: "R$ 999,90/mês", detail: "3x/semana + 2 aulas individuais", accent: "violet" as const },
+    {
+      name: "Standard",
+      price: "R$ 249,90/mês",
+      detail: "1x por semana, em grupo",
+      accent: "navy" as const,
+    },
+    {
+      name: "Premium",
+      price: "R$ 499,90/mês",
+      detail: "2x/semana + 1 aula individual",
+      accent: "gold" as const,
+    },
+    {
+      name: "Elite",
+      price: "R$ 999,90/mês",
+      detail: "3x/semana + 2 aulas individuais",
+      accent: "violet" as const,
+    },
   ];
 
   return (
@@ -593,8 +623,8 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         Nenhum plano criado ainda
       </p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-admin-foreground/55">
-        Um plano define o que o aluno compra e quanto paga. Ao salvar, ele é publicado
-        na Stripe com link de pagamento próprio.
+        Um plano define o que o aluno compra e quanto paga. Ao salvar, ele é publicado na
+        Stripe com link de pagamento próprio.
       </p>
 
       <div className="mx-auto mt-7 grid max-w-2xl gap-3 sm:grid-cols-3">
@@ -604,10 +634,14 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + index * 0.08, duration: 0.4 }}
-            style={{ boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${ACCENT_TONE[example.accent]} 28%, transparent)` }}
+            style={{
+              boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${ACCENT_TONE[example.accent]} 28%, transparent)`,
+            }}
             className="rounded-xl bg-admin-background p-3 text-left"
           >
-            <p className="text-[13px] font-semibold text-admin-foreground">{example.name}</p>
+            <p className="text-[13px] font-semibold text-admin-foreground">
+              {example.name}
+            </p>
             <p className="mt-0.5 text-[12px] tabular text-admin-foreground/60">
               {example.price}
             </p>

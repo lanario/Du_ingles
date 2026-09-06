@@ -13,7 +13,10 @@ export default async function AlunosPage() {
   // Duas consultas planas: os alunos e as turmas. O nome e o nível da turma
   // matriculada são resolvidos aqui em memória (`joinGroups`), como a página
   // de Clientes do modelo de referência resolve rede e pasta.
-  const [students, groups] = await Promise.all([listStudents(ctx.organizationId), listGroups()]);
+  const [students, groups] = await Promise.all([
+    listStudents(ctx.organizationId),
+    listGroups(),
+  ]);
 
   return <StudentsView students={joinGroups(students, groups)} groups={groups} />;
 }

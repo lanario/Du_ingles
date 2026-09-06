@@ -24,7 +24,14 @@ import {
 import { EditUserForm } from "@/components/features/admin/users/edit-user-form";
 import { UserLifecycleActions } from "@/components/features/admin/users/user-lifecycle-actions";
 import { SetPasswordForm } from "@/components/features/admin/users/set-password-form";
-import { CopyButton, GroupPill, LevelPill, PendingPasswordPill, StatusPill, UserAvatar } from "./students-visuals";
+import {
+  CopyButton,
+  GroupPill,
+  LevelPill,
+  PendingPasswordPill,
+  StatusPill,
+  UserAvatar,
+} from "./students-visuals";
 import { formatDate, type Student } from "./students-utils";
 import type { UserDetail as UserDetailData } from "@/repositories/users";
 
@@ -54,7 +61,13 @@ export function StudentDetail({
   canManage = true,
 }: StudentDetailProps) {
   return (
-    <SidePanel open={open} onClose={onClose} title={user?.fullName ?? "Aluno"} subtitle={user?.email} wide>
+    <SidePanel
+      open={open}
+      onClose={onClose}
+      title={user?.fullName ?? "Aluno"}
+      subtitle={user?.email}
+      wide
+    >
       {user && student && (
         <StudentDetailContent
           key={session}
@@ -114,7 +127,12 @@ function StudentDetailContent({
           <div className="flex items-center justify-between gap-3 rounded-xl border border-admin-border px-3.5 py-3">
             <GroupPill name={student.groupName} level={student.groupLevel} />
             {canManage && (
-              <DetailButton icon={SwapIcon} label="Mover" tone="accent" onClick={onMove} />
+              <DetailButton
+                icon={SwapIcon}
+                label="Mover"
+                tone="accent"
+                onClick={onMove}
+              />
             )}
           </div>
         </DetailSection>
@@ -136,7 +154,10 @@ function StudentDetailContent({
 
         {canManage && user.role !== "admin" && (
           <DetailSection title="Senha">
-            <SetPasswordForm userId={user.id} userName={user.fullName.split(" ")[0] ?? "o aluno"} />
+            <SetPasswordForm
+              userId={user.id}
+              userName={user.fullName.split(" ")[0] ?? "o aluno"}
+            />
           </DetailSection>
         )}
 
@@ -147,10 +168,19 @@ function StudentDetailContent({
               label="E-mail"
               value={user.email}
               href={`mailto:${user.email}`}
-              action={<CopyButton value={user.email} label={`Copiar e-mail de ${user.fullName}`} />}
+              action={
+                <CopyButton
+                  value={user.email}
+                  label={`Copiar e-mail de ${user.fullName}`}
+                />
+              }
             />
             <DetailRow icon={UserIcon} label="Telefone" value={user.phone} />
-            <DetailRow icon={CalendarIcon} label="Aluno desde" value={formatDate(user.createdAt)} />
+            <DetailRow
+              icon={CalendarIcon}
+              label="Aluno desde"
+              value={formatDate(user.createdAt)}
+            />
           </div>
         </DetailSection>
 

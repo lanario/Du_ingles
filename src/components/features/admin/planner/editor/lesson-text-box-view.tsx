@@ -259,7 +259,10 @@ export function LessonTextBoxView(props: ReactNodeViewProps) {
                 >
                   <span
                     aria-hidden
-                    className={cn("h-4 w-4 rounded-[5px] border", TONE_SWATCH[tone.value])}
+                    className={cn(
+                      "h-4 w-4 rounded-[5px] border",
+                      TONE_SWATCH[tone.value],
+                    )}
                   />
                 </button>
               ))}

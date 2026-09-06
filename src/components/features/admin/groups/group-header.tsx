@@ -96,9 +96,12 @@ export function GroupHeader({
           <OccupancyRing group={group} size={96} />
 
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-2xl font-semibold text-admin-foreground">{group.name}</h1>
+            <h1 className="truncate text-2xl font-semibold text-admin-foreground">
+              {group.name}
+            </h1>
             <p className="mt-1 text-sm font-medium" style={{ color: tone }}>
-              {occupancyLabel(group)} · {group.enrolledCount} de {group.maxStudents} lugares
+              {occupancyLabel(group)} · {group.enrolledCount} de {group.maxStudents}{" "}
+              lugares
             </p>
 
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -119,25 +122,25 @@ export function GroupHeader({
               Editar
             </button>
             {canManageGroups && (
-            <button
-              type="button"
-              onClick={toggleActive}
-              disabled={busy}
-              className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-50",
-                group.isActive
-                  ? "border-destructive/35 text-destructive hover:bg-destructive/10"
-                  : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted",
-              )}
-            >
-              {busy ? (
-                <LogoLoader size={16} label={null} />
-              ) : (
-                <PowerIcon className="h-4 w-4" />
-              )}
-              {group.isActive ? "Arquivar" : "Reativar"}
-            </button>
+              <button
+                type="button"
+                onClick={toggleActive}
+                disabled={busy}
+                className={cn(
+                  "inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-50",
+                  group.isActive
+                    ? "border-destructive/35 text-destructive hover:bg-destructive/10"
+                    : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted",
+                )}
+              >
+                {busy ? (
+                  <LogoLoader size={16} label={null} />
+                ) : (
+                  <PowerIcon className="h-4 w-4" />
+                )}
+                {group.isActive ? "Arquivar" : "Reativar"}
+              </button>
             )}
           </div>
         </div>
@@ -147,7 +150,9 @@ export function GroupHeader({
           <span className="text-[11px] text-admin-foreground/45">
             {formatMinutes(weeklyMinutes(group.schedule))} por semana
           </span>
-          {period && <span className="text-[11px] text-admin-foreground/45">{period}</span>}
+          {period && (
+            <span className="text-[11px] text-admin-foreground/45">{period}</span>
+          )}
         </div>
 
         {error && (

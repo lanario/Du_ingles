@@ -14,7 +14,12 @@
  */
 
 import type { StudentPlan } from "@/repositories/student-plans";
-import type { PlanAccent, PlanInterval, PlanTier, PlanWeeklyFrequency } from "@/schemas/student-plans";
+import type {
+  PlanAccent,
+  PlanInterval,
+  PlanTier,
+  PlanWeeklyFrequency,
+} from "@/schemas/student-plans";
 
 export const TIER_ORDER: PlanTier[] = ["standard", "premium", "elite"];
 
@@ -159,7 +164,10 @@ export const COMMITMENT_DISCOUNT: Partial<Record<CommitmentInterval, number>> = 
  * comercial. É a partir daqui que semestral e anual são calculados
  * ([[commitmentPriceCents]]); o admin nunca digita esses 27 valores à mão.
  */
-export const BASE_MONTHLY_PRICE_CENTS: Record<PlanTier, Record<PlanWeeklyFrequency, number>> = {
+export const BASE_MONTHLY_PRICE_CENTS: Record<
+  PlanTier,
+  Record<PlanWeeklyFrequency, number>
+> = {
   standard: { 1: 24990, 2: 34990, 3: 49990 },
   premium: { 1: 39990, 2: 49990, 3: 69990 },
   elite: { 1: 59990, 2: 74990, 3: 99990 },
@@ -262,7 +270,9 @@ export function buildTierCatalogSeeds(skip: Set<string> = new Set()): TierPlanSe
           weeklyFrequency: frequency,
           accent: TIER_ACCENT[tier],
           badge:
-            frequency === RECOMMENDED_FREQUENCY && tier === "premium" ? "Mais recomendado" : null,
+            frequency === RECOMMENDED_FREQUENCY && tier === "premium"
+              ? "Mais recomendado"
+              : null,
           isFeatured: tier === "premium",
           sortOrder,
         });

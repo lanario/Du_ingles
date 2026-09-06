@@ -20,10 +20,13 @@ export function ScheduleBuilder({
   /** Pré-carrega a grade ao editar uma turma existente. */
   initial?: ScheduleEntry[];
 }) {
-  const mutedText = tone === "admin" ? "text-admin-foreground/60" : "text-muted-foreground";
+  const mutedText =
+    tone === "admin" ? "text-admin-foreground/60" : "text-muted-foreground";
   const accentText = tone === "admin" ? "text-admin-accent" : "text-gold-600";
   const [entries, setEntries] = useState<ScheduleEntry[]>(
-    initial && initial.length > 0 ? initial : [{ weekday: 1, start: "19:00", end: "20:30" }],
+    initial && initial.length > 0
+      ? initial
+      : [{ weekday: 1, start: "19:00", end: "20:30" }],
   );
 
   function update(index: number, patch: Partial<ScheduleEntry>) {

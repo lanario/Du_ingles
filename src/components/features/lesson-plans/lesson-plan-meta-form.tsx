@@ -45,7 +45,12 @@ export function LessonPlanMetaForm({ plan }: { plan: LessonPlanDetail }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="level">Nível</Label>
-          <Select id="level" name="level" defaultValue={plan.level} disabled={!plan.isOwn}>
+          <Select
+            id="level"
+            name="level"
+            defaultValue={plan.level}
+            disabled={!plan.isOwn}
+          >
             {CEFR_LEVELS.map((l) => (
               <option key={l} value={l}>
                 {l}

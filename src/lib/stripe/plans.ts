@@ -2,7 +2,11 @@ import "server-only";
 import type Stripe from "stripe";
 import { env } from "@/lib/env";
 import { getStripe, stripeErrorMessage } from "@/lib/stripe/client";
-import { markSyncError, saveStripeMirror, type StudentPlan } from "@/repositories/student-plans";
+import {
+  markSyncError,
+  saveStripeMirror,
+  type StudentPlan,
+} from "@/repositories/student-plans";
 import type { PlanInterval } from "@/schemas/student-plans";
 
 /**
@@ -74,7 +78,10 @@ async function ensureProduct(plan: StudentPlan): Promise<Stripe.Product> {
  * periodicidade mudaram. Sem essa checagem, salvar o plano sem mexer no preço
  * geraria um Price novo a cada clique em "Salvar".
  */
-async function ensurePrice(plan: StudentPlan, product: Stripe.Product): Promise<Stripe.Price> {
+async function ensurePrice(
+  plan: StudentPlan,
+  product: Stripe.Product,
+): Promise<Stripe.Price> {
   const stripe = getStripe();
   const recurring = recurringFor(plan.billingInterval);
 
@@ -84,7 +91,8 @@ async function ensurePrice(plan: StudentPlan, product: Stripe.Product): Promise<
       const sameAmount = current.unit_amount === plan.priceCents;
       const sameInterval =
         current.recurring?.interval === recurring?.interval &&
-        (current.recurring?.interval_count ?? null) === (recurring?.interval_count ?? null);
+        (current.recurring?.interval_count ?? null) ===
+          (recurring?.interval_count ?? null);
 
       if (current.active && sameAmount && sameInterval) return current;
 
@@ -197,10 +205,14 @@ export async function syncPlanToStripe(
       productId: product.id,
       priceId: price.id,
       paymentLinkId: paymentLink?.id ?? (priceChanged ? null : previousPaymentLinkId),
-      paymentLinkUrl: paymentLink?.url ?? (priceChanged ? null : plan.stripePaymentLinkUrl),
+      paymentLinkUrl:
+        paymentLink?.url ?? (priceChanged ? null : plan.stripePaymentLinkUrl),
     });
 
-    return { success: true, paymentLinkUrl: paymentLink?.url ?? plan.stripePaymentLinkUrl };
+    return {
+      success: true,
+      paymentLinkUrl: paymentLink?.url ?? plan.stripePaymentLinkUrl,
+    };
   } catch (error) {
     const message = stripeErrorMessage(error);
     await markSyncError(plan.id, message);

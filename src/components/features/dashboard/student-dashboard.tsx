@@ -91,7 +91,11 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
     sessionStart !== null && nextSession
       ? sessionStart + nextSession.durationMinutes * 60_000
       : null;
-  const isLive = sessionStart !== null && sessionEnd !== null && now >= sessionStart && now <= sessionEnd;
+  const isLive =
+    sessionStart !== null &&
+    sessionEnd !== null &&
+    now >= sessionStart &&
+    now <= sessionEnd;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -141,7 +145,10 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
                 {isLive && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success">
                     <span className="relative flex h-2 w-2 flex-none">
-                      <span className="live-dot absolute inset-0 rounded-full" aria-hidden />
+                      <span
+                        className="live-dot absolute inset-0 rounded-full"
+                        aria-hidden
+                      />
                       <span className="relative h-2 w-2 rounded-full bg-success" />
                     </span>
                     Ao vivo
@@ -310,7 +317,10 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
                           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
                         >
                           {!reduced && (
-                            <span aria-hidden className="progress-shimmer absolute inset-0 rounded-full" />
+                            <span
+                              aria-hidden
+                              className="progress-shimmer absolute inset-0 rounded-full"
+                            />
                           )}
                         </motion.div>
                       </div>
@@ -437,7 +447,11 @@ function StatCard({
   return (
     <div
       className="group relative h-full overflow-hidden rounded-2xl border border-border bg-background p-3.5 shadow-[0_1px_2px_rgba(11,26,51,0.04)] transition-colors hover:border-gold-300 sm:p-4"
-      style={{ "--tone": tone === "gold" ? "var(--gold-500)" : "var(--navy-700)" } as CSSProperties}
+      style={
+        {
+          "--tone": tone === "gold" ? "var(--gold-500)" : "var(--navy-700)",
+        } as CSSProperties
+      }
     >
       <div
         aria-hidden
@@ -449,7 +463,11 @@ function StatCard({
       <p
         className={cn(
           "relative mt-1.5 text-xl font-semibold tracking-tight sm:text-2xl",
-          value === null ? "text-muted-foreground/60" : tone === "gold" ? "text-gold-700" : "text-navy-900",
+          value === null
+            ? "text-muted-foreground/60"
+            : tone === "gold"
+              ? "text-gold-700"
+              : "text-navy-900",
         )}
       >
         {value === null ? (

@@ -62,8 +62,12 @@ export function DetailHeader({
         <p className="truncate text-base font-semibold leading-snug text-admin-foreground">
           {title}
         </p>
-        {description && <div className="mt-1 text-sm text-admin-foreground/60">{description}</div>}
-        {badges && <div className="mt-2.5 flex flex-wrap items-center gap-1.5">{badges}</div>}
+        {description && (
+          <div className="mt-1 text-sm text-admin-foreground/60">{description}</div>
+        )}
+        {badges && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">{badges}</div>
+        )}
       </div>
     </div>
   );
@@ -142,7 +146,12 @@ export function DetailRow({
               {value}
             </a>
           ) : (
-            <p className={cn("truncate text-sm text-admin-foreground", mono && "font-mono")}>
+            <p
+              className={cn(
+                "truncate text-sm text-admin-foreground",
+                mono && "font-mono",
+              )}
+            >
               {value}
             </p>
           )

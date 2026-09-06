@@ -208,7 +208,9 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
                 name="features"
                 rows={5}
                 defaultValue={plan?.features.join("\n") ?? ""}
-                placeholder={"4 aulas por mês\nMaterial digital incluso\nCorreção de redação"}
+                placeholder={
+                  "4 aulas por mês\nMaterial digital incluso\nCorreção de redação"
+                }
                 className={cn(
                   "w-full rounded-md border px-3 py-2 text-sm leading-relaxed outline-none",
                   "focus-visible:ring-2",
@@ -245,8 +247,9 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
           --------------------------------------------------------------- */}
           <Section title="Grade de níveis (opcional)">
             <p className="-mt-2 text-[11px] leading-relaxed text-admin-foreground/45">
-              Marcando nível e ritmo, este plano entra no construtor &ldquo;nível → ritmo →
-              compromisso&rdquo; da vitrine. Deixe em branco para um plano avulso, fora da grade.
+              Marcando nível e ritmo, este plano entra no construtor &ldquo;nível → ritmo
+              → compromisso&rdquo; da vitrine. Deixe em branco para um plano avulso, fora
+              da grade.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -404,7 +407,9 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
                 <Input
                   id="plan-minutes"
                   name="minutesPerLesson"
-                  defaultValue={plan?.minutesPerLesson ? String(plan.minutesPerLesson) : ""}
+                  defaultValue={
+                    plan?.minutesPerLesson ? String(plan.minutesPerLesson) : ""
+                  }
                   inputMode="numeric"
                   placeholder="50"
                   autoComplete="off"
@@ -638,13 +643,17 @@ function Toggle({
         <motion.span
           layout
           transition={
-            reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 620, damping: 34 }
+            reduceMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 620, damping: 34 }
           }
           className={cn("h-4 w-4 rounded-full bg-white shadow-sm", on && "ml-auto")}
         />
       </span>
       <span className="min-w-0">
-        <span className="block text-[13px] font-medium text-admin-foreground">{label}</span>
+        <span className="block text-[13px] font-medium text-admin-foreground">
+          {label}
+        </span>
         <span className="mt-0.5 block text-[11px] leading-snug text-admin-foreground/50">
           {hint}
         </span>
@@ -674,7 +683,9 @@ function PlanPreview({
   badge: string;
 }) {
   const tone = ACCENT_TONE[accent];
-  const cents = Math.round(Number(price.replace(/[^\d,.-]/g, "").replace(",", ".")) * 100);
+  const cents = Math.round(
+    Number(price.replace(/[^\d,.-]/g, "").replace(",", ".")) * 100,
+  );
   const { whole, fraction } = splitMoney(Number.isFinite(cents) && cents > 0 ? cents : 0);
 
   return (
@@ -722,7 +733,9 @@ function PlanPreview({
 
         <p className="mt-3 flex items-baseline gap-1 leading-none text-admin-foreground">
           <span className="text-[12px] font-medium text-admin-foreground/45">R$</span>
-          <span className="text-[26px] font-semibold tabular tracking-tight">{whole}</span>
+          <span className="text-[26px] font-semibold tabular tracking-tight">
+            {whole}
+          </span>
           <span className="text-[13px] font-semibold tabular text-admin-foreground/55">
             ,{fraction}
           </span>

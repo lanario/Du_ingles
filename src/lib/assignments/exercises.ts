@@ -109,7 +109,9 @@ export function readQuestions(instructions: Json | null): Question[] {
 
     if (questionType === "multiple_choice") {
       const options = Array.isArray(q.options)
-        ? q.options.filter((o): o is string => typeof o === "string" && o.trim().length > 0)
+        ? q.options.filter(
+            (o): o is string => typeof o === "string" && o.trim().length > 0,
+          )
         : [];
       // Alternativa única não é escolha — a questão perdeu o sentido.
       if (options.length < 2) continue;
@@ -270,7 +272,8 @@ export function answersToPlainText(
           ? (question.options?.[picked] ?? "(sem resposta)")
           : "(sem resposta)";
       } else if (question.type === "true_false") {
-        shown = raw === "true" ? "Verdadeiro" : raw === "false" ? "Falso" : "(sem resposta)";
+        shown =
+          raw === "true" ? "Verdadeiro" : raw === "false" ? "Falso" : "(sem resposta)";
       } else if (!raw.trim()) {
         shown = "(sem resposta)";
       }

@@ -19,7 +19,11 @@ export default async function MeuPerfilPage() {
       </p>
       {profile ? (
         <div className="mt-8 max-w-xl space-y-6">
-          <AvatarUploader userId={profile.id} name={profile.fullName || profile.email} avatarUrl={ctx.avatarUrl} />
+          <AvatarUploader
+            userId={profile.id}
+            name={profile.fullName || profile.email}
+            avatarUrl={ctx.avatarUrl}
+          />
           <ProfileForm profile={profile} />
         </div>
       ) : null}

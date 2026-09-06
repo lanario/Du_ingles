@@ -62,7 +62,9 @@ function GroupRoster({
 
   function enroll(studentId: string, transfer: boolean) {
     startEnroll(async () => {
-      const result = await enrollStudentInMyGroupAction(group.id, studentId, { transfer });
+      const result = await enrollStudentInMyGroupAction(group.id, studentId, {
+        transfer,
+      });
       setConflict(null);
       if (!result.success) {
         setEnrollError(result.error.message);
@@ -84,7 +86,8 @@ function GroupRoster({
     const current = activeByStudent[selected];
     if (current && current.groupId !== group.id) {
       setConflict({
-        studentName: students.find((item) => item.id === selected)?.fullName ?? "Este aluno",
+        studentName:
+          students.find((item) => item.id === selected)?.fullName ?? "Este aluno",
         fromGroupName: current.groupName,
         toGroupName: group.name,
       });

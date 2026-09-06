@@ -52,7 +52,12 @@ interface ActionMenuProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function ActionMenu({ items, label, disabled = false, onOpenChange }: ActionMenuProps) {
+export function ActionMenu({
+  items,
+  label,
+  disabled = false,
+  onOpenChange,
+}: ActionMenuProps) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -144,7 +149,9 @@ export function ActionMenu({ items, label, disabled = false, onOpenChange }: Act
               <motion.div
                 ref={menuRef}
                 role="menu"
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.97 }}
+                initial={
+                  reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.97 }
+                }
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}

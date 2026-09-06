@@ -138,8 +138,8 @@ function Panel({
             <strong className={admin ? "text-admin-foreground" : "text-navy-900"}>
               {conflict.studentName}
             </strong>{" "}
-            está matriculado em <strong>{conflict.fromGroupName}</strong>. Um aluno só pode
-            estar em uma turma por vez — continuar move a matrícula para{" "}
+            está matriculado em <strong>{conflict.fromGroupName}</strong>. Um aluno só
+            pode estar em uma turma por vez — continuar move a matrícula para{" "}
             <strong>{conflict.toGroupName}</strong> e encerra a anterior.
           </p>
         </div>

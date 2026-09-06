@@ -160,9 +160,8 @@ export function AgendaDetail({
 
           {item.kind === "preview" && (
             <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-              Esta aula ainda não foi marcada — é o que a grade da turma prevê para
-              esta data. Ela passa a existir quando o professor confirmar a
-              próxima aula.
+              Esta aula ainda não foi marcada — é o que a grade da turma prevê para esta
+              data. Ela passa a existir quando o professor confirmar a próxima aula.
             </p>
           )}
 

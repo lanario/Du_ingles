@@ -151,9 +151,13 @@ export async function gradeSubmissionAsAdminAction(
     return fail("FORBIDDEN", "Esta turma não é sua.");
 
   if (assignment.maxScore != null && parsed.data.score > assignment.maxScore) {
-    return fail("VALIDATION_ERROR", `A nota máxima desta tarefa é ${assignment.maxScore}.`, {
-      score: [`Use um valor entre 0 e ${assignment.maxScore}.`],
-    });
+    return fail(
+      "VALIDATION_ERROR",
+      `A nota máxima desta tarefa é ${assignment.maxScore}.`,
+      {
+        score: [`Use um valor entre 0 e ${assignment.maxScore}.`],
+      },
+    );
   }
 
   const success = await repo.gradeSubmission(

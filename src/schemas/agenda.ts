@@ -62,9 +62,7 @@ export const agendaEventSchema = z
    * "dia inteiro" às 14:00 desenharia uma faixa de uma hora à tarde.
    */
   .transform((value) =>
-    value.allDay
-      ? { ...value, time: "00:00", durationMinutes: 1440 }
-      : value,
+    value.allDay ? { ...value, time: "00:00", durationMinutes: 1440 } : value,
   );
 export type AgendaEventInput = z.infer<typeof agendaEventSchema>;
 

@@ -90,7 +90,11 @@ export function StatusPill({ isActive }: { isActive: boolean }) {
       style={{ color: tone, backgroundColor: `color-mix(in srgb, ${tone} 10%, #ffffff)` }}
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
     >
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tone }} />
+      <span
+        aria-hidden
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: tone }}
+      />
       {isActive ? "Ativo" : "Inativo"}
     </span>
   );

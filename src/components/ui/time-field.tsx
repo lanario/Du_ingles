@@ -103,9 +103,11 @@ export function TimeField({
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(
-    null,
-  );
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
   const admin = tone === "admin";
@@ -148,7 +150,9 @@ export function TimeField({
 
   /** Popover em portal + posição fixa: painéis e diálogos rolam e cortariam. */
   const place = useCallback(() => {
-    const trigger = triggerRef.current?.closest("[data-time-field-root]") as HTMLElement | null;
+    const trigger = triggerRef.current?.closest(
+      "[data-time-field-root]",
+    ) as HTMLElement | null;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
     const height = popoverRef.current?.offsetHeight ?? 240;
@@ -412,7 +416,9 @@ export function TimeField({
           onKeyDown={onInputKeyDown}
           className={cn(
             "w-[3.6rem] min-w-0 flex-1 bg-transparent tabular outline-none",
-            admin ? "placeholder:text-admin-foreground/40" : "placeholder:text-muted-foreground",
+            admin
+              ? "placeholder:text-admin-foreground/40"
+              : "placeholder:text-muted-foreground",
             disabled && "cursor-not-allowed",
           )}
         />

@@ -105,9 +105,10 @@ export function SettingsView({
                     Stripe não configurada neste ambiente
                   </p>
                   <p className="mt-1 text-[13px] leading-relaxed text-admin-foreground/60">
-                    Defina <code className="font-mono text-[12px]">STRIPE_SECRET_KEY</code> e{" "}
-                    <code className="font-mono text-[12px]">STRIPE_WEBHOOK_SECRET</code> no
-                    ambiente para habilitar cobranças.
+                    Defina{" "}
+                    <code className="font-mono text-[12px]">STRIPE_SECRET_KEY</code> e{" "}
+                    <code className="font-mono text-[12px]">STRIPE_WEBHOOK_SECRET</code>{" "}
+                    no ambiente para habilitar cobranças.
                   </p>
                 </div>
               </div>

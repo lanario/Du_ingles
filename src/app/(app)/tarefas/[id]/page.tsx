@@ -59,7 +59,9 @@ export default async function TarefaDetailPage({ params }: PageProps) {
         {assignment.dueAt && (
           <span
             className={
-              overdue ? "flex items-center gap-1.5 font-medium text-destructive" : "flex items-center gap-1.5"
+              overdue
+                ? "flex items-center gap-1.5 font-medium text-destructive"
+                : "flex items-center gap-1.5"
             }
           >
             <CalendarIcon className="h-4 w-4" />

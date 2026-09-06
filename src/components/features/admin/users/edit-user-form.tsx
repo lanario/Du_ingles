@@ -37,7 +37,11 @@ export function EditUserForm({ user }: { user: UserDetail }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="birthDate">Data de nascimento</Label>
-          <DateField id="birthDate" name="birthDate" defaultValue={user.birthDate ?? ""} />
+          <DateField
+            id="birthDate"
+            name="birthDate"
+            defaultValue={user.birthDate ?? ""}
+          />
         </div>
       </div>
 

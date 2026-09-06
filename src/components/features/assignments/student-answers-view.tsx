@@ -8,7 +8,11 @@
  * há como esta tela vazar resposta certa nem por engano.
  */
 
-import { optionLabel, type Question, type StudentAnswers } from "@/lib/assignments/exercises";
+import {
+  optionLabel,
+  type Question,
+  type StudentAnswers,
+} from "@/lib/assignments/exercises";
 import { cn } from "@/lib/utils";
 
 export function StudentAnswersView({

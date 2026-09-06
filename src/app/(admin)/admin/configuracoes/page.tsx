@@ -9,6 +9,9 @@ export default async function ConfiguracoesPage() {
   await requireRole(["admin"]);
 
   return (
-    <SettingsView stripeConfigured={isStripeConfigured()} stripeLiveMode={isStripeLiveMode()} />
+    <SettingsView
+      stripeConfigured={isStripeConfigured()}
+      stripeLiveMode={isStripeLiveMode()}
+    />
   );
 }

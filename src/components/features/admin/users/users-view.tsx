@@ -193,7 +193,10 @@ export function UsersView({
         )}
       >
         {/* Progresso da rolagem da lista (GSAP com scrub). */}
-        <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
+        >
           <span
             ref={lineRef}
             className="block h-full w-full origin-left bg-gradient-to-r from-navy-700 to-gold-500"
@@ -218,7 +221,9 @@ export function UsersView({
                 className={cn(
                   "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
-                  active ? "text-admin-foreground" : "text-admin-foreground/50 hover:text-admin-foreground",
+                  active
+                    ? "text-admin-foreground"
+                    : "text-admin-foreground/50 hover:text-admin-foreground",
                 )}
               >
                 {active && (
@@ -226,7 +231,11 @@ export function UsersView({
                     layoutId="du-usuarios-tab"
                     aria-hidden
                     className="absolute inset-0 rounded-lg bg-admin-muted shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--gold-500)_30%,transparent)]"
-                    transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 38 }}
+                    transition={
+                      reduceMotion
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 480, damping: 38 }
+                    }
                   />
                 )}
                 <span className="relative flex items-center gap-1.5">
@@ -235,7 +244,9 @@ export function UsersView({
                   <span
                     className={cn(
                       "rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
-                      active ? "bg-gold-100 text-gold-700" : "bg-admin-muted text-admin-foreground/50",
+                      active
+                        ? "bg-gold-100 text-gold-700"
+                        : "bg-admin-muted text-admin-foreground/50",
                     )}
                   >
                     {count}
@@ -311,12 +322,17 @@ export function UsersView({
             description="Ajuste a busca ou a aba para encontrar alguém."
             action={
               searchActive ? (
-                <SecondaryButton onClick={() => setSearch("")}>Limpar busca</SecondaryButton>
+                <SecondaryButton onClick={() => setSearch("")}>
+                  Limpar busca
+                </SecondaryButton>
               ) : null
             }
           />
         ) : (
-          <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <motion.div
+            layout
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          >
             <AnimatePresence mode="popLayout" initial={false}>
               {filtered.map((user) => (
                 <UserCard
@@ -350,7 +366,15 @@ export function UsersView({
   );
 }
 
-function Indicator({ label, value, tone }: { label: string; value: number; tone?: string }) {
+function Indicator({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: string;
+}) {
   return (
     <div className="rounded-xl border border-admin-border bg-admin-surface px-3.5 py-2">
       <dt className="text-[10px] font-medium uppercase tracking-wide text-admin-foreground/50">
@@ -366,7 +390,13 @@ function Indicator({ label, value, tone }: { label: string; value: number; tone?
   );
 }
 
-function SecondaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+function SecondaryButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

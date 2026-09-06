@@ -50,7 +50,12 @@ import type {
   ReportCategorySlice,
 } from "@/repositories/financial-reports";
 import { REPORT_WINDOWS, type ReportWindow } from "@/schemas/reports";
-import { MoneyValue, RankList, ResultWaterfall, RevenueExpenseChart } from "./report-charts";
+import {
+  MoneyValue,
+  RankList,
+  ResultWaterfall,
+  RevenueExpenseChart,
+} from "./report-charts";
 import { PedagogyPanel } from "./pedagogy-panel";
 
 type TabId = "overview" | "students" | "teachers" | "pedagogy";
@@ -190,7 +195,9 @@ function Tabs({ value, onChange }: { value: TabId; onChange: (id: TabId) => void
             onClick={() => onChange(item.id)}
             className={cn(
               "relative flex-1 rounded-xl px-4 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
-              active ? "text-admin-foreground" : "text-admin-foreground/55 hover:text-admin-foreground/80",
+              active
+                ? "text-admin-foreground"
+                : "text-admin-foreground/55 hover:text-admin-foreground/80",
             )}
           >
             {active && (
@@ -233,7 +240,9 @@ function WindowPicker({
             aria-pressed={active}
             className={cn(
               "relative rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-50",
-              active ? "text-admin-foreground" : "text-admin-foreground/50 hover:text-admin-foreground/80",
+              active
+                ? "text-admin-foreground"
+                : "text-admin-foreground/50 hover:text-admin-foreground/80",
             )}
           >
             {active && (
@@ -295,7 +304,10 @@ function MoneyTile({
         <span
           aria-hidden
           className="relative inline-flex h-8 w-8 items-center justify-center rounded-xl"
-          style={{ backgroundColor: `color-mix(in srgb, ${tone} 12%, #ffffff)`, color: tone }}
+          style={{
+            backgroundColor: `color-mix(in srgb, ${tone} 12%, #ffffff)`,
+            color: tone,
+          }}
         >
           {icon}
         </span>
@@ -380,7 +392,13 @@ function OverviewTab({ report }: { report: FinancialReport }) {
             cents={totals.netCents}
             tone={positive ? MONEY.revenue : MONEY.cost}
             emphasis
-            icon={positive ? <TrendUpIcon className="h-4 w-4" /> : <TrendDownIcon className="h-4 w-4" />}
+            icon={
+              positive ? (
+                <TrendUpIcon className="h-4 w-4" />
+              ) : (
+                <TrendDownIcon className="h-4 w-4" />
+              )
+            }
             changePercent={delta(totals.netCents, previousTotals.netCents)}
             footnote={
               totals.marginPercent == null
@@ -407,7 +425,8 @@ function OverviewTab({ report }: { report: FinancialReport }) {
             subtitle="Despesa empilhada em folha e estrutura; o fio escuro é o resultado"
             action={
               <span className="text-[11px] text-admin-foreground/45">
-                {report.series[0]?.label} – {report.series[report.series.length - 1]?.label}
+                {report.series[0]?.label} –{" "}
+                {report.series[report.series.length - 1]?.label}
               </span>
             }
           />
@@ -438,8 +457,16 @@ function OverviewTab({ report }: { report: FinancialReport }) {
                 <ResultWaterfall
                   steps={[
                     { label: "Receita", cents: totals.revenueCents, role: "in" },
-                    { label: "Professores", cents: totals.professionalCostCents, role: "out" },
-                    { label: "Estrutura", cents: totals.operatingExpenseCents, role: "out" },
+                    {
+                      label: "Professores",
+                      cents: totals.professionalCostCents,
+                      role: "out",
+                    },
+                    {
+                      label: "Estrutura",
+                      cents: totals.operatingExpenseCents,
+                      role: "out",
+                    },
                     { label: "Resultado", cents: totals.netCents, role: "result" },
                   ]}
                 />
@@ -538,7 +565,9 @@ function SettlementBar({
           className="relative h-full rounded-full"
           style={{ backgroundColor: tone }}
           initial={reduced ? false : { width: 0 }}
-          animate={{ width: `${Math.max(settledShare * 100, total > 0 && settled > 0 ? 2 : 0)}%` }}
+          animate={{
+            width: `${Math.max(settledShare * 100, total > 0 && settled > 0 ? 2 : 0)}%`,
+          }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
           <span aria-hidden className="progress-shimmer absolute inset-0 block" />
@@ -659,7 +688,9 @@ function StudentsTab({ report }: { report: FinancialReport }) {
                 Concentração
               </p>
               <p className="mt-1 text-xl font-semibold leading-tight tabular text-admin-foreground">
-                {summary.topShare == null ? "—" : `${formatNumber(summary.topShare * 100, 1)}%`}
+                {summary.topShare == null
+                  ? "—"
+                  : `${formatNumber(summary.topShare * 100, 1)}%`}
               </p>
               <p className="mt-1.5 text-[11px] text-admin-foreground/45">
                 {report.students[0]?.identified
@@ -719,7 +750,9 @@ function StudentsTab({ report }: { report: FinancialReport }) {
                 rows={rows.map((row) => ({
                   id: row.studentId ?? "unmatched",
                   label: row.name,
-                  sublabel: row.planName ?? (row.identified ? undefined : "contraparte não cadastrada"),
+                  sublabel:
+                    row.planName ??
+                    (row.identified ? undefined : "contraparte não cadastrada"),
                   cents: row.cents,
                   share: row.share,
                   settledShare: row.cents > 0 ? row.paidCents / row.cents : 0,
@@ -881,7 +914,9 @@ function TeachersTab({ report }: { report: FinancialReport }) {
                         {formatBRL(row.cents)}
                       </td>
                       <td className="tabular px-3 py-3 text-right text-admin-foreground/75">
-                        {row.costPerHourCents == null ? "—" : formatBRL(row.costPerHourCents)}
+                        {row.costPerHourCents == null
+                          ? "—"
+                          : formatBRL(row.costPerHourCents)}
                       </td>
                       <td className="px-5 py-3 text-right">
                         {row.estimatedCents == null ? (
@@ -891,7 +926,10 @@ function TeachersTab({ report }: { report: FinancialReport }) {
                             <span className="tabular text-admin-foreground/60">
                               {formatBRL(row.estimatedCents)}
                             </span>
-                            <VarianceChip actual={row.cents} expected={row.estimatedCents} />
+                            <VarianceChip
+                              actual={row.cents}
+                              expected={row.estimatedCents}
+                            />
                           </span>
                         )}
                       </td>

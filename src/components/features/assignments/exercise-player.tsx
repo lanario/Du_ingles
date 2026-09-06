@@ -158,7 +158,11 @@ export function ExercisePlayer({
                 ? "Tudo respondido — revise e envie."
                 : `Faltam ${total - answered} quest${total - answered === 1 ? "ão" : "ões"}.`}
             </p>
-            <Button type="button" disabled={!complete} onClick={() => setConfirming(true)}>
+            <Button
+              type="button"
+              disabled={!complete}
+              onClick={() => setConfirming(true)}
+            >
               Enviar tarefa
             </Button>
           </div>
@@ -304,9 +308,7 @@ function ChoiceInput({
             <span
               className={cn(
                 "grid h-7 w-7 flex-none place-items-center rounded-lg text-xs font-bold transition-colors",
-                selected
-                  ? "bg-navy-900 text-gold-400"
-                  : "bg-muted text-muted-foreground",
+                selected ? "bg-navy-900 text-gold-400" : "bg-muted text-muted-foreground",
               )}
             >
               {optionLabel(index)}

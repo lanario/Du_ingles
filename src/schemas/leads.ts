@@ -10,7 +10,11 @@ export const createLeadSchema = z.object({
     .max(30)
     .optional()
     .transform((v) => (v ? v : undefined)),
-  message: z.string().trim().max(2000, "A mensagem passou de 2000 caracteres.").optional(),
+  message: z
+    .string()
+    .trim()
+    .max(2000, "A mensagem passou de 2000 caracteres.")
+    .optional(),
 });
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 
@@ -48,7 +52,8 @@ export const trialClassSchema = z.object({
       if (problem) ctx.addIssue({ code: "custom", message: problem });
     }),
   isAdult: z.enum(["sim", "nao"], {
-    error: "Diga se você tem 18 anos ou mais — é o que define se falamos com um responsável.",
+    error:
+      "Diga se você tem 18 anos ou mais — é o que define se falamos com um responsável.",
   }),
   goal: z
     .string()

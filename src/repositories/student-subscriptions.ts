@@ -24,8 +24,7 @@ export interface StudentSubscription {
   createdAt: string;
 }
 
-const SELECT =
-  "*, plan:plan_id(name), student:student_id(full_name, email)";
+const SELECT = "*, plan:plan_id(name), student:student_id(full_name, email)";
 
 type JoinedRow = Database["public"]["Tables"]["student_subscriptions"]["Row"] & {
   plan: { name: string } | null;

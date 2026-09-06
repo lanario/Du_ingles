@@ -142,7 +142,8 @@ export function RadialOrbitalTimeline({ items, className }: RadialOrbitalTimelin
           angleRef.current = targetAngleRef.current;
           targetAngleRef.current = null;
         } else {
-          angleRef.current = (angleRef.current + diff * Math.min(1, delta * 7) + 360) % 360;
+          angleRef.current =
+            (angleRef.current + diff * Math.min(1, delta * 7) + 360) % 360;
         }
         applyPositions();
       } else if (autoRotateRef.current) {
@@ -362,7 +363,9 @@ export function RadialOrbitalTimeline({ items, className }: RadialOrbitalTimelin
                   <div className="mt-3 border-t border-border pt-3">
                     <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
                       <span>Domínio esperado</span>
-                      <span className="font-semibold text-foreground">{item.energy}%</span>
+                      <span className="font-semibold text-foreground">
+                        {item.energy}%
+                      </span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                       <div

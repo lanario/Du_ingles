@@ -58,8 +58,8 @@ export function SetPasswordForm({
       )}
 
       <p className="text-sm text-admin-foreground/60">
-        A senha definida aqui é provisória: no próximo login, {userName} terá de
-        escolher uma senha própria. As sessões abertas serão encerradas.
+        A senha definida aqui é provisória: no próximo login, {userName} terá de escolher
+        uma senha própria. As sessões abertas serão encerradas.
       </p>
 
       <div className="space-y-1.5">
@@ -72,7 +72,9 @@ export function SetPasswordForm({
           required
         />
         <FieldError
-          messages={state && !state.success ? state.error.fields?.["password"] : undefined}
+          messages={
+            state && !state.success ? state.error.fields?.["password"] : undefined
+          }
         />
       </div>
 

@@ -20,7 +20,14 @@ export interface SidePanelProps {
   wide?: boolean;
 }
 
-export function SidePanel({ open, onClose, title, subtitle, children, wide = false }: SidePanelProps) {
+export function SidePanel({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  wide = false,
+}: SidePanelProps) {
   const titleId = useId();
   const reduceMotion = useReducedMotion();
 
@@ -62,15 +69,22 @@ export function SidePanel({ open, onClose, title, subtitle, children, wide = fal
             transition={{ type: "spring", stiffness: 340, damping: 34 }}
             className={[
               "fixed right-0 top-0 bottom-0 z-50 flex max-h-[100dvh] flex-col border-l border-admin-border bg-admin-surface shadow-2xl",
-              wide ? "w-full sm:w-[600px] sm:max-w-xl" : "w-full sm:w-[440px] sm:max-w-md",
+              wide
+                ? "w-full sm:w-[600px] sm:max-w-xl"
+                : "w-full sm:w-[440px] sm:max-w-md",
             ].join(" ")}
           >
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-admin-border px-4 py-4 sm:px-6 sm:py-5">
               <div className="min-w-0">
-                <h2 id={titleId} className="truncate text-xl font-bold text-admin-foreground">
+                <h2
+                  id={titleId}
+                  className="truncate text-xl font-bold text-admin-foreground"
+                >
                   {title}
                 </h2>
-                {subtitle && <p className="mt-1 text-sm text-admin-foreground/60">{subtitle}</p>}
+                {subtitle && (
+                  <p className="mt-1 text-sm text-admin-foreground/60">{subtitle}</p>
+                )}
               </div>
               <button
                 type="button"

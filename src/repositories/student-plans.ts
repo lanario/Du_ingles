@@ -251,7 +251,10 @@ export async function createManyStudentPlans(
     .select("*");
 
   if (error || !data) {
-    return { plans: [], error: error?.message ?? "Erro desconhecido ao inserir os planos." };
+    return {
+      plans: [],
+      error: error?.message ?? "Erro desconhecido ao inserir os planos.",
+    };
   }
   return { plans: data.map((row) => mapRow(row)), error: null };
 }

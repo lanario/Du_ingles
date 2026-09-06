@@ -39,7 +39,10 @@ export function PasswordStrength({
       <div className="flex items-center gap-2">
         <div className="flex flex-1 gap-1" aria-hidden>
           {[0, 1, 2, 3].map((index) => (
-            <span key={index} className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+            <span
+              key={index}
+              className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+            >
               {/*
                 Transição em CSS pura: são quatro blocos que só mudam
                 `transform` e `background-color` a cada tecla. Não há aqui
@@ -110,7 +113,13 @@ export function PasswordStrength({
  * Estado do campo "confirmar senha". Some enquanto o campo está vazio: um
  * "não coincidem" no primeiro caractere digitado é ruído, não ajuda.
  */
-export function PasswordMatch({ password, confirm }: { password: string; confirm: string }) {
+export function PasswordMatch({
+  password,
+  confirm,
+}: {
+  password: string;
+  confirm: string;
+}) {
   if (confirm.length === 0) return null;
   const matches = password === confirm;
 

@@ -150,11 +150,7 @@ export async function createPlannerPlanAction(
   if (parsed.data.folderId && !(await ownsFolder(ctx, parsed.data.folderId)))
     return fail("NOT_FOUND", "Pasta não encontrada.");
 
-  const id = await planner.createPlannerPlan(
-    parsed.data,
-    ctx.organizationId,
-    ctx.userId,
-  );
+  const id = await planner.createPlannerPlan(parsed.data, ctx.organizationId, ctx.userId);
   if (!id) return fail("INTERNAL_ERROR", "Falha ao criar o plano.");
 
   await auditLog({
@@ -238,11 +234,7 @@ export async function duplicatePlannerPlanAction(
   if (!source || (!isAdmin(ctx) && source.authorId !== ctx.userId && !source.isShared))
     return fail("NOT_FOUND", "Plano não encontrado.");
 
-  const id = await planner.duplicatePlannerPlan(
-    planId,
-    ctx.organizationId,
-    ctx.userId,
-  );
+  const id = await planner.duplicatePlannerPlan(planId, ctx.organizationId, ctx.userId);
   if (!id) return fail("INTERNAL_ERROR", "Falha ao duplicar.");
 
   revalidateStaffPath(PLANNER_SUFFIX);
@@ -884,10 +876,7 @@ export async function saveSessionRecordingAction(
 
   const parsed = sessionRecordingSchema.safeParse({ recordingUrl });
   if (!parsed.success) {
-    return fail(
-      "VALIDATION_ERROR",
-      parsed.error.issues[0]?.message ?? "Link inválido.",
-    );
+    return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Link inválido.");
   }
 
   const value = parsed.data.recordingUrl.length > 0 ? parsed.data.recordingUrl : null;

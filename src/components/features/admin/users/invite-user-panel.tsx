@@ -36,7 +36,12 @@ import type { AppRole } from "@/types/domain";
 import type { ComponentType } from "react";
 import { LogoLoader } from "@/components/ui/logo-loader";
 
-const ROLES: { id: AppRole; label: string; hint: string; icon: ComponentType<IconProps> }[] = [
+const ROLES: {
+  id: AppRole;
+  label: string;
+  hint: string;
+  icon: ComponentType<IconProps>;
+}[] = [
   { id: "student", label: "Aluno", hint: "Turmas e tarefas", icon: UserIcon },
   { id: "teacher", label: "Professor", hint: "Aulas e planos", icon: GraduationIcon },
   { id: "admin", label: "Admin", hint: "Acesso total", icon: ShieldIcon },
@@ -194,9 +199,9 @@ export function InviteUserPanel({
                 <MessageIcon className="h-4 w-4" />
               </span>
               <p className="text-xs leading-relaxed text-admin-foreground/65">
-                Nada é enviado automaticamente. Ao gerar, o WhatsApp abre com a
-                mensagem pronta e <strong className="font-medium">você</strong> aperta
-                enviar. O link vale 7 dias e serve uma única vez.
+                Nada é enviado automaticamente. Ao gerar, o WhatsApp abre com a mensagem
+                pronta e <strong className="font-medium">você</strong> aperta enviar. O
+                link vale 7 dias e serve uma única vez.
               </p>
             </div>
           </div>
@@ -255,7 +260,9 @@ function RoleOption({
       <span
         className={cn(
           "grid h-7 w-7 place-items-center rounded-lg",
-          selected ? "bg-gold-500/20 text-gold-700" : "bg-admin-muted text-admin-foreground/50",
+          selected
+            ? "bg-gold-500/20 text-gold-700"
+            : "bg-admin-muted text-admin-foreground/50",
         )}
       >
         <Icon className="h-3.5 w-3.5" />
@@ -363,9 +370,9 @@ function InviteReady({
 
         <div className="rounded-xl border border-dashed border-admin-border px-3.5 py-3">
           <p className="text-xs leading-relaxed text-admin-foreground/60">
-            Guarde agora se precisar: por segurança o link não fica salvo e não pode
-            ser exibido de novo. Se ele se perder, gere um novo convite — o anterior
-            deixa de funcionar.
+            Guarde agora se precisar: por segurança o link não fica salvo e não pode ser
+            exibido de novo. Se ele se perder, gere um novo convite — o anterior deixa de
+            funcionar.
           </p>
         </div>
       </div>

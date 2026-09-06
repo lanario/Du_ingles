@@ -58,7 +58,9 @@ export async function listLibraryEntries(
   const supabase = await createServerSupabaseClient();
   let query = supabase
     .from("class_sessions")
-    .select("id, group_id, title, scheduled_at, pdf_path, recording_url, group:group_id(name)")
+    .select(
+      "id, group_id, title, scheduled_at, pdf_path, recording_url, group:group_id(name)",
+    )
     .eq("is_published", true)
     // Aula que aconteceu de verdade. `is_published` só é ligado por
     // `endSession()`, que grava `completed` no mesmo update — o filtro é a

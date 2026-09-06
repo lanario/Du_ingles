@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { CEFR_LEVELS } from "@/types/domain";
 
-export const PLAN_INTERVALS = ["month", "quarter", "semester", "year", "one_time"] as const;
+export const PLAN_INTERVALS = [
+  "month",
+  "quarter",
+  "semester",
+  "year",
+  "one_time",
+] as const;
 export type PlanInterval = (typeof PLAN_INTERVALS)[number];
 
 export const PLAN_ACCENTS = ["gold", "navy", "emerald", "violet"] as const;
@@ -149,8 +155,14 @@ export const studentPlanSchema = z.object({
     .transform((v) => v || undefined),
   // Checkbox ausente no FormData significa desmarcado — daí o `=== "on"` em
   // vez de `z.coerce.boolean()`, que consideraria a string "false" como true.
-  isFeatured: z.string().optional().transform((v) => v === "on"),
-  isPublic: z.string().optional().transform((v) => v === "on"),
+  isFeatured: z
+    .string()
+    .optional()
+    .transform((v) => v === "on"),
+  isPublic: z
+    .string()
+    .optional()
+    .transform((v) => v === "on"),
   sortOrder: z
     .string()
     .trim()

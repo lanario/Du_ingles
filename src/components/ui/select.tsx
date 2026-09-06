@@ -108,9 +108,11 @@ export function Select({
 
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
-  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(
-    null,
-  );
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const [mounted, setMounted] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -269,7 +271,9 @@ export function Select({
         role="listbox"
         id={listboxId}
         tabIndex={-1}
-        aria-activedescendant={options.length > 0 ? `${listboxId}-opt-${highlighted}` : undefined}
+        aria-activedescendant={
+          options.length > 0 ? `${listboxId}-opt-${highlighted}` : undefined
+        }
         onKeyDown={onListKeyDown}
         className="max-h-64 overflow-y-auto p-1.5 focus:outline-none"
       >
@@ -288,9 +292,7 @@ export function Select({
               onClick={() => selectOption(index)}
               className={cn(
                 "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors",
-                option.disabled
-                  ? "cursor-not-allowed opacity-40"
-                  : "cursor-pointer",
+                option.disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
                 !option.disabled && active && (admin ? "bg-admin-muted" : "bg-gold-50"),
                 selected
                   ? admin
@@ -312,7 +314,9 @@ export function Select({
 
   return (
     <div ref={rootRef} className="relative">
-      {name && <input ref={hiddenRef} type="hidden" name={name} value={current} readOnly />}
+      {name && (
+        <input ref={hiddenRef} type="hidden" name={name} value={current} readOnly />
+      )}
 
       <button
         ref={triggerRef}
@@ -344,7 +348,8 @@ export function Select({
         <span
           className={cn(
             "flex-1 truncate",
-            !selectedOption && (admin ? "text-admin-foreground/45" : "text-muted-foreground"),
+            !selectedOption &&
+              (admin ? "text-admin-foreground/45" : "text-muted-foreground"),
           )}
         >
           {selectedOption ? selectedOption.label : placeholder}

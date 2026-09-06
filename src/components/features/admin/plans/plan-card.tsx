@@ -89,7 +89,9 @@ export function PlanCard({
         "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border p-5 transition-colors duration-300",
         "bg-admin-surface",
         "shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-20px_rgba(11,26,51,0.4)]",
-        plan.isFeatured ? "border-transparent" : "border-admin-border hover:border-gold-300",
+        plan.isFeatured
+          ? "border-transparent"
+          : "border-admin-border hover:border-gold-300",
         menuOpen && "z-20",
         busy && "relative pointer-events-none",
         !plan.isActive && "opacity-75",

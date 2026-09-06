@@ -138,7 +138,8 @@ export function GroupSessions({
   if (sessions.length === 0 && previews.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-admin-border px-4 py-10 text-center text-sm text-admin-foreground/50">
-        Nenhuma sessão gerada ainda — confira se a turma tem horários definidos na grade semanal.
+        Nenhuma sessão gerada ainda — confira se a turma tem horários definidos na grade
+        semanal.
       </p>
     );
   }
@@ -150,7 +151,10 @@ export function GroupSessions({
   return (
     <div className="space-y-3">
       {error && (
-        <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
           {error}
         </p>
       )}
@@ -205,7 +209,9 @@ export function GroupSessions({
           onClick={() => setExpanded((value) => !value)}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-gold-700 transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
         >
-          <ChevronIcon className={cn("h-3.5 w-3.5 transition-transform", expanded && "-rotate-90")} />
+          <ChevronIcon
+            className={cn("h-3.5 w-3.5 transition-transform", expanded && "-rotate-90")}
+          />
           {expanded ? "Mostrar menos" : "Ver o mês inteiro"}
         </button>
       )}
@@ -252,10 +258,7 @@ export function GroupSessions({
         </div>
       )}
 
-      <EditSessionDialog
-        session={editing}
-        onClose={() => setEditing(null)}
-      />
+      <EditSessionDialog session={editing} onClose={() => setEditing(null)} />
     </div>
   );
 }
@@ -297,12 +300,14 @@ function SessionRow({
       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.28, delay: Math.min(index, 8) * 0.035, ease: [0.16, 1, 0.3, 1] }}
+      transition={{
+        duration: 0.28,
+        delay: Math.min(index, 8) * 0.035,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       className={cn(
         "relative rounded-xl border px-3.5 py-2.5",
-        next
-          ? "border-gold-300 bg-gold-50/60"
-          : "border-admin-border bg-admin-surface",
+        next ? "border-gold-300 bg-gold-50/60" : "border-admin-border bg-admin-surface",
         (dimmed || status === "cancelled") && "opacity-70",
       )}
     >
@@ -411,7 +416,11 @@ function PreviewRow({
       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.28, delay: Math.min(index, 8) * 0.035, ease: [0.16, 1, 0.3, 1] }}
+      transition={{
+        duration: 0.28,
+        delay: Math.min(index, 8) * 0.035,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       className="relative rounded-xl border border-dashed border-admin-border/80 bg-transparent px-3.5 py-2.5"
     >
       <span

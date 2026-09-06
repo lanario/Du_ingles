@@ -23,13 +23,7 @@ export type AgendaViewMode = "dia" | "semana" | "mes" | "lista";
 
 /** Como a barra lateral recorta a agenda: um tipo de compromisso por chave. */
 export type AgendaKindFilter =
-  | "session"
-  | "preview"
-  | "meeting"
-  | "event"
-  | "exam"
-  | "holiday"
-  | "reminder";
+  "session" | "preview" | "meeting" | "event" | "exam" | "holiday" | "reminder";
 
 export const AGENDA_KIND_FILTERS: readonly AgendaKindFilter[] = [
   "session",

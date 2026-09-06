@@ -618,7 +618,8 @@ export async function getFinancialReport(
             : null,
         costPerSessionCents:
           row.sessions > 0 && row.cents > 0 ? Math.round(row.cents / row.sessions) : null,
-        costPerHourCents: hours > 0 && row.cents > 0 ? Math.round(row.cents / hours) : null,
+        costPerHourCents:
+          hours > 0 && row.cents > 0 ? Math.round(row.cents / hours) : null,
         share: payrollCents > 0 ? row.cents / payrollCents : 0,
       };
     })
@@ -660,9 +661,7 @@ export async function getFinancialReport(
     previousTotals: summarize(previousRows, today),
     windowTotals: summarize(windowRows, today),
     revenueCategories: sliceByCategory(revenueRows),
-    expenseCategories: sliceByCategory(
-      monthRows.filter((row) => row.kind !== "revenue"),
-    ),
+    expenseCategories: sliceByCategory(monthRows.filter((row) => row.kind !== "revenue")),
     students: studentRows,
     studentSummary,
     teachers: teacherRows,

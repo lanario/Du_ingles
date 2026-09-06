@@ -147,7 +147,9 @@ export function AcceptInviteForm({
             required
             max={new Date().toISOString().slice(0, 10)}
             invalid={Boolean(fields?.["birthDate"]?.length)}
-            aria-describedby={fields?.["birthDate"]?.length ? "birthDate-error" : undefined}
+            aria-describedby={
+              fields?.["birthDate"]?.length ? "birthDate-error" : undefined
+            }
           />
           <FieldError id="birthDate-error" messages={fields?.["birthDate"]} />
         </div>

@@ -16,9 +16,7 @@ export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
  * de uma vez — vira uma linha em `assignments` por turma selecionada.
  */
 export const createPlannerAssignmentSchema = z.object({
-  groupIds: z
-    .array(z.string().uuid())
-    .min(1, "Selecione ao menos uma turma."),
+  groupIds: z.array(z.string().uuid()).min(1, "Selecione ao menos uma turma."),
   title: z.string().trim().min(2, "Informe o título.").max(200),
   instructions: z
     .string()
@@ -147,7 +145,9 @@ export const questionsFieldSchema = z
 export const createExerciseAssignmentSchema = createPlannerAssignmentSchema.extend({
   questions: questionsFieldSchema,
 });
-export type CreateExerciseAssignmentInput = z.infer<typeof createExerciseAssignmentSchema>;
+export type CreateExerciseAssignmentInput = z.infer<
+  typeof createExerciseAssignmentSchema
+>;
 
 /**
  * Respostas do aluno: um mapa `questionId -> texto`. Objetivas também viajam
@@ -162,10 +162,9 @@ export type CreateExerciseAssignmentInput = z.infer<typeof createExerciseAssignm
  */
 export const answersFieldSchema = z.record(z.string(), z.string().max(5000));
 
-export const submitExerciseSchema = z
-  .object({
-    answers: answersFieldSchema,
-    /** Rascunho salva sem cobrar resposta; envio definitivo, não. */
-    draft: z.boolean().default(false),
-  });
+export const submitExerciseSchema = z.object({
+  answers: answersFieldSchema,
+  /** Rascunho salva sem cobrar resposta; envio definitivo, não. */
+  draft: z.boolean().default(false),
+});
 export type SubmitExerciseInput = z.infer<typeof submitExerciseSchema>;

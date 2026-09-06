@@ -139,7 +139,10 @@ export function RevenueAreaChart({
   // com a viewport. `pad` precisa ser estável entre renders: ele entra nas
   // dependências do `geometry`, que por sua vez re-cria os tweens do GSAP.
   const compact = chartWidth < 520;
-  const pad = useMemo(() => (compact ? { ...PAD, left: 44, bottom: 26 } : PAD), [compact]);
+  const pad = useMemo(
+    () => (compact ? { ...PAD, left: 44, bottom: 26 } : PAD),
+    [compact],
+  );
   const chartHeight = compact ? Math.min(height, 200) : height;
 
   const geometry = useMemo(() => {
@@ -392,8 +395,7 @@ export function RevenueAreaChart({
                   up ? "text-emerald-700" : "text-red-700",
                 )}
               >
-                {up ? "▲" : "▼"} {formatNumber(Math.abs(change), 1)}% vs.{" "}
-                {previous.label}
+                {up ? "▲" : "▼"} {formatNumber(Math.abs(change), 1)}% vs. {previous.label}
               </p>
             );
           })()}
@@ -536,12 +538,11 @@ export function IncomeStatementPanel({ statement }: { statement: IncomeStatement
                         : shareOfRevenue(row.cents, statement.grossRevenueCents)}
                     </span>
                     <span>
-                      {formatNumber((100 * row.cents) / ceiling, 1)}% da maior conta
-                      do mês
+                      {formatNumber((100 * row.cents) / ceiling, 1)}% da maior conta do
+                      mês
                     </span>
                     <span>
-                      Impacto no resultado:{" "}
-                      {row.direction === "in" ? "+" : "-"}
+                      Impacto no resultado: {row.direction === "in" ? "+" : "-"}
                       {formatBRL(row.cents)}
                     </span>
                   </p>

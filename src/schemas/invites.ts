@@ -24,7 +24,10 @@ export const createInviteSchema = z.object({
     .superRefine((value, ctx) => {
       const problem = phoneIssue(value, { allowInternational: true });
       if (problem) {
-        ctx.addIssue({ code: "custom", message: problem.replace("telefone", "WhatsApp") });
+        ctx.addIssue({
+          code: "custom",
+          message: problem.replace("telefone", "WhatsApp"),
+        });
       }
     })
     .transform(normalizePhone),

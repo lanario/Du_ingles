@@ -84,7 +84,12 @@ export function SecurityModal({ open, onClose, theme, dataHref }: SecurityModalP
       }
       size="lg"
     >
-      <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-6">
+      <motion.div
+        variants={listVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
         <motion.div variants={itemVariants} className="flex items-center gap-3">
           <span className="relative grid h-11 w-11 flex-none place-items-center">
             <span
@@ -108,7 +113,9 @@ export function SecurityModal({ open, onClose, theme, dataHref }: SecurityModalP
               <ShieldIcon className="h-5 w-5" />
             </span>
           </span>
-          <p className={classes.muted}>Mantenha sua senha forte e exclusiva desta conta.</p>
+          <p className={classes.muted}>
+            Mantenha sua senha forte e exclusiva desta conta.
+          </p>
         </motion.div>
 
         <motion.div variants={itemVariants}>

@@ -108,7 +108,10 @@ export function AreaChart({
   // some entre os eixos. `pad` precisa ser estavel entre renders (entra nas
   // deps de `geometry`, que recria os tweens do GSAP).
   const compact = chartWidth < 520;
-  const pad = useMemo(() => (compact ? { ...PAD, left: 32, bottom: 26 } : PAD), [compact]);
+  const pad = useMemo(
+    () => (compact ? { ...PAD, left: 32, bottom: 26 } : PAD),
+    [compact],
+  );
   const chartHeight = compact ? Math.min(height, 210) : height;
 
   const geometry = useMemo(() => {
@@ -300,9 +303,7 @@ export function AreaChart({
               key={point.label + index}
               x={geometry.x(index)}
               y={chartHeight - 8}
-              textAnchor={
-                index === 0 ? "start" : index === lastIndex ? "end" : "middle"
-              }
+              textAnchor={index === 0 ? "start" : index === lastIndex ? "end" : "middle"}
               fontSize="11"
               fill={active === index ? PALETTE.ink : PALETTE.muted}
               fontWeight={active === index ? 600 : 400}

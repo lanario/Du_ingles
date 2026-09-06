@@ -132,9 +132,7 @@ export function projectSessions({
     }
   }
 
-  return out
-    .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))
-    .slice(0, limit);
+  return out.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)).slice(0, limit);
 }
 
 /**

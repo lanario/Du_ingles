@@ -25,9 +25,7 @@ const TZ = "America/Sao_Paulo";
 function daysUntil(dueAt: string): number {
   const startOfDay = (value: Date) =>
     Date.parse(formatInTimeZone(value, TZ, "yyyy-MM-dd") + "T00:00:00Z");
-  return Math.round(
-    (startOfDay(new Date(dueAt)) - startOfDay(new Date())) / 86_400_000,
-  );
+  return Math.round((startOfDay(new Date(dueAt)) - startOfDay(new Date())) / 86_400_000);
 }
 
 function dueLabel(dueAt: string): string {

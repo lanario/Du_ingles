@@ -131,12 +131,16 @@ export function CreateGroupPanel({
                   </option>
                 ))}
               </Select>
-              <p className="text-xs text-admin-foreground/55">Opcional — pode vincular depois.</p>
+              <p className="text-xs text-admin-foreground/55">
+                Opcional — pode vincular depois.
+              </p>
             </div>
           </div>
 
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-admin-foreground">Nível (CEFR)</legend>
+            <legend className="text-sm font-medium text-admin-foreground">
+              Nível (CEFR)
+            </legend>
             <input type="hidden" name="level" value={level} />
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {CEFR_LEVELS.map((item) => (

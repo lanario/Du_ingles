@@ -20,7 +20,8 @@ export function LgpdPanel({ theme = "app" }: { theme?: "app" | "admin" }) {
     theme === "admin"
       ? "text-sm text-admin-foreground/70"
       : "text-sm text-muted-foreground";
-  const headingClass = theme === "admin" ? "font-semibold" : "font-semibold text-navy-900";
+  const headingClass =
+    theme === "admin" ? "font-semibold" : "font-semibold text-navy-900";
 
   const exportSection = (
     <>
@@ -54,7 +55,12 @@ export function LgpdPanel({ theme = "app" }: { theme?: "app" | "admin" }) {
           {state && !state.success && (
             <FormBanner tone="error">{state.error.message}</FormBanner>
           )}
-          <Button type="submit" variant="destructive" disabled={isPending} className="mt-2">
+          <Button
+            type="submit"
+            variant="destructive"
+            disabled={isPending}
+            className="mt-2"
+          >
             {isPending ? (
               <span className="inline-flex items-center gap-2">
                 <LogoLoader size={16} label={null} />

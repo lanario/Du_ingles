@@ -37,9 +37,9 @@ export async function createAnnouncementAction(
       ? await audience.orgMembers(ctx.organizationId)
       : [
           ...(await audience.groupStudents(parsed.data.groupId!)),
-          ...(await audience.groupTeacher(parsed.data.groupId!).then((teacher) =>
-            teacher ? [teacher] : [],
-          )),
+          ...(await audience
+            .groupTeacher(parsed.data.groupId!)
+            .then((teacher) => (teacher ? [teacher] : []))),
         ];
 
   if (recipients.length === 0) {

@@ -9,7 +9,11 @@ import type { GroupListItem } from "@/repositories/groups";
 import type { StudentListItem } from "@/repositories/students";
 import type { CefrLevel } from "@/types/domain";
 
-export { formatDate, initialsOf, toneOf } from "@/components/features/admin/users/users-utils";
+export {
+  formatDate,
+  initialsOf,
+  toneOf,
+} from "@/components/features/admin/users/users-utils";
 
 /** Aluno com o nome e o nível da turma já resolvidos (a página faz o merge). */
 export interface Student extends StudentListItem {
@@ -23,7 +27,8 @@ export type StatusFilter = "all" | "active" | "inactive";
  * Turma selecionada na barra: todas, uma turma específica (o id) ou só os
  * alunos sem matrícula ativa.
  */
-export type GroupFilter = { type: "all" } | { type: "none" } | { type: "group"; id: string };
+export type GroupFilter =
+  { type: "all" } | { type: "none" } | { type: "group"; id: string };
 
 export const CEFR_LEVELS_ORDER: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -40,11 +45,16 @@ export const CEFR_TONE: Record<CefrLevel, string> = {
   C2: "var(--gold-500)",
 };
 
-export function joinGroups(students: StudentListItem[], groups: GroupListItem[]): Student[] {
+export function joinGroups(
+  students: StudentListItem[],
+  groups: GroupListItem[],
+): Student[] {
   const groupById = new Map(groups.map((group) => [group.id, group]));
 
   return students.map((student) => {
-    const group = student.enrollment ? groupById.get(student.enrollment.groupId) : undefined;
+    const group = student.enrollment
+      ? groupById.get(student.enrollment.groupId)
+      : undefined;
     return {
       ...student,
       groupName: group?.name ?? null,

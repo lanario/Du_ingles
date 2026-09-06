@@ -40,7 +40,8 @@ const CHIP_INACTIVE =
 const CHIP_ACTIVE = "border-gold-500 bg-gold-50 text-admin-foreground";
 
 /** Turma iluminada porque o aluno arrastado está pairando sobre ela. */
-const CHIP_TARGET = "border-gold-500 bg-gold-100 text-admin-foreground ring-2 ring-gold-500 scale-105";
+const CHIP_TARGET =
+  "border-gold-500 bg-gold-100 text-admin-foreground ring-2 ring-gold-500 scale-105";
 
 export function GroupsRail({
   groups,
@@ -105,21 +106,34 @@ export function GroupsRail({
                 {...dropProps(group.id, group.id)}
                 className={cn(
                   CHIP,
-                  target === group.id ? CHIP_TARGET : active ? CHIP_ACTIVE : CHIP_INACTIVE,
+                  target === group.id
+                    ? CHIP_TARGET
+                    : active
+                      ? CHIP_ACTIVE
+                      : CHIP_INACTIVE,
                   !group.isActive && "opacity-60",
                 )}
               >
                 <button
                   type="button"
                   aria-pressed={active}
-                  onClick={() => onFilterChange(active ? { type: "all" } : { type: "group", id: group.id })}
+                  onClick={() =>
+                    onFilterChange(
+                      active ? { type: "all" } : { type: "group", id: group.id },
+                    )
+                  }
                   className="-my-2 flex items-center gap-2 py-2 focus:outline-none"
                 >
                   <GroupsIcon
-                    className={cn("h-4 w-4", active ? "text-gold-600" : "text-admin-foreground/40")}
+                    className={cn(
+                      "h-4 w-4",
+                      active ? "text-gold-600" : "text-admin-foreground/40",
+                    )}
                   />
                   <span className="max-w-[10rem] truncate">{group.name}</span>
-                  <span className="text-[10px] text-admin-foreground/40">{group.level}</span>
+                  <span className="text-[10px] text-admin-foreground/40">
+                    {group.level}
+                  </span>
                   <Count value={group.enrolledCount} active={active} />
                 </button>
               </motion.div>
@@ -131,12 +145,18 @@ export function GroupsRail({
           <button
             type="button"
             aria-pressed={filter.type === "none"}
-            onClick={() => onFilterChange(filter.type === "none" ? { type: "all" } : { type: "none" })}
+            onClick={() =>
+              onFilterChange(filter.type === "none" ? { type: "all" } : { type: "none" })
+            }
             {...dropProps("sem-turma", null)}
             className={cn(
               CHIP,
               "border-dashed",
-              target === "sem-turma" ? CHIP_TARGET : filter.type === "none" ? CHIP_ACTIVE : CHIP_INACTIVE,
+              target === "sem-turma"
+                ? CHIP_TARGET
+                : filter.type === "none"
+                  ? CHIP_ACTIVE
+                  : CHIP_INACTIVE,
             )}
           >
             <GroupsIcon className="h-4 w-4 opacity-50" />
@@ -154,7 +174,9 @@ function Count({ value, active }: { value: number; active: boolean }) {
     <span
       className={cn(
         "rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
-        active ? "bg-gold-200/70 text-gold-800" : "bg-admin-muted text-admin-foreground/50",
+        active
+          ? "bg-gold-200/70 text-gold-800"
+          : "bg-admin-muted text-admin-foreground/50",
       )}
     >
       {value}

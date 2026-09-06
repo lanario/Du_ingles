@@ -125,7 +125,9 @@ export function EnrollStudentForm({
               return (
                 <option key={student.id} value={student.id}>
                   {student.fullName}
-                  {current && current.groupId !== groupId ? ` · em ${current.groupName}` : ""}
+                  {current && current.groupId !== groupId
+                    ? ` · em ${current.groupName}`
+                    : ""}
                 </option>
               );
             })}
@@ -180,7 +182,11 @@ export function EnrollStudentForm({
                 transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
                 className="flex items-center gap-3 border-b border-admin-border bg-admin-surface px-3.5 py-3 text-sm transition-colors last:border-0 hover:bg-admin-muted/50"
               >
-                <UserAvatar id={enrollment.studentId} name={enrollment.studentName} size="sm" />
+                <UserAvatar
+                  id={enrollment.studentId}
+                  name={enrollment.studentName}
+                  size="sm"
+                />
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-admin-foreground">
@@ -241,8 +247,8 @@ export function EnrollStudentForm({
       {full && active.length > 0 && (
         <p className="flex items-center gap-2 text-xs text-admin-foreground/50">
           <UserIcon className="h-3.5 w-3.5" />
-          Turma lotada — aumente o máximo de alunos em &ldquo;Editar&rdquo; para matricular mais
-          alguém.
+          Turma lotada — aumente o máximo de alunos em &ldquo;Editar&rdquo; para
+          matricular mais alguém.
         </p>
       )}
     </div>

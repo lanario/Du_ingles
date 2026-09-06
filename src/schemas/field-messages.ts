@@ -91,7 +91,8 @@ export function nameField({
     .trim()
     .superRefine((value, ctx) => {
       if (value.length === 0) return issue(ctx, "Informe o nome completo.");
-      if (value.length < 2) return issue(ctx, "Nome curto demais — informe o nome completo.");
+      if (value.length < 2)
+        return issue(ctx, "Nome curto demais — informe o nome completo.");
       if (value.length > max) {
         return issue(ctx, `O nome pode ter no máximo ${max} caracteres.`);
       }
@@ -198,7 +199,9 @@ export const birthDateField = z
     const day = Number(match[3]);
     const date = new Date(year, month - 1, day);
     const isRealDate =
-      date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day;
     if (!isRealDate) {
       return issue(ctx, "Essa data não existe no calendário. Confira o dia e o mês.");
     }

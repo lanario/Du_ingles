@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { formatInTimeZone } from "date-fns-tz";
@@ -51,7 +58,10 @@ function isRecent(iso: string): boolean {
  * a letra do acento; `\p{Diacritic}` remove só o acento solto que sobrou.
  */
 function normalize(value: string): string {
-  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +315,8 @@ export function LibraryView({ entries, groups, selectedGroupId }: LibraryViewPro
     if (!term) return entries;
     return entries.filter(
       (entry) =>
-        normalize(entry.title).includes(term) || normalize(entry.groupName).includes(term),
+        normalize(entry.title).includes(term) ||
+        normalize(entry.groupName).includes(term),
     );
   }, [entries, query]);
 
@@ -509,7 +520,10 @@ export function LibraryView({ entries, groups, selectedGroupId }: LibraryViewPro
                   </span>
                 </div>
 
-                <motion.ul layout className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <motion.ul
+                  layout
+                  className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                >
                   <AnimatePresence mode="popLayout" initial={false}>
                     {month.items.map((entry) => (
                       <MaterialCard key={entry.id} entry={entry} />

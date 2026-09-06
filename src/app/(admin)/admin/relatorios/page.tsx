@@ -4,7 +4,11 @@ import { getOrganizationName } from "@/lib/organization";
 import { getAdminReport } from "@/repositories/reports";
 import { currentMonthKey } from "@/repositories/finance";
 import { getFinancialReport } from "@/repositories/financial-reports";
-import { DEFAULT_REPORT_WINDOW, isReportWindow, type ReportWindow } from "@/schemas/reports";
+import {
+  DEFAULT_REPORT_WINDOW,
+  isReportWindow,
+  type ReportWindow,
+} from "@/schemas/reports";
 import { monthKeySchema } from "@/schemas/finance";
 import { ReportsView } from "@/components/features/admin/reports/reports-view";
 

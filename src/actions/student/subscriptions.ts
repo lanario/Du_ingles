@@ -25,7 +25,7 @@ import { fail, ok, type ActionResult } from "@/types/action-result";
  */
 function blockedInViewAs(isViewAs: boolean): ActionResult<never> | null {
   return isViewAs
-    ? fail("READ_ONLY_MODE", "O modo \"ver como\" é somente leitura — nada é cobrado aqui.")
+    ? fail("READ_ONLY_MODE", 'O modo "ver como" é somente leitura — nada é cobrado aqui.')
     : null;
 }
 

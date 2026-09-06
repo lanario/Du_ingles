@@ -81,7 +81,8 @@ function format(date: Date): string {
 /** Só os dígitos digitados, com "/" inseridos conforme o usuário avança. */
 function maskTyped(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  if (digits.length > 4)
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return digits;
 }
@@ -96,7 +97,9 @@ function parseTyped(digits: string): Date | null {
   const year = Number(digits.slice(4, 8));
   const date = new Date(year, month - 1, day);
   const isRealDate =
-    date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day;
   return isRealDate ? date : null;
 }
 
@@ -230,14 +233,11 @@ export function DateField({
     setOpen(true);
   }, [current, disabled, today]);
 
-  const closePicker = useCallback(
-    (refocus = true) => {
-      setOpen(false);
-      setPickingMonth(false);
-      if (refocus) triggerRef.current?.focus();
-    },
-    [],
-  );
+  const closePicker = useCallback((refocus = true) => {
+    setOpen(false);
+    setPickingMonth(false);
+    if (refocus) triggerRef.current?.focus();
+  }, []);
 
   /** Popover em portal + posição fixa: painéis e diálogos rolam e cortariam. */
   const place = useCallback(() => {
@@ -253,7 +253,8 @@ export function DateField({
     // grade, sempre >= a do seletor) só pra essa decisão, que então fica
     // estável nas duas views — o `top` continua usando a altura real.
     const maxHeight = Math.max(height, 400);
-    const openUp = rect.bottom + maxHeight + 8 > window.innerHeight && rect.top > maxHeight + 8;
+    const openUp =
+      rect.bottom + maxHeight + 8 > window.innerHeight && rect.top > maxHeight + 8;
     const left = Math.min(
       Math.max(8, rect.left),
       Math.max(8, window.innerWidth - width - 8),
@@ -720,7 +721,9 @@ export function DateField({
           onKeyDown={onInputKeyDown}
           className={cn(
             "min-w-0 flex-1 truncate bg-transparent tabular outline-none",
-            admin ? "placeholder:text-admin-foreground/40" : "placeholder:text-muted-foreground",
+            admin
+              ? "placeholder:text-admin-foreground/40"
+              : "placeholder:text-muted-foreground",
             disabled && "cursor-not-allowed",
           )}
         />
@@ -740,9 +743,7 @@ export function DateField({
           }}
           className="flex-none text-muted-foreground transition-transform disabled:cursor-not-allowed"
         >
-          <ChevronIcon
-            className={cn("h-4 w-4", open ? "-rotate-90" : "rotate-90")}
-          />
+          <ChevronIcon className={cn("h-4 w-4", open ? "-rotate-90" : "rotate-90")} />
         </button>
       </div>
 
@@ -765,8 +766,7 @@ export function DateField({
         </button>
       )}
 
-      {mounted &&
-        createPortal(open ? popover : null, document.body)}
+      {mounted && createPortal(open ? popover : null, document.body)}
     </div>
   );
 }

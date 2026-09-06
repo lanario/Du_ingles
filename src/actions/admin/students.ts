@@ -66,7 +66,8 @@ export async function moveStudentToGroupAction(
 
   if (!currentEnrollmentId) {
     const result = await enrollStudent(toGroupId, studentId, ctx.organizationId);
-    if (!result.success) return fail("CONFLICT", result.message ?? "Falha ao matricular.");
+    if (!result.success)
+      return fail("CONFLICT", result.message ?? "Falha ao matricular.");
 
     await auditLog({
       organizationId: ctx.organizationId,

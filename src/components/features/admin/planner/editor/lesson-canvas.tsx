@@ -320,9 +320,9 @@ export function LessonCanvas({
       {editable && !presenting && (
         <div className="flex items-center justify-between border-t border-admin-border/70 px-5 py-2 text-[11px] text-admin-foreground/50">
           <span>
-            Cole imagens com Ctrl+V · arraste para mover, os cantos para redimensionar
-            · a imagem solta e a caixa de texto flutuam sobre a folha, sem ocupar
-            linha do texto
+            Cole imagens com Ctrl+V · arraste para mover, os cantos para redimensionar · a
+            imagem solta e a caixa de texto flutuam sobre a folha, sem ocupar linha do
+            texto
           </span>
           <span className="tabular">
             {editor.storage.characterCount.words()} palavras ·{" "}

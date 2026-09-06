@@ -28,7 +28,13 @@ export function ChangeRoleForm({
         <label htmlFor="role" className="text-sm font-medium">
           Papel
         </label>
-        <Select id="role" name="role" tone="admin" defaultValue={currentRole} className="w-40">
+        <Select
+          id="role"
+          name="role"
+          tone="admin"
+          defaultValue={currentRole}
+          className="w-40"
+        >
           <option value="student">Aluno</option>
           <option value="teacher">Professor</option>
           <option value="admin">Admin</option>

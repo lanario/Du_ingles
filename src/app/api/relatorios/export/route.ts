@@ -6,7 +6,11 @@ import {
   getFinancialReport,
   type FinancialReport,
 } from "@/repositories/financial-reports";
-import { DEFAULT_REPORT_WINDOW, isReportWindow, type ReportWindow } from "@/schemas/reports";
+import {
+  DEFAULT_REPORT_WINDOW,
+  isReportWindow,
+  type ReportWindow,
+} from "@/schemas/reports";
 import { monthKeySchema } from "@/schemas/finance";
 
 /**
@@ -43,7 +47,14 @@ function percent(ratio: number | null): string {
 
 function overviewLines(report: FinancialReport): string[] {
   const lines = [
-    row(["Competência", "Receitas", "Custo com professores", "Estrutura", "Despesas", "Resultado"]),
+    row([
+      "Competência",
+      "Receitas",
+      "Custo com professores",
+      "Estrutura",
+      "Despesas",
+      "Resultado",
+    ]),
   ];
 
   for (const point of report.series) {
@@ -64,12 +75,24 @@ function overviewLines(report: FinancialReport): string[] {
   lines.push(row(["Tipo", "Categoria", "Valor", "Participação (%)", "Lançamentos"]));
   for (const slice of report.revenueCategories) {
     lines.push(
-      row(["Receita", slice.label, money(slice.cents), percent(slice.share), slice.count]),
+      row([
+        "Receita",
+        slice.label,
+        money(slice.cents),
+        percent(slice.share),
+        slice.count,
+      ]),
     );
   }
   for (const slice of report.expenseCategories) {
     lines.push(
-      row(["Despesa", slice.label, money(slice.cents), percent(slice.share), slice.count]),
+      row([
+        "Despesa",
+        slice.label,
+        money(slice.cents),
+        percent(slice.share),
+        slice.count,
+      ]),
     );
   }
 
@@ -148,7 +171,9 @@ function teacherLines(report: FinancialReport): string[] {
 
 async function pedagogyLines(): Promise<string[]> {
   const report = await getAdminReport();
-  const lines = [row(["Turma", "Professor", "Frequência (%)", "Conclusão de tarefas (%)"])];
+  const lines = [
+    row(["Turma", "Professor", "Frequência (%)", "Conclusão de tarefas (%)"]),
+  ];
 
   for (const group of report.groups) {
     lines.push(
@@ -194,7 +219,9 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams;
   const rawScope = params.get("escopo") ?? "overview";
-  const scope: Scope = SCOPES.includes(rawScope as Scope) ? (rawScope as Scope) : "overview";
+  const scope: Scope = SCOPES.includes(rawScope as Scope)
+    ? (rawScope as Scope)
+    : "overview";
 
   const parsedMonth = monthKeySchema.safeParse(params.get("mes") ?? "");
   const monthKey = parsedMonth.success ? parsedMonth.data : currentMonthKey();

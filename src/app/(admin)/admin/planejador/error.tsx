@@ -26,8 +26,8 @@ export default function PlanejadorError({
           Não consegui abrir esta tela
         </h1>
         <p className="mt-1 text-sm text-admin-foreground/60">
-          O planejador falhou ao carregar. Tentar de novo costuma resolver; se
-          persistir, o detalhe abaixo ajuda a investigar.
+          O planejador falhou ao carregar. Tentar de novo costuma resolver; se persistir,
+          o detalhe abaixo ajuda a investigar.
         </p>
       </div>
 

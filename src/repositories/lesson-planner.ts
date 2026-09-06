@@ -189,7 +189,9 @@ export async function duplicatePlannerPlan(
   const admin = createAdminSupabaseClient();
   const { data: original } = await admin
     .from("lesson_plans")
-    .select("title, summary, level, duration_minutes, objectives, content, tags, folder_id")
+    .select(
+      "title, summary, level, duration_minutes, objectives, content, tags, folder_id",
+    )
     .eq("id", id)
     .eq("organization_id", organizationId)
     .single();
@@ -341,10 +343,7 @@ export async function updatePlannerFolder(
 }
 
 /** As aulas de dentro sobrevivem: `on delete set null` as devolve ao ateliê. */
-export async function deletePlannerFolder(
-  id: string,
-  ownerId: string,
-): Promise<boolean> {
+export async function deletePlannerFolder(id: string, ownerId: string): Promise<boolean> {
   const admin = createAdminSupabaseClient();
   const { error } = await admin
     .from("lesson_plan_folders")
@@ -570,7 +569,9 @@ export async function listPlannerAttendance(
     admin.from("attendance").select("student_id, status").eq("session_id", sessionId),
   ]);
 
-  const statusByStudent = new Map((attendance ?? []).map((row) => [row.student_id, row.status]));
+  const statusByStudent = new Map(
+    (attendance ?? []).map((row) => [row.student_id, row.status]),
+  );
 
   return (enrollments ?? [])
     .filter((row) => row.student)

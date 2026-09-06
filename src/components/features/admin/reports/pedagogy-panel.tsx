@@ -20,7 +20,12 @@ import {
   RevealItem,
   formatNumber,
 } from "@/components/features/admin/dashboard/primitives";
-import { BarList, DonutChart, PALETTE, RadialGauge } from "@/components/features/admin/dashboard/charts";
+import {
+  BarList,
+  DonutChart,
+  PALETTE,
+  RadialGauge,
+} from "@/components/features/admin/dashboard/charts";
 import { cn } from "@/lib/utils";
 import type { AdminReport } from "@/repositories/reports";
 
@@ -193,7 +198,10 @@ export function PedagogyPanel({ report }: { report: AdminReport }) {
 
         <RevealItem>
           <Card className="h-full">
-            <CardHeader title="Aulas ministradas" subtitle="Por professor, aulas concluídas" />
+            <CardHeader
+              title="Aulas ministradas"
+              subtitle="Por professor, aulas concluídas"
+            />
             <div className="p-5">
               {report.teacherSessions.length === 0 ? (
                 <EmptyState>Nenhuma aula concluída ainda.</EmptyState>

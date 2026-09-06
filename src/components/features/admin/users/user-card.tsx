@@ -32,7 +32,14 @@ interface UserCardProps {
   onReactivate: () => void;
 }
 
-export function UserCard({ user, isSelf, busy, onOpen, onDeactivate, onReactivate }: UserCardProps) {
+export function UserCard({
+  user,
+  isSelf,
+  busy,
+  onOpen,
+  onDeactivate,
+  onReactivate,
+}: UserCardProps) {
   const reduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -48,8 +55,20 @@ export function UserCard({ user, isSelf, busy, onOpen, onDeactivate, onReactivat
   if (canManage) {
     actions.push(
       user.isActive
-        ? { label: "Desativar", icon: PowerIcon, tone: "danger", separated: true, onSelect: onDeactivate }
-        : { label: "Reativar", icon: PowerIcon, tone: "accent", separated: true, onSelect: onReactivate },
+        ? {
+            label: "Desativar",
+            icon: PowerIcon,
+            tone: "danger",
+            separated: true,
+            onSelect: onDeactivate,
+          }
+        : {
+            label: "Reativar",
+            icon: PowerIcon,
+            tone: "accent",
+            separated: true,
+            onSelect: onReactivate,
+          },
     );
   }
 
@@ -75,7 +94,12 @@ export function UserCard({ user, isSelf, busy, onOpen, onDeactivate, onReactivat
       {busy && <LoadingVeil label={null} size={40} className="rounded-2xl" />}
       <div className="relative flex items-start justify-between gap-2">
         <StatusPill isActive={user.isActive} />
-        <ActionMenu items={actions} disabled={busy} onOpenChange={setMenuOpen} label={`Ações de ${user.fullName}`} />
+        <ActionMenu
+          items={actions}
+          disabled={busy}
+          onOpenChange={setMenuOpen}
+          label={`Ações de ${user.fullName}`}
+        />
       </div>
 
       <div className="relative mt-3 flex flex-col items-center text-center">
@@ -90,7 +114,10 @@ export function UserCard({ user, isSelf, busy, onOpen, onDeactivate, onReactivat
           O nome é um botão de verdade: o clique no cartão inteiro é
           comodidade de mouse, e o teclado precisa de um alvo focável.
         */}
-        <h3 title={user.fullName} className="mt-3 w-full text-[15px] font-semibold leading-snug">
+        <h3
+          title={user.fullName}
+          className="mt-3 w-full text-[15px] font-semibold leading-snug"
+        >
           <button
             type="button"
             onClick={onOpen}
@@ -109,7 +136,9 @@ export function UserCard({ user, isSelf, busy, onOpen, onDeactivate, onReactivat
       <ul className="relative mt-4 space-y-2.5 border-t border-admin-border pt-4 text-xs">
         <li className="flex items-center gap-2.5">
           <MailIcon className="h-3.5 w-3.5 shrink-0 text-admin-foreground/40" />
-          <span className="min-w-0 flex-1 truncate text-admin-foreground/60">{user.email}</span>
+          <span className="min-w-0 flex-1 truncate text-admin-foreground/60">
+            {user.email}
+          </span>
           <CopyButton value={user.email} label={`Copiar e-mail de ${user.fullName}`} />
         </li>
         <li className="flex items-center gap-2.5">

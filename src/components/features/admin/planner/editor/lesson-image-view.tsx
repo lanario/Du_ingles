@@ -310,9 +310,7 @@ export function LessonImageView(props: ReactNodeViewProps) {
                 }
                 onClick={() =>
                   updateAttributes(
-                    free
-                      ? { free: false, offsetX: 0, offsetY: 0 }
-                      : { free: true },
+                    free ? { free: false, offsetX: 0, offsetY: 0 } : { free: true },
                   )
                 }
                 className={cn(

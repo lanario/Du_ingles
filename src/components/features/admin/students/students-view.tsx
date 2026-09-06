@@ -42,7 +42,12 @@ import { MoveToGroup } from "./move-to-group";
 import { StudentCard } from "./student-card";
 import { StudentDetail } from "./student-detail";
 import { LIST_GRID, StudentListItem } from "./student-list-item";
-import { studentMatches, type GroupFilter, type StatusFilter, type Student } from "./students-utils";
+import {
+  studentMatches,
+  type GroupFilter,
+  type StatusFilter,
+  type Student,
+} from "./students-utils";
 
 interface StudentsViewProps {
   students: Student[];
@@ -128,7 +133,8 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
     () =>
       students.filter((student) => {
         if (groupFilter.type === "none") return !student.enrollment;
-        if (groupFilter.type === "group") return student.enrollment?.groupId === groupFilter.id;
+        if (groupFilter.type === "group")
+          return student.enrollment?.groupId === groupFilter.id;
         return true;
       }),
     [students, groupFilter],
@@ -231,7 +237,8 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         groupId,
         conflict: {
           studentName: student.fullName,
-          fromGroupName: groups.find((g) => g.id === currentGroupId)?.name ?? "outra turma",
+          fromGroupName:
+            groups.find((g) => g.id === currentGroupId)?.name ?? "outra turma",
           toGroupName: groups.find((g) => g.id === groupId)?.name ?? "esta turma",
         },
       });
@@ -242,7 +249,8 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
   }
 
   const noStudentsAtAll = students.length === 0;
-  const filtersActive = search.trim() !== "" || status !== "all" || groupFilter.type !== "all";
+  const filtersActive =
+    search.trim() !== "" || status !== "all" || groupFilter.type !== "all";
   const groupEmpty = groupOpenName !== null && search.trim() === "" && status === "all";
 
   return (
@@ -276,7 +284,10 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
           "data-[stuck=true]:border-admin-border data-[stuck=true]:shadow-[0_18px_30px_-28px_rgba(11,26,51,0.35)]",
         )}
       >
-        <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
+        >
           <span
             ref={lineRef}
             className="block h-full w-full origin-left bg-gradient-to-r from-navy-700 to-gold-500"
@@ -299,7 +310,9 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                 className={cn(
                   "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
-                  active ? "text-admin-foreground" : "text-admin-foreground/50 hover:text-admin-foreground",
+                  active
+                    ? "text-admin-foreground"
+                    : "text-admin-foreground/50 hover:text-admin-foreground",
                 )}
               >
                 {active && (
@@ -307,7 +320,11 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                     layoutId="du-alunos-tab"
                     aria-hidden
                     className="absolute inset-0 rounded-lg bg-admin-muted shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--gold-500)_30%,transparent)]"
-                    transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 38 }}
+                    transition={
+                      reduceMotion
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 480, damping: 38 }
+                    }
                   />
                 )}
                 <span className="relative flex items-center gap-1.5">
@@ -315,7 +332,9 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                   <span
                     className={cn(
                       "rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
-                      active ? "bg-gold-100 text-gold-700" : "bg-admin-muted text-admin-foreground/50",
+                      active
+                        ? "bg-gold-100 text-gold-700"
+                        : "bg-admin-muted text-admin-foreground/50",
                     )}
                   >
                     {statusCounts[item.id]}
@@ -362,24 +381,35 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
           aria-label="Modo de visualização"
           className="hidden items-center gap-1 rounded-xl border border-admin-border bg-admin-surface p-1 sm:flex"
         >
-          <ViewModeButton active={mode === "cards"} label="Ver em cartões" onClick={() => setViewMode("cards")}>
+          <ViewModeButton
+            active={mode === "cards"}
+            label="Ver em cartões"
+            onClick={() => setViewMode("cards")}
+          >
             <GridIcon className="relative h-4 w-4" />
           </ViewModeButton>
-          <ViewModeButton active={mode === "list"} label="Ver em lista" onClick={() => setViewMode("list")}>
+          <ViewModeButton
+            active={mode === "list"}
+            label="Ver em lista"
+            onClick={() => setViewMode("list")}
+          >
             <RowsIcon className="relative h-4 w-4" />
           </ViewModeButton>
         </div>
 
         {canManage && (
-        <motion.div whileHover={reduceMotion ? undefined : { scale: 1.03 }} whileTap={reduceMotion ? undefined : { scale: 0.97 }}>
-          <Link
-            href="/admin/usuarios?convite=student"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
+          <motion.div
+            whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.97 }}
           >
-            <PlusIcon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Novo aluno</span>
-          </Link>
-        </motion.div>
+            <Link
+              href="/admin/usuarios?convite=student"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
+            >
+              <PlusIcon className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Novo aluno</span>
+            </Link>
+          </motion.div>
         )}
       </div>
 
@@ -411,7 +441,11 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         {filtered.length === 0 ? (
           <EmptyState
             title={
-              noStudentsAtAll ? "Nenhum aluno cadastrado" : groupEmpty ? "Turma vazia" : "Nada encontrado"
+              noStudentsAtAll
+                ? "Nenhum aluno cadastrado"
+                : groupEmpty
+                  ? "Turma vazia"
+                  : "Nada encontrado"
             }
             description={
               noStudentsAtAll
@@ -447,7 +481,10 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
             }
           />
         ) : mode === "cards" ? (
-          <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <motion.div
+            layout
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          >
             <AnimatePresence mode="popLayout" initial={false}>
               {filtered.map((student) => (
                 <StudentCard
@@ -504,7 +541,8 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
 
       {filtered.length > 0 && (
         <p className="mt-4 text-xs text-admin-foreground/50">
-          Exibindo {filtered.length} de {totals.total} {totals.total === 1 ? "aluno" : "alunos"}.
+          Exibindo {filtered.length} de {totals.total}{" "}
+          {totals.total === 1 ? "aluno" : "alunos"}.
         </p>
       )}
 
@@ -539,10 +577,20 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
   );
 }
 
-function Indicator({ label, value, tone }: { label: string; value: number; tone?: string }) {
+function Indicator({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: string;
+}) {
   return (
     <div className="rounded-xl border border-admin-border bg-admin-surface px-3.5 py-2">
-      <dt className="text-[10px] font-medium uppercase tracking-wide text-admin-foreground/50">{label}</dt>
+      <dt className="text-[10px] font-medium uppercase tracking-wide text-admin-foreground/50">
+        {label}
+      </dt>
       <dd
         className="text-lg font-semibold tabular-nums text-admin-foreground"
         style={tone ? { color: tone } : undefined}
@@ -583,7 +631,11 @@ function ViewModeButton({
           layoutId="du-alunos-modo"
           aria-hidden
           className="absolute inset-0 rounded-lg bg-admin-muted"
-          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 38 }}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 480, damping: 38 }
+          }
         />
       )}
       {children}
@@ -591,7 +643,13 @@ function ViewModeButton({
   );
 }
 
-function SecondaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+function SecondaryButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -603,7 +661,15 @@ function SecondaryButton({ children, onClick }: { children: ReactNode; onClick: 
   );
 }
 
-function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
+function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}

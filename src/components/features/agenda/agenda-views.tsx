@@ -387,9 +387,7 @@ export function WeekView({
       <div className="flex">
         <TimeColumn bounds={bounds} />
         {days.map((day) => {
-          const items = placed.filter(
-            (entry) => entry.day === day && !entry.item.allDay,
-          );
+          const items = placed.filter((entry) => entry.day === day && !entry.item.allDay);
           const positioned = layoutDay(
             items,
             bounds.start,
@@ -576,7 +574,9 @@ export function ListView({
           <h3
             className={cn(
               "sticky top-0 z-10 -mx-1 mb-2 bg-[var(--agenda-surface)] px-1 py-1 text-xs font-semibold uppercase tracking-wide",
-              day === today ? "text-[var(--agenda-accent)]" : "text-[var(--agenda-muted-fg)]",
+              day === today
+                ? "text-[var(--agenda-accent)]"
+                : "text-[var(--agenda-muted-fg)]",
             )}
           >
             {day === today ? "Hoje · " : ""}

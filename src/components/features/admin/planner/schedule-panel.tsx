@@ -180,7 +180,12 @@ export function SchedulePanel({
                 <Label htmlFor="session-teacherId" className="text-admin-foreground">
                   Professor da aula
                 </Label>
-                <Select id="session-teacherId" name="teacherId" tone="admin" defaultValue="">
+                <Select
+                  id="session-teacherId"
+                  name="teacherId"
+                  tone="admin"
+                  defaultValue=""
+                >
                   <option value="">Titular da turma</option>
                   {teachers.map((teacher) => (
                     <option key={teacher.id} value={teacher.id}>

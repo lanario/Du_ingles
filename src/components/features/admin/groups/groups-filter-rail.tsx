@@ -12,7 +12,13 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { GraduationIcon, GroupsIcon, UserIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { CEFR_TONE, initialsOf, toneOf, type TeacherBucket, type TeacherFilter } from "./groups-utils";
+import {
+  CEFR_TONE,
+  initialsOf,
+  toneOf,
+  type TeacherBucket,
+  type TeacherFilter,
+} from "./groups-utils";
 import type { CefrLevel } from "@/types/domain";
 
 const CHIP =
@@ -53,7 +59,10 @@ export function GroupsFilterRail({
             type="button"
             aria-pressed={teacherFilter.type === "all"}
             onClick={() => onTeacherChange({ type: "all" })}
-            className={cn(CHIP, teacherFilter.type === "all" ? CHIP_ACTIVE : CHIP_INACTIVE)}
+            className={cn(
+              CHIP,
+              teacherFilter.type === "all" ? CHIP_ACTIVE : CHIP_INACTIVE,
+            )}
           >
             <GroupsIcon className="h-4 w-4 text-gold-600" />
             Todos os professores
@@ -62,7 +71,8 @@ export function GroupsFilterRail({
 
           <AnimatePresence initial={false} mode="popLayout">
             {teachers.map((teacher) => {
-              const active = teacherFilter.type === "teacher" && teacherFilter.id === teacher.id;
+              const active =
+                teacherFilter.type === "teacher" && teacherFilter.id === teacher.id;
               const tone = toneOf(teacher.id || teacher.name);
               return (
                 <motion.button
@@ -75,7 +85,9 @@ export function GroupsFilterRail({
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   aria-pressed={active}
                   onClick={() =>
-                    onTeacherChange(active ? { type: "all" } : { type: "teacher", id: teacher.id })
+                    onTeacherChange(
+                      active ? { type: "all" } : { type: "teacher", id: teacher.id },
+                    )
                   }
                   className={cn(CHIP, "pl-1.5", active ? CHIP_ACTIVE : CHIP_INACTIVE)}
                 >

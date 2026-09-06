@@ -10,7 +10,12 @@
  */
 
 import { motion, useReducedMotion } from "framer-motion";
-import { CalendarIcon, GraduationIcon, GroupsIcon, UserIcon } from "@/components/ui/icons";
+import {
+  CalendarIcon,
+  GraduationIcon,
+  GroupsIcon,
+  UserIcon,
+} from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import {
   WEEKDAY_LONG,
@@ -73,17 +78,18 @@ export function OccupancyRing({
           strokeLinecap="round"
           pathLength={1}
           strokeDasharray="1 1"
-          initial={reduceMotion ? { strokeDashoffset: 1 - ratio } : { strokeDashoffset: 1 }}
+          initial={
+            reduceMotion ? { strokeDashoffset: 1 - ratio } : { strokeDashoffset: 1 }
+          }
           animate={{ strokeDashoffset: 1 - ratio }}
-          transition={reduceMotion ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          transition={
+            reduceMotion ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1] }
+          }
         />
       </svg>
 
       <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span
-          className="text-[15px] font-semibold tabular"
-          style={{ color: tone }}
-        >
+        <span className="text-[15px] font-semibold tabular" style={{ color: tone }}>
           {group.enrolledCount}
         </span>
         <span className="mt-0.5 text-[10px] text-admin-foreground/45 tabular">
@@ -114,11 +120,11 @@ export function OccupancyBar({ group, className }: { group: Group; className?: s
           style={{ backgroundColor: tone }}
           initial={reduceMotion ? { width: `${ratio * 100}%` } : { width: 0 }}
           animate={{ width: `${ratio * 100}%` }}
-          transition={reduceMotion ? { duration: 0 } : { duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={
+            reduceMotion ? { duration: 0 } : { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
+          }
         />
-        {ratio >= 1 && (
-          <span aria-hidden className="progress-shimmer absolute inset-0" />
-        )}
+        {ratio >= 1 && <span aria-hidden className="progress-shimmer absolute inset-0" />}
       </div>
     </div>
   );
@@ -132,7 +138,11 @@ export function GroupStatusPill({ isActive }: { isActive: boolean }) {
       style={{ color: tone, backgroundColor: `color-mix(in srgb, ${tone} 10%, #ffffff)` }}
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
     >
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tone }} />
+      <span
+        aria-hidden
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: tone }}
+      />
       {isActive ? "Ativa" : "Arquivada"}
     </span>
   );
@@ -173,7 +183,13 @@ export function TeacherPill({
   );
 }
 
-export function CoursePill({ name, className }: { name: string | null; className?: string }) {
+export function CoursePill({
+  name,
+  className,
+}: {
+  name: string | null;
+  className?: string;
+}) {
   if (!name) {
     return (
       <span

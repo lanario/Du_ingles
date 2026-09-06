@@ -40,7 +40,9 @@ export async function listGroupEnrollments(
     studentId: row.student?.id ?? "",
     studentName: row.student?.full_name ?? "—",
     studentEmail: row.student?.email ?? "",
-    studentAvatarUrl: row.student?.avatar_url ? `/api/avatars/${row.student.avatar_url}` : null,
+    studentAvatarUrl: row.student?.avatar_url
+      ? `/api/avatars/${row.student.avatar_url}`
+      : null,
     status: row.status,
   }));
 }
@@ -216,7 +218,9 @@ export async function listEnrollmentsForGroups(
       studentId: row.student?.id ?? "",
       studentName: row.student?.full_name ?? "—",
       studentEmail: row.student?.email ?? "",
-      studentAvatarUrl: row.student?.avatar_url ? `/api/avatars/${row.student.avatar_url}` : null,
+      studentAvatarUrl: row.student?.avatar_url
+        ? `/api/avatars/${row.student.avatar_url}`
+        : null,
       status: row.status,
     });
   }

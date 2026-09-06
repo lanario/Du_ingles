@@ -76,7 +76,9 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
 
   // Presença geral: só sessões já concluídas contam para a taxa (uma futura
   // sem registro ainda não é falta).
-  const completedAttendance = attendanceRows.filter((a) => a.session?.status === "completed");
+  const completedAttendance = attendanceRows.filter(
+    (a) => a.session?.status === "completed",
+  );
   const presentCount = completedAttendance.filter(
     (a) => a.status === "present" || a.status === "late",
   ).length;
@@ -89,7 +91,8 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
   // enquanto o aluno esteve presente (ou atrasado — ainda compareceu).
   const orderedByRecent = [...completedAttendance].sort(
     (a, b) =>
-      new Date(b.session!.scheduled_at).getTime() - new Date(a.session!.scheduled_at).getTime(),
+      new Date(b.session!.scheduled_at).getTime() -
+      new Date(a.session!.scheduled_at).getTime(),
   );
   let streak = 0;
   for (const row of orderedByRecent) {
@@ -112,7 +115,9 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
   if (groupIds.length) {
     const { data } = await supabase
       .from("class_sessions")
-      .select("title, group_id, scheduled_at, duration_minutes, teacher:teacher_id(full_name)")
+      .select(
+        "title, group_id, scheduled_at, duration_minutes, teacher:teacher_id(full_name)",
+      )
       .in("group_id", groupIds)
       .in("status", ["scheduled", "in_progress"])
       .gte("scheduled_at", new Date().toISOString())
@@ -122,7 +127,8 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
 
   const upcomingByGroup = new Map<string, UpcomingSessionRow>();
   for (const session of upcomingSessions) {
-    if (!upcomingByGroup.has(session.group_id)) upcomingByGroup.set(session.group_id, session);
+    if (!upcomingByGroup.has(session.group_id))
+      upcomingByGroup.set(session.group_id, session);
   }
   const nextOverall = upcomingSessions[0] ?? null;
   const groupNameById = new Map(groupRows.map((row) => [row.group!.id, row.group!.name]));
