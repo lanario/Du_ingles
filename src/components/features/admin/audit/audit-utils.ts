@@ -294,6 +294,18 @@ const CATALOG: Record<string, Descriptor> = {
     icon: "aula",
     phrase: (ctx) => `encerrou ${withName("a", "aula", ctx.target)}`,
   },
+  SESSION_RECORDING_SET: {
+    category: "aulas",
+    severity: "rotina",
+    icon: "aula",
+    phrase: (ctx) => `publicou a gravação ${withName("da", "aula", ctx.target)}`,
+  },
+  SESSION_RECORDING_CLEAR: {
+    category: "aulas",
+    severity: "atencao",
+    icon: "aula",
+    phrase: (ctx) => `removeu a gravação ${withName("da", "aula", ctx.target)}`,
+  },
   ATTENDANCE_RECORD: {
     category: "aulas",
     severity: "rotina",

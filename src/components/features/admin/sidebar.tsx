@@ -12,7 +12,6 @@ import { UserMenu } from "@/components/features/account/user-menu";
 import { NotificationBell } from "@/components/features/notification-bell";
 import { RoleSwitch } from "@/components/features/admin/role-switch";
 import type { NotificationItem } from "@/repositories/notifications";
-import type { MyProfile } from "@/repositories/users";
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
 
 const RAIL_WIDTH = 64;
@@ -51,6 +50,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
     label: "Operação",
     items: [
+      { href: "/admin/agenda", label: "Agenda", icon: "calendar" },
       { href: "/admin/planejador", label: "Planejador de aulas", icon: "lesson" },
       { href: "/admin/financeiro", label: "Financeiro", icon: "coin" },
       { href: "/admin/relatorios", label: "Relatórios", icon: "chart" },
@@ -61,7 +61,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
     label: "Conta",
     items: [
-      { href: "/admin/meus-dados", label: "Meus dados", icon: "user" },
+      { href: "/admin/meus-dados", label: "Meu Perfil", icon: "user" },
       { href: "/admin/configuracoes", label: "Configurações", icon: "gear" },
     ],
   },
@@ -80,6 +80,7 @@ export type IconName =
   | "clipboard"
   | "coin"
   | "lesson"
+  | "calendar"
   | "gear";
 
 const PATHS: Record<IconName, React.ReactNode> = {
@@ -158,6 +159,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="m10.2 17.4-2.6.6.6-2.6 4.6-4.6a1.3 1.3 0 0 1 1.9 1.9Z" />
     </>
   ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="16" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </>
+  ),
   gear: (
     <>
       <circle cx="12" cy="12" r="3.2" />
@@ -196,8 +203,6 @@ interface AdminSidebarProps {
   fullName: string;
   /** Foto de perfil já pronta para o `src` (`/api/avatars/...`) ou `null`. */
   avatarUrl: string | null;
-  /** Dados editáveis do modal de perfil (telefone, nascimento etc). */
-  profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
   /** Mapa de navegação — o padrão é o da coordenação. */
@@ -206,7 +211,7 @@ interface AdminSidebarProps {
   rootHref?: string;
   /** Papel exibido no menu da conta. */
   role?: "admin" | "teacher";
-  /** Destino de "Meus dados" no menu da conta. */
+  /** Destino de "Meu Perfil" no menu da conta. */
   dataHref?: Route;
   /**
    * A chave "ver como" é da coordenação. A área do professor não alterna
@@ -283,7 +288,6 @@ function AdminRail({
   email,
   fullName,
   avatarUrl,
-  profile,
   initialNotifications,
   initialUnreadCount,
   sections = ADMIN_NAV_SECTIONS,
@@ -542,7 +546,6 @@ function AdminRail({
               email={email}
               role={role}
               avatarUrl={avatarUrl}
-              profile={profile}
               theme="admin"
               dataHref={dataHref}
               compact
@@ -571,7 +574,6 @@ function AdminNavMobile({
   email,
   fullName,
   avatarUrl,
-  profile,
   initialNotifications,
   initialUnreadCount,
   sections = ADMIN_NAV_SECTIONS,
@@ -739,7 +741,6 @@ function AdminNavMobile({
                   email={email}
                   role={role}
                   avatarUrl={avatarUrl}
-                  profile={profile}
                   theme="admin"
                   dataHref={dataHref}
                 />

@@ -9,6 +9,89 @@ export type Database = {
   };
   public: {
     Tables: {
+      agenda_events: {
+        Row: {
+          all_day: boolean;
+          audience: Database["public"]["Enums"]["agenda_audience"];
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          duration_minutes: number;
+          group_id: string | null;
+          id: string;
+          kind: Database["public"]["Enums"]["agenda_event_kind"];
+          location: string | null;
+          organization_id: string;
+          owner_id: string | null;
+          starts_at: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          all_day?: boolean;
+          audience?: Database["public"]["Enums"]["agenda_audience"];
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          duration_minutes?: number;
+          group_id?: string | null;
+          id?: string;
+          kind?: Database["public"]["Enums"]["agenda_event_kind"];
+          location?: string | null;
+          organization_id: string;
+          owner_id?: string | null;
+          starts_at: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          all_day?: boolean;
+          audience?: Database["public"]["Enums"]["agenda_audience"];
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
+          duration_minutes?: number;
+          group_id?: string | null;
+          id?: string;
+          kind?: Database["public"]["Enums"]["agenda_event_kind"];
+          location?: string | null;
+          organization_id?: string;
+          owner_id?: string | null;
+          starts_at?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "agenda_events_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "agenda_events_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "agenda_events_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "agenda_events_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       assignment_submissions: {
         Row: {
           answers: Json | null;
@@ -283,6 +366,7 @@ export type Database = {
           organization_id: string;
           pdf_generated_at: string | null;
           pdf_path: string | null;
+          recording_url: string | null;
           scheduled_at: string;
           started_at: string | null;
           status: Database["public"]["Enums"]["session_status"];
@@ -306,6 +390,7 @@ export type Database = {
           organization_id: string;
           pdf_generated_at?: string | null;
           pdf_path?: string | null;
+          recording_url?: string | null;
           scheduled_at: string;
           started_at?: string | null;
           status?: Database["public"]["Enums"]["session_status"];
@@ -329,6 +414,7 @@ export type Database = {
           organization_id?: string;
           pdf_generated_at?: string | null;
           pdf_path?: string | null;
+          recording_url?: string | null;
           scheduled_at?: string;
           started_at?: string | null;
           status?: Database["public"]["Enums"]["session_status"];
@@ -755,6 +841,51 @@ export type Database = {
           },
         ];
       };
+      lesson_plan_folders: {
+        Row: {
+          color: string;
+          created_at: string;
+          id: string;
+          name: string;
+          organization_id: string;
+          owner_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          color?: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          organization_id: string;
+          owner_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          color?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          organization_id?: string;
+          owner_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lesson_plan_folders_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lesson_plan_folders_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       lesson_plans: {
         Row: {
           author_id: string;
@@ -762,6 +893,7 @@ export type Database = {
           course_id: string | null;
           created_at: string;
           duration_minutes: number;
+          folder_id: string | null;
           id: string;
           is_shared: boolean;
           is_template: boolean;
@@ -781,6 +913,7 @@ export type Database = {
           course_id?: string | null;
           created_at?: string;
           duration_minutes?: number;
+          folder_id?: string | null;
           id?: string;
           is_shared?: boolean;
           is_template?: boolean;
@@ -800,6 +933,7 @@ export type Database = {
           course_id?: string | null;
           created_at?: string;
           duration_minutes?: number;
+          folder_id?: string | null;
           id?: string;
           is_shared?: boolean;
           is_template?: boolean;
@@ -826,6 +960,13 @@ export type Database = {
             columns: ["course_id"];
             isOneToOne: false;
             referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lesson_plans_folder_id_fkey";
+            columns: ["folder_id"];
+            isOneToOne: false;
+            referencedRelation: "lesson_plan_folders";
             referencedColumns: ["id"];
           },
           {
@@ -1554,6 +1695,8 @@ export type Database = {
       teaches_student: { Args: { p_student: string }; Returns: boolean };
     };
     Enums: {
+      agenda_audience: "all" | "staff" | "students";
+      agenda_event_kind: "meeting" | "event" | "exam" | "holiday" | "reminder";
       app_role: "admin" | "teacher" | "student";
       assignment_status: "pending" | "submitted" | "graded" | "late";
       attendance_status: "present" | "absent" | "late" | "excused";
@@ -1700,6 +1843,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agenda_audience: ["all", "staff", "students"],
+      agenda_event_kind: ["meeting", "event", "exam", "holiday", "reminder"],
       app_role: ["admin", "teacher", "student"],
       assignment_status: ["pending", "submitted", "graded", "late"],
       attendance_status: ["present", "absent", "late", "excused"],

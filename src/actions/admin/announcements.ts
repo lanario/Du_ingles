@@ -1,8 +1,9 @@
 "use server";
 
 import { requireRole } from "@/lib/auth/session";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { auditLog } from "@/lib/audit";
+import * as audience from "@/lib/notifications/audience";
+import { notifyAnnouncement } from "@/lib/notifications/events";
 import { createAnnouncementSchema } from "@/schemas/announcements";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
@@ -29,49 +30,29 @@ export async function createAnnouncementAction(
     return fail("VALIDATION_ERROR", "Selecione uma turma.");
   }
 
-  const admin = createAdminSupabaseClient();
-  let recipientIds: string[] = [];
+  // O público é resolvido aqui (e não junto com o envio) porque comunicado
+  // sem destinatário é erro de formulário: o admin precisa ver isso na tela.
+  const recipients =
+    parsed.data.scope === "school"
+      ? await audience.orgMembers(ctx.organizationId)
+      : [
+          ...(await audience.groupStudents(parsed.data.groupId!)),
+          ...(await audience.groupTeacher(parsed.data.groupId!).then((teacher) =>
+            teacher ? [teacher] : [],
+          )),
+        ];
 
-  if (parsed.data.scope === "school") {
-    const { data } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("organization_id", ctx.organizationId)
-      .eq("is_active", true)
-      .is("deleted_at", null);
-    recipientIds = (data ?? []).map((p) => p.id);
-  } else {
-    const { data: group } = await admin
-      .from("groups")
-      .select("teacher_id")
-      .eq("id", parsed.data.groupId!)
-      .single();
-    const { data: enrollments } = await admin
-      .from("enrollments")
-      .select("student_id")
-      .eq("group_id", parsed.data.groupId!)
-      .eq("status", "active");
-    recipientIds = [
-      ...(group ? [group.teacher_id] : []),
-      ...(enrollments ?? []).map((e) => e.student_id),
-    ];
-  }
-
-  if (recipientIds.length === 0) {
+  if (recipients.length === 0) {
     return fail("VALIDATION_ERROR", "Nenhum destinatário encontrado.");
   }
 
-  const { error } = await admin.from("notifications").insert(
-    recipientIds.map((recipientId) => ({
-      organization_id: ctx.organizationId,
-      recipient_id: recipientId,
-      type: "announcement",
-      title: parsed.data.title,
-      body: parsed.data.body,
-    })),
-  );
-
-  if (error) return fail("INTERNAL_ERROR", "Falha ao enviar o comunicado.");
+  notifyAnnouncement({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    title: parsed.data.title,
+    body: parsed.data.body,
+    recipients,
+  });
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -81,7 +62,7 @@ export async function createAnnouncementAction(
     metadata: {
       scope: parsed.data.scope,
       groupId: parsed.data.groupId ?? null,
-      recipients: recipientIds.length,
+      recipients: recipients.length,
     },
   });
 

@@ -115,7 +115,7 @@ export function InviteUserPanel({
       ) : (
         <form action={formAction} className="flex min-h-full flex-col" noValidate>
           <div className="flex-1 space-y-5 px-4 py-5 sm:px-6">
-            {state && !state.success && !state.error.fields && (
+            {state && !state.success && (
               <FormBanner tone="error">{state.error.message}</FormBanner>
             )}
 
@@ -134,6 +134,7 @@ export function InviteUserPanel({
                   />
                 ))}
               </div>
+              <FieldError messages={fieldErrors?.["role"]} />
               <p className="text-xs text-admin-foreground/55">
                 Define o que a pessoa vê ao entrar. Só o admin pode alterar depois.
               </p>
@@ -151,6 +152,7 @@ export function InviteUserPanel({
                 placeholder="Ex.: Maria Silva"
                 autoComplete="off"
                 required
+                aria-invalid={fieldErrors?.["fullName"]?.length ? true : undefined}
                 className="border-admin-border bg-admin-background focus-visible:ring-gold-500"
               />
               <FieldError messages={fieldErrors?.["fullName"]} />
@@ -177,6 +179,7 @@ export function InviteUserPanel({
                   placeholder="(21) 99999-8888"
                   autoComplete="off"
                   required
+                  aria-invalid={fieldErrors?.["phone"]?.length ? true : undefined}
                   className="border-admin-border bg-admin-background focus-visible:ring-gold-500"
                 />
               </div>

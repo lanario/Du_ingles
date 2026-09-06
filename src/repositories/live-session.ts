@@ -21,6 +21,7 @@ export interface LiveSessionDetail {
   lockedBy: string | null;
   lockedAt: string | null;
   pdfPath: string | null;
+  recordingUrl: string | null;
 }
 
 /**
@@ -35,7 +36,7 @@ export async function getLiveSession(
   const { data, error } = await admin
     .from("class_sessions")
     .select(
-      "id, group_id, teacher_id, title, scheduled_at, duration_minutes, started_at, ended_at, status, is_published, content, teacher_notes, homework, locked_by, locked_at, pdf_path, group:group_id(name)",
+      "id, group_id, teacher_id, title, scheduled_at, duration_minutes, started_at, ended_at, status, is_published, content, teacher_notes, homework, locked_by, locked_at, pdf_path, recording_url, group:group_id(name)",
     )
     .eq("id", sessionId)
     .single();
@@ -60,6 +61,7 @@ export async function getLiveSession(
     lockedBy: data.locked_by,
     lockedAt: data.locked_at,
     pdfPath: data.pdf_path,
+    recordingUrl: data.recording_url,
   };
 }
 
@@ -208,4 +210,25 @@ export async function listVersions(sessionId: string): Promise<SessionVersion[]>
     content: v.content,
     createdAt: v.created_at,
   }));
+}
+
+/**
+ * Grava (ou apaga, com `null`) o link da gravação.
+ *
+ * Diferente de `saveContent`, isto vale para aula já encerrada — é justamente
+ * *depois* da aula que o Meet termina de processar o vídeo e o link existe.
+ * A política de UPDATE do professor barra sessão `completed`, por isso a
+ * escrita passa pelo service-role, como o resto deste módulo; a autorização
+ * real é a checagem de dono feita na action.
+ */
+export async function setRecordingUrl(
+  sessionId: string,
+  recordingUrl: string | null,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("class_sessions")
+    .update({ recording_url: recordingUrl })
+    .eq("id", sessionId);
+  return !error;
 }

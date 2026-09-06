@@ -1,9 +1,29 @@
-export function FieldError({ messages }: { messages?: string[] }) {
+/**
+ * Erro de um campo. Mostra TODAS as mensagens que a validação devolveu, não
+ * só a primeira: uma senha sem maiúscula e sem número tem dois problemas, e
+ * corrigir um de cada vez (com um submit entre eles) é o tipo de fricção que
+ * faz a pessoa desistir do cadastro.
+ */
+export function FieldError({ id, messages }: { id?: string; messages?: string[] }) {
   if (!messages?.length) return null;
+
+  if (messages.length === 1) {
+    return (
+      <p id={id} role="alert" className="text-sm text-destructive">
+        {messages[0]}
+      </p>
+    );
+  }
+
   return (
-    <p role="alert" className="text-sm text-destructive">
-      {messages[0]}
-    </p>
+    <ul id={id} role="alert" className="space-y-0.5 text-sm text-destructive">
+      {messages.map((message) => (
+        <li key={message} className="flex gap-1.5">
+          <span aria-hidden>•</span>
+          <span>{message}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

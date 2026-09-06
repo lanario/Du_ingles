@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
+import { notifyEnrollmentChange } from "@/lib/notifications/events";
 import {
   enrollStudent,
   getActiveEnrollmentForStudent,
@@ -37,8 +38,8 @@ export async function moveStudentToGroupAction(
   if (toGroupId === null) {
     if (!currentEnrollmentId) return ok(undefined as never);
 
-    const success = await unenrollStudent(currentEnrollmentId);
-    if (!success) return fail("INTERNAL_ERROR", "Falha ao remover o aluno da turma.");
+    const removed = await unenrollStudent(currentEnrollmentId);
+    if (!removed) return fail("INTERNAL_ERROR", "Falha ao remover o aluno da turma.");
 
     await auditLog({
       organizationId: ctx.organizationId,
@@ -48,6 +49,15 @@ export async function moveStudentToGroupAction(
       entityType: "profile",
       entityId: studentId,
       metadata: { enrollmentId: currentEnrollmentId },
+    });
+
+    notifyEnrollmentChange({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      actorRole: ctx.realRole,
+      studentId,
+      kind: "removed",
+      fromGroupId: removed.groupId,
     });
 
     revalidatePath("/admin/alunos");
@@ -68,6 +78,15 @@ export async function moveStudentToGroupAction(
       metadata: { studentId },
     });
 
+    notifyEnrollmentChange({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      actorRole: ctx.realRole,
+      studentId,
+      kind: "enrolled",
+      toGroupId,
+    });
+
     revalidatePath("/admin/alunos");
     return ok(undefined as never);
   }
@@ -83,6 +102,16 @@ export async function moveStudentToGroupAction(
     entityType: "group",
     entityId: toGroupId,
     metadata: { studentId, enrollmentId: currentEnrollmentId },
+  });
+
+  notifyEnrollmentChange({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    studentId,
+    kind: "transferred",
+    toGroupId,
+    fromGroupId: current?.groupId ?? null,
   });
 
   revalidatePath("/admin/alunos");

@@ -3,7 +3,9 @@
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
 import * as invitesService from "@/services/invites";
-import { createInviteSchema } from "@/schemas/invites";
+import { CREATE_INVITE_FIELDS, createInviteSchema } from "@/schemas/invites";
+import { describeInvalidFields } from "@/lib/form-errors";
+import { notifyInviteCreated } from "@/lib/notifications/events";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -27,10 +29,11 @@ export async function createInviteAction(
     role: formData.get("role"),
   });
   if (!parsed.success) {
+    const fields = parsed.error.flatten().fieldErrors as Record<string, string[]>;
     return fail(
       "VALIDATION_ERROR",
-      "Verifique os campos.",
-      parsed.error.flatten().fieldErrors,
+      describeInvalidFields(fields, CREATE_INVITE_FIELDS),
+      fields,
     );
   }
 
@@ -53,6 +56,13 @@ export async function createInviteAction(
     // Sem o token: log de auditoria é lido por gente, e um link válido ali
     // dentro seria uma credencial em texto plano.
     metadata: { role: parsed.data.role, phone: parsed.data.phone },
+  });
+
+  notifyInviteCreated({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    name: parsed.data.fullName,
+    role: parsed.data.role,
   });
 
   return ok(result.data);

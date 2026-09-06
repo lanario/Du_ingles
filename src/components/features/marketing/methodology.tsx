@@ -1,56 +1,58 @@
-import Image from "next/image";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 
 /**
- * As cinco metodologias que sustentam o plano de aula. Elas aparecem
- * "dentro" da tela do tablet (ContainerScroll), como se o visitante
- * estivesse olhando o roteiro de uma aula de verdade.
+ * Os seis pilares que sustentam uma aula da escola. Eles aparecem "dentro" da
+ * tela do tablet (ContainerScroll), como se o visitante estivesse olhando o
+ * roteiro de uma aula de verdade.
+ *
+ * A lista era ilustrada (`/metodologia/0X-*.webp`), mas as cinco vinhetas
+ * foram desenhadas para os cinco métodos acadêmicos que estavam aqui antes —
+ * nenhuma corresponde a estes seis pilares, e faltaria uma sexta. Enquanto as
+ * novas ilustrações não existirem, o cartão é só tipografia; a coluna da
+ * imagem volta ao layout no dia em que os arquivos entrarem em `public/`.
  */
 const METHODOLOGIES = [
   {
     step: "01",
-    title: "Abordagem Comunicativa",
-    original: "CLT — Communicative Language Teaching",
+    title: "Módulos pré-definidos",
+    tag: "Trilha por nível",
     description:
-      "A aula inteira gira em torno de comunicação real: você fala desde o primeiro dia, e a gramática entra a serviço do que precisa ser dito.",
-    image: "/metodologia/01-comunicativa.webp",
-    alt: "Duas pessoas se apresentando em inglês com balões de fala.",
+      "Cada turma tem aulas correspondentes ao seu nível. Alguns módulos são mais longos que outros, conforme o grau de dificuldade e o entendimento da turma.",
   },
   {
     step: "02",
-    title: "Aprendizagem Baseada em Tarefas",
-    original: "TBL — Task-Based Learning",
+    title: "Intensidade",
+    tag: "Você escolhe o ritmo",
     description:
-      "Cada encontro tem uma tarefa concreta — negociar, apresentar, resolver — e o inglês é a ferramenta para concluí-la.",
-    image: "/metodologia/02-tarefas.webp",
-    alt: "Grupo em volta de um mapa resolvendo uma tarefa com checklist.",
+      "Quanto mais aulas a turma tem por semana, mais rápido o módulo é concluído.",
   },
   {
     step: "03",
-    title: "Abordagem Lexical",
-    original: "Lexical Approach",
+    title: "Imersão",
+    tag: "Role-play e músicas",
     description:
-      "O estudo parte de blocos de linguagem (chunks e colocações) em vez de palavras soltas, acelerando a fluência natural.",
-    image: "/metodologia/03-lexical.webp",
-    alt: "Caderno aberto com blocos de linguagem e colocações em destaque.",
+      "Cada módulo tem uma aula imersiva, alternando entre role-play — situações da vida real em inglês, como fazer compras, ir ao shopping ou pedir comida no restaurante — e músicas fáceis e famosas, para exercitar o listening e aprender palavras do cotidiano.",
   },
   {
     step: "04",
-    title: "Sala de Aula Invertida",
-    original: "Flipped Classroom",
+    title: "Sistema PPP de ensino",
+    tag: "Presentation · Practice · Production",
     description:
-      "O conteúdo novo chega antes da aula pelo material da plataforma; o tempo ao vivo fica reservado para praticar e corrigir.",
-    image: "/metodologia/04-invertida.webp",
-    alt: "Estudo em casa antes da aula, de um lado, e prática ao vivo com o professor, do outro.",
+      "Durante a aula, um assunto novo é Apresentado; em seguida Praticado, com exercícios que testam o entendimento e a pronúncia ao mesmo tempo; e então Produzido pelos alunos, com desafios de criação de frases e histórias.",
   },
   {
     step: "05",
-    title: "Input Compreensível",
-    original: "Natural Approach",
+    title: "Shadowing",
+    tag: "Repetição guiada, 3 a 5 vezes",
     description:
-      "Exposição constante a inglês um passo acima do seu nível, com apoio do professor — é assim que a língua é adquirida, não decorada.",
-    image: "/metodologia/05-input.webp",
-    alt: "Professora mostrando cartões ilustrados enquanto o aluno escuta em inglês.",
+      "Durante toda a aula, professor e aluno repetem as palavras juntos de três a cinco vezes, para que a pronúncia fique retida na mente.",
+  },
+  {
+    step: "06",
+    title: "Exercícios personalizados",
+    tag: "Corrigidos pelo professor",
+    description:
+      "Exercícios e tarefas feitos sob medida para cada aula e cada turma, realizados na própria plataforma e corrigidos pelo professor.",
   },
 ];
 
@@ -64,8 +66,8 @@ export function Methodology() {
               Metodologia Du Inglês
             </h2>
             <p className="mt-3 text-[15px] text-muted-foreground sm:text-base">
-              Cinco das metodologias mais eficientes do ensino moderno de inglês,
-              combinadas passo a passo em cada aula.
+              Seis pilares que se repetem em toda aula — do módulo que a turma percorre ao
+              exercício que o professor corrige.
             </p>
           </div>
         }
@@ -87,36 +89,21 @@ export function Methodology() {
             {METHODOLOGIES.map((item) => (
               <li
                 key={item.step}
-                className="flex shrink-0 flex-col-reverse gap-3.5 rounded-xl border border-border bg-muted/60 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4 md:gap-6 md:p-6"
+                className="flex shrink-0 items-start gap-3 rounded-xl border border-border bg-muted/60 p-3 sm:gap-4 sm:p-4 md:gap-5 md:p-5"
               >
-                <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4 md:gap-5">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground md:h-11 md:w-11 md:text-base">
-                    {item.step}
-                  </span>
-                  <div className="min-w-0">
-                    <h3 className="text-[15px] font-semibold leading-tight sm:text-base md:text-lg">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-gold-600 sm:text-[11px] md:text-xs">
-                      {item.original}
-                    </p>
-                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground sm:text-sm md:text-base">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-                {/* Vinheta da metodologia — as ilustrações são 16:9 e
-                    preenchem o quadro sem recorte. No celular ela vem *antes*
-                    do texto (`flex-col-reverse`): a ilustração é o que faz
-                    parar a rolagem, e o passo numerado logo abaixo dela. */}
-                <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg border border-border bg-background sm:w-44 md:w-64">
-                  <Image
-                    src={item.image}
-                    alt={item.alt}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 176px, 256px"
-                    className="object-cover"
-                  />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground md:h-11 md:w-11 md:text-base">
+                  {item.step}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[15px] font-semibold leading-tight sm:text-base md:text-lg">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-gold-600 sm:text-[11px] md:text-xs">
+                    {item.tag}
+                  </p>
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground sm:text-sm md:text-[15px]">
+                    {item.description}
+                  </p>
                 </div>
               </li>
             ))}

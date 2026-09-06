@@ -119,7 +119,13 @@ export type AcceptInviteResult =
   | { success: true; userId: string; organizationId: string; role: AppRole }
   | {
       success: false;
-      reason: "invite_invalid" | "email_taken" | "cpf_taken" | "internal";
+      reason:
+        | "invite_invalid"
+        | "email_taken"
+        | "email_invalid"
+        | "cpf_taken"
+        | "password_weak"
+        | "internal";
       message: string;
     };
 
@@ -174,19 +180,37 @@ export async function acceptInvite(
   });
 
   if (authError || !created?.user) {
-    const alreadyRegistered =
-      authError?.status === 422 || /already/i.test(authError?.message ?? "");
-    if (alreadyRegistered) {
+    // O Supabase devolve 422 para três coisas diferentes — e-mail já cadastrado,
+    // e-mail que ele não consegue validar e senha recusada. Tratar todas como
+    // "e-mail já está em uso" (o que fazíamos) mandava a pessoa trocar de e-mail
+    // por causa de uma senha. Aqui a mensagem vai para o campo certo.
+    const detail = `${authError?.code ?? ""} ${authError?.message ?? ""}`;
+
+    if (/already|exists|registered/i.test(detail)) {
       return {
         success: false,
         reason: "email_taken",
-        message: "Este e-mail já está em uso.",
+        message: "Este e-mail já está em uso. Use outro ou entre pelo login.",
+      };
+    }
+    if (/email/i.test(detail)) {
+      return {
+        success: false,
+        reason: "email_invalid",
+        message: "Este e-mail não foi aceito. Confira o endereço digitado.",
+      };
+    }
+    if (/password/i.test(detail)) {
+      return {
+        success: false,
+        reason: "password_weak",
+        message: "Esta senha não foi aceita. Escolha outra, mais forte.",
       };
     }
     return {
       success: false,
       reason: "internal",
-      message: "Falha ao criar a conta. Tente novamente.",
+      message: "Falha ao criar a conta. Tente novamente em instantes.",
     };
   }
 
@@ -211,7 +235,7 @@ export async function acceptInvite(
       success: false,
       reason: duplicate ? "cpf_taken" : "internal",
       message: duplicate
-        ? "Já existe um cadastro com este CPF ou e-mail."
+        ? "Já existe um cadastro com este CPF ou e-mail nesta escola."
         : "Falha ao criar o perfil. Tente novamente.",
     };
   }

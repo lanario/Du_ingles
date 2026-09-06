@@ -1758,3 +1758,48 @@ body {
     animation: du-veil-in 1ms linear 220ms both;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Agenda
+
+   A mesma agenda serve as três áreas — coordenação, professor e aluno — e o
+   que muda entre elas é só a origem dos tokens, declarada uma vez na raiz da
+   tela (mesmo padrão do `.chat-theme`). Sem isso, cada peça da grade
+   precisaria carregar um prop `tone` só para escolher entre `border-border` e
+   `border-admin-border`.
+--------------------------------------------------------------------------- */
+.agenda-theme {
+  --agenda-surface: var(--background);
+  --agenda-canvas: var(--muted);
+  --agenda-border: var(--border);
+  --agenda-fg: var(--foreground);
+  --agenda-muted-fg: var(--muted-foreground);
+  --agenda-accent: var(--accent);
+  --agenda-primary: var(--primary);
+  --agenda-primary-fg: var(--primary-foreground);
+  /* Linha do "agora" nas vistas de dia e semana. */
+  --agenda-now: var(--destructive);
+}
+
+[data-admin-theme] .agenda-theme {
+  --agenda-surface: var(--admin-surface);
+  --agenda-canvas: var(--admin-muted);
+  --agenda-border: var(--admin-border);
+  --agenda-fg: var(--admin-foreground);
+  --agenda-muted-fg: color-mix(in srgb, var(--admin-foreground) 55%, transparent);
+  --agenda-accent: var(--admin-accent);
+  --agenda-primary: var(--navy-800);
+  --agenda-primary-fg: #ffffff;
+}
+
+/*
+ * Faixa das horas fora do expediente: mais escura que o canvas, o suficiente
+ * para o olho encontrar o miolo do dia sem ler os rótulos de hora.
+ */
+.agenda-offhours {
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--agenda-fg) 3%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}

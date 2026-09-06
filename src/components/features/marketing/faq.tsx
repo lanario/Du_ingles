@@ -11,11 +11,11 @@ const FAQS: FaqItem[] = [
   },
   {
     q: "A aula experimental tem algum custo?",
-    a: "Nenhum. É uma aula ao vivo com professor certificado, mais o diagnóstico do seu nível CEFR — sem cartão e sem compromisso de matrícula.",
+    a: "Nenhum. São 30 minutos ao vivo com professor certificado, mais o diagnóstico do seu nível CEFR — sem cartão e sem compromisso de matrícula.",
   },
   {
     q: "As aulas são gravadas?",
-    a: "As aulas são ao vivo. O conteúdo de cada aula fica disponível para você em PDF na sua biblioteca, mas não há vídeo gravado.",
+    a: "São. As aulas acontecem ao vivo e ficam gravadas para todos os planos, junto com o PDF do conteúdo, na biblioteca da sua turma — se você faltar, é só assistir depois.",
   },
   {
     q: "Posso mudar de turma ou horário?",
@@ -39,7 +39,7 @@ const STEPS = [
   },
   {
     title: "Você faz a aula ao vivo",
-    detail: "Aula real com professor certificado e diagnóstico do seu nível.",
+    detail: "30 minutos com professor certificado e o diagnóstico do seu nível.",
   },
 ];
 
@@ -69,7 +69,7 @@ export function Faq() {
             </h2>
             <p className="mt-4 max-w-md text-[15px] text-muted-foreground sm:text-base">
               Preencha os dados abaixo e a coordenação entra em contato para agendar sua
-              aula experimental gratuita.
+              aula experimental gratuita de 30 minutos.
             </p>
           </div>
 

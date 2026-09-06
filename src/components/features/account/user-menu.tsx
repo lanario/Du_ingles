@@ -2,8 +2,8 @@
 
 /**
  * Cartão da conta no rodapé da sidebar: foto, nome e papel, com um menu que
- * sobe ao clique (Perfil, Segurança, Sair). Substitui o par "e-mail solto +
- * botão Sair" que existia antes nas duas barras.
+ * sobe ao clique (Meu Perfil, Segurança, Sair). Substitui o par "e-mail solto
+ * + botão Sair" que existia antes nas duas barras.
  *
  * O painel do menu vai para um portal no `body` com posição fixa: o rail tem
  * `overflow-hidden` (é o que mascara a animação de largura), então qualquer
@@ -19,15 +19,14 @@ import {
   useTransition,
 } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth/logout";
 import { AccountAvatar } from "@/components/features/account/account-avatar";
-import { AccountModal } from "@/components/features/account/account-modal";
 import { SecurityModal } from "@/components/features/account/security-modal";
 import { ChevronIcon, KeyIcon, LogoutIcon, UserIcon } from "@/components/ui/icons";
-import type { MyProfile } from "@/repositories/users";
 import type { AppRole } from "@/types/domain";
 
 const ROLE_LABEL: Record<AppRole, string> = {
@@ -45,10 +44,9 @@ interface UserMenuProps {
   email: string;
   role: AppRole;
   avatarUrl: string | null;
-  profile: MyProfile | null;
   /** `app` = rail navy; `admin` = rail dourado. Muda só o cartão-gatilho. */
   theme: "app" | "admin";
-  /** Destino de "Meus dados", linkado a partir do modal de Segurança. */
+  /** Destino de "Meu Perfil", linkado a partir do menu e do modal de Segurança. */
   dataHref: Route;
   /** Rail recolhido mostra só a foto; a gaveta do mobile é sempre larga. */
   compact?: boolean;
@@ -61,14 +59,12 @@ export function UserMenu({
   email,
   role,
   avatarUrl,
-  profile,
   theme,
   dataHref,
   compact = false,
   className,
 }: UserMenuProps) {
   const [open, setOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
   const [coords, setCoords] = useState<{ left: number; bottom: number } | null>(null);
   const [loggingOut, startLogout] = useTransition();
@@ -161,18 +157,15 @@ export function UserMenu({
                 <div className="h-px bg-border" />
 
                 <div className="p-1.5">
-                  <button
-                    type="button"
+                  <Link
+                    href={dataHref}
                     role="menuitem"
-                    onClick={() => {
-                      setOpen(false);
-                      setProfileOpen(true);
-                    }}
+                    onClick={() => setOpen(false)}
                     className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm font-medium text-navy-900 transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
                   >
                     <UserIcon className="h-[18px] w-[18px] text-navy-900/60" />
-                    Perfil
-                  </button>
+                    Meu Perfil
+                  </Link>
                   <button
                     type="button"
                     role="menuitem"
@@ -275,25 +268,12 @@ export function UserMenu({
 
       {typeof document !== "undefined" &&
         createPortal(
-          <>
-            <AccountModal
-              open={profileOpen}
-              onClose={() => setProfileOpen(false)}
-              profile={profile}
-              avatarUrl={avatarUrl}
-              theme={theme}
-              onOpenSecurity={() => {
-                setProfileOpen(false);
-                setSecurityOpen(true);
-              }}
-            />
-            <SecurityModal
-              open={securityOpen}
-              onClose={() => setSecurityOpen(false)}
-              theme={theme}
-              dataHref={dataHref}
-            />
-          </>,
+          <SecurityModal
+            open={securityOpen}
+            onClose={() => setSecurityOpen(false)}
+            theme={theme}
+            dataHref={dataHref}
+          />,
           document.body,
         )}
     </>

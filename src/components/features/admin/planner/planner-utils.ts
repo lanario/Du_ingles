@@ -118,3 +118,33 @@ export function defaultScheduleParts(): { date: string; time: string } {
   const time = timeFormatter.format(now);
   return { date: dayKeyFormatter.format(now), time: `${time.slice(0, 2)}:00` };
 }
+
+// ------------------------------------------------------ recortes do ateliê --
+
+/**
+ * Recorte aberto no ateliê. Os quatro literais são os filtros da biblioteca
+ * (calculados a partir de `isShared`); qualquer outro valor é o id de uma
+ * pasta pessoal.
+ */
+export type AtelieKey = "todas" | "compartilhadas" | "privadas" | "sem-pasta" | string;
+
+export const ATELIE_LIBRARY_KEYS = [
+  "todas",
+  "compartilhadas",
+  "privadas",
+  "sem-pasta",
+] as const;
+
+/**
+ * `?pasta=` da URL. Id de pasta que não existe mais (link velho, pasta
+ * excluída em outra aba) cai em "todas" — melhor a estante inteira do que
+ * uma tela vazia sem explicação.
+ */
+export function folderKeyFromParam(
+  value: string | undefined,
+  folders: { id: string }[],
+): AtelieKey {
+  if (!value) return "todas";
+  if ((ATELIE_LIBRARY_KEYS as readonly string[]).includes(value)) return value;
+  return folders.some((folder) => folder.id === value) ? value : "todas";
+}

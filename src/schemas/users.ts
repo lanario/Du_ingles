@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { APP_ROLES } from "@/types/domain";
 import { passwordRules } from "@/schemas/auth";
+import { confirmPasswordMatches } from "@/schemas/field-messages";
 
 /**
  * O que o admin ainda edita num usuário existente. A criação não mora mais
@@ -38,8 +39,5 @@ export const adminSetPasswordSchema = z
     password: passwordRules,
     confirmPassword: z.string().min(1, "Confirme a senha."),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "As senhas não coincidem.",
-    path: ["confirmPassword"],
-  });
+  .superRefine(confirmPasswordMatches);
 export type AdminSetPasswordInput = z.infer<typeof adminSetPasswordSchema>;

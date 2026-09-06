@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { canTouchGroup, canTouchGroups, requireStaff } from "@/lib/auth/staff";
 import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
+import {
+  notifyAssignmentCreated,
+  notifyAssignmentDeleted,
+  notifyAssignmentGraded,
+} from "@/lib/notifications/events";
 import * as repo from "@/repositories/assignments";
 import {
   createExerciseAssignmentSchema,
@@ -44,7 +49,7 @@ export async function createPlannerAssignmentAction(
   if (!(await canTouchGroups(ctx, parsed.data.groupIds)))
     return fail("FORBIDDEN", "Só dá para criar tarefa nas suas turmas.");
 
-  const success = await repo.createAssignmentsForGroups({
+  const created = await repo.createAssignmentsForGroups({
     groupIds: parsed.data.groupIds,
     title: parsed.data.title,
     instructions: parsed.data.instructions,
@@ -54,7 +59,7 @@ export async function createPlannerAssignmentAction(
     organizationId: ctx.organizationId,
     createdBy: ctx.userId,
   });
-  if (!success) return fail("INTERNAL_ERROR", "Falha ao criar a tarefa.");
+  if (!created) return fail("INTERNAL_ERROR", "Falha ao criar a tarefa.");
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -63,6 +68,14 @@ export async function createPlannerAssignmentAction(
     action: "ASSIGNMENT_CREATE",
     entityType: "assignment",
     metadata: { groupIds: parsed.data.groupIds, title: parsed.data.title },
+  });
+
+  notifyAssignmentCreated({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    title: parsed.data.title,
+    dueAt: parsed.data.dueAt,
+    targets: created.map((row) => ({ groupId: row.groupId, assignmentId: row.id })),
   });
 
   revalidateStaffPath(PLANNER_SUFFIX);
@@ -92,6 +105,13 @@ export async function deletePlannerAssignmentAction(
     action: "ASSIGNMENT_DELETE",
     entityType: "assignment",
     entityId: assignmentId,
+  });
+
+  notifyAssignmentDeleted({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    groupId: assignment.groupId,
+    title: assignment.title,
   });
 
   revalidateStaffPath(PLANNER_SUFFIX);
@@ -153,6 +173,16 @@ export async function gradeSubmissionAsAdminAction(
     entityType: "assignment",
     entityId: assignmentId,
     metadata: { studentId },
+  });
+
+  notifyAssignmentGraded({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    assignmentId,
+    studentId,
+    title: assignment.title,
+    score: parsed.data.score,
+    maxScore: assignment.maxScore,
   });
 
   revalidateStaffPath(PLANNER_SUFFIX);

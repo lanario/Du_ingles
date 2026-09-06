@@ -36,6 +36,7 @@ import { PlanFormPanel } from "../plan-form-panel";
 import { SchedulePanel } from "../schedule-panel";
 import { LEVEL_HINT, STATUS_META, formatDay, formatTime } from "../planner-utils";
 import type {
+  PlannerFolder,
   PlannerGroupOption,
   PlannerPlan,
   PlannerPlanDetail,
@@ -49,6 +50,8 @@ export interface LessonStudioProps {
   sessions: PlannerSession[];
   groups: PlannerGroupOption[];
   teachers: UserListItem[];
+  /** Pastas de quem está olhando — a ficha edita a pasta junto com o resto. */
+  folders: PlannerFolder[];
   /**
    * Plano compartilhado de outra pessoa: dá para ler, apresentar e agendar,
    * mas não reescrever — o autosave nem é ligado (a action recusaria de
@@ -62,6 +65,7 @@ export function LessonStudio({
   sessions,
   groups,
   teachers,
+  folders,
   readOnly = false,
 }: LessonStudioProps) {
   const router = useRouter();
@@ -441,6 +445,7 @@ export function LessonStudio({
           router.refresh();
         }}
         plan={plan as PlannerPlan}
+        folders={folders}
       />
 
       <SchedulePanel

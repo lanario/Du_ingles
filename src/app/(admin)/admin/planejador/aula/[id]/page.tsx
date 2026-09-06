@@ -7,6 +7,7 @@ import {
   listPlannerPlans,
 } from "@/repositories/lesson-planner";
 import { getLiveSession } from "@/repositories/live-session";
+import { getNextSessionPlan } from "@/repositories/class-sessions";
 import { LessonRoom } from "@/components/features/admin/planner/live/lesson-room";
 
 export const metadata: Metadata = { title: "Sala de aula · Planejador" };
@@ -28,14 +29,22 @@ export default async function SalaDeAulaPage({ params }: PageProps) {
   const session = await getPlannerSession(id, ctx.organizationId);
   if (!session) notFound();
 
-  const [live, attendance, plans] = await Promise.all([
+  const [live, attendance, plans, nextPlan] = await Promise.all([
     getLiveSession(id),
     listPlannerAttendance(id, session.groupId),
     listPlannerPlans(ctx.organizationId),
+    // Só a aula encerrada pergunta pela próxima; nas outras a busca é ruído.
+    session.status === "completed" ? getNextSessionPlan(id) : Promise.resolve(null),
   ]);
   if (!live) notFound();
 
   return (
-    <LessonRoom session={session} live={live} plans={plans} attendance={attendance} />
+    <LessonRoom
+      session={session}
+      live={live}
+      plans={plans}
+      attendance={attendance}
+      nextPlan={nextPlan}
+    />
   );
 }

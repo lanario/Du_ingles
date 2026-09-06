@@ -8,9 +8,15 @@
  * O telefone aparece travado: ele veio do convite, é o número que recebeu
  * o link, e não é enviado pelo formulário — a server action lê do convite.
  * Deixá-lo editável seria deixar alguém se cadastrar com outro número.
+ *
+ * Sobre o erro: nunca "dados inválidos". A recusa chega por campo
+ * (`schemas/field-messages.ts`) e a tela mostra três camadas — o resumo no topo
+ * com o nome de cada campo recusado, a borda vermelha no campo e o texto
+ * embaixo dele dizendo o que fazer. O foco vai para o primeiro erro, que num
+ * formulário desta altura costuma estar fora da tela.
  */
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { acceptInviteAction } from "@/actions/auth/accept-invite";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +26,7 @@ import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { PasswordMatch, PasswordStrength } from "@/components/ui/password-strength";
 import { EyeIcon, LockIcon } from "@/components/ui/icons";
 import { formatCpf } from "@/lib/cpf";
+import { ACCEPT_INVITE_FIELDS } from "@/schemas/invites";
 import { cn } from "@/lib/utils";
 
 export function AcceptInviteForm({
@@ -39,11 +46,50 @@ export function AcceptInviteForm({
   const [confirm, setConfirm] = useState("");
 
   const fields = state && !state.success ? state.error.fields : undefined;
+  const message = state && !state.success ? state.error.message : undefined;
+
+  /** Campos recusados, na ordem da tela — é a ordem em que a pessoa lê. */
+  const invalidFields = ACCEPT_INVITE_FIELDS.filter(([name]) => fields?.[name]?.length);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // O primeiro campo com erro pode estar acima ou abaixo do que está visível (o
+  // formulário tem seis campos e um medidor de senha no meio). Levar o foco até
+  // ele é o que evita o "deu erro e eu não sei onde".
+  useEffect(() => {
+    const first = invalidFields[0]?.[0];
+    if (!first) return;
+    const element = document.getElementById(first);
+    element?.focus({ preventScroll: true });
+    element?.scrollIntoView({ block: "center", behavior: "smooth" });
+    // Depende só de `state`: ele é um objeto novo a cada submit, então
+    // reenviar sem corrigir nada reposiciona o foco em vez de parecer que
+    // nada aconteceu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  const errorProps = (name: string) =>
+    fields?.[name]?.length
+      ? { "aria-invalid": true as const, "aria-describedby": `${name}-error` }
+      : {};
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
-      {state && !state.success && !state.error.fields && (
-        <FormBanner tone="error">{state.error.message}</FormBanner>
+    <form ref={formRef} action={formAction} className="space-y-5" noValidate>
+      {message && (
+        <FormBanner tone="error">
+          <p className="font-medium">{message}</p>
+          {invalidFields.length > 0 && (
+            <ul className="mt-1.5 space-y-0.5">
+              {invalidFields.map(([name, label]) => (
+                <li key={name}>
+                  <a href={`#${name}`} className="underline underline-offset-2">
+                    {label}
+                  </a>
+                  {`: ${fields?.[name]?.[0] ?? ""}`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </FormBanner>
       )}
 
       <div className="space-y-1.5">
@@ -54,8 +100,9 @@ export function AcceptInviteForm({
           defaultValue={defaultFullName}
           autoComplete="name"
           required
+          {...errorProps("fullName")}
         />
-        <FieldError messages={fields?.["fullName"]} />
+        <FieldError id="fullName-error" messages={fields?.["fullName"]} />
       </div>
 
       <div className="space-y-1.5">
@@ -85,8 +132,9 @@ export function AcceptInviteForm({
           autoComplete="email"
           placeholder="voce@email.com"
           required
+          {...errorProps("email")}
         />
-        <FieldError messages={fields?.["email"]} />
+        <FieldError id="email-error" messages={fields?.["email"]} />
         <p className="text-xs text-muted-foreground">Será o seu login na plataforma.</p>
       </div>
 
@@ -98,9 +146,10 @@ export function AcceptInviteForm({
             name="birthDate"
             required
             max={new Date().toISOString().slice(0, 10)}
-            invalid={Boolean(fields?.["birthDate"])}
+            invalid={Boolean(fields?.["birthDate"]?.length)}
+            aria-describedby={fields?.["birthDate"]?.length ? "birthDate-error" : undefined}
           />
-          <FieldError messages={fields?.["birthDate"]} />
+          <FieldError id="birthDate-error" messages={fields?.["birthDate"]} />
         </div>
 
         <div className="space-y-1.5">
@@ -113,8 +162,9 @@ export function AcceptInviteForm({
             onChange={(event) => setCpf(formatCpf(event.target.value))}
             placeholder="000.000.000-00"
             required
+            {...errorProps("cpf")}
           />
-          <FieldError messages={fields?.["cpf"]} />
+          <FieldError id="cpf-error" messages={fields?.["cpf"]} />
         </div>
       </div>
 
@@ -126,9 +176,10 @@ export function AcceptInviteForm({
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
+          errors={fields?.["password"]}
         />
         <PasswordStrength value={password} className="pt-1" />
-        <FieldError messages={fields?.["password"]} />
+        <FieldError id="password-error" messages={fields?.["password"]} />
       </div>
 
       <div className="space-y-1.5">
@@ -139,10 +190,11 @@ export function AcceptInviteForm({
           value={confirm}
           onChange={setConfirm}
           autoComplete="new-password"
+          errors={fields?.["confirmPassword"]}
         />
         <PasswordStrength value={confirm} showChecklist={false} className="pt-1" />
         <PasswordMatch password={password} confirm={confirm} />
-        <FieldError messages={fields?.["confirmPassword"]} />
+        <FieldError id="confirmPassword-error" messages={fields?.["confirmPassword"]} />
       </div>
 
       <Button type="submit" className="w-full" disabled={isPending}>
@@ -171,14 +223,17 @@ function PasswordField({
   value,
   onChange,
   autoComplete,
+  errors,
 }: {
   id: string;
   name: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  errors?: string[];
 }) {
   const [visible, setVisible] = useState(false);
+  const invalid = Boolean(errors?.length);
 
   return (
     <div className="relative">
@@ -190,6 +245,8 @@ function PasswordField({
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
         required
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? `${id}-error` : undefined}
         className="pr-11"
       />
       <button

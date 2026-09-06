@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
+import { notifyPasswordReset, notifyRoleChanged } from "@/lib/notifications/events";
 import * as usersService from "@/services/users";
 import {
   updateUserSchema,
@@ -151,6 +152,13 @@ export async function changeUserRoleAction(
     metadata: { newRole: parsed.data.role },
   });
 
+  notifyRoleChanged({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    userId,
+    role: parsed.data.role as AppRole,
+  });
+
   revalidatePath(`/admin/usuarios/${userId}`);
   return ok(undefined as never);
 }
@@ -195,6 +203,12 @@ export async function setUserPasswordAction(
     action: "USER_PASSWORD_RESET",
     entityType: "profile",
     entityId: userId,
+  });
+
+  notifyPasswordReset({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    userId,
   });
 
   revalidatePath("/admin/usuarios");

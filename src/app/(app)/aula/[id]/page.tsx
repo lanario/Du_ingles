@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { getLiveSession } from "@/repositories/live-session";
+import { getNextSessionPlan } from "@/repositories/class-sessions";
 import { listSessionAttendance } from "@/repositories/attendance";
 import { listLessonPlans } from "@/repositories/lesson-plans";
 import { StartSessionForm } from "@/components/features/live-session/start-session-form";
 import { LiveSessionEditor } from "@/components/features/live-session/live-session-editor";
 import { AttendancePanel } from "@/components/features/live-session/attendance-panel";
 import { CompletedSessionView } from "@/components/features/live-session/completed-session-view";
+import { NextSessionPrompt } from "@/components/features/live-session/next-session-prompt";
 
 export const metadata: Metadata = { title: "Sala de aula" };
 
@@ -44,9 +46,21 @@ export default async function AulaPage({ params }: PageProps) {
   const attendance = await listSessionAttendance(session.id, session.groupId);
 
   if (session.status === "completed") {
+    // Aula encerrada é a hora de resolver a seguinte: a agenda só anda quando
+    // alguém marca a próxima (ver `0035_next_session_only.sql`).
+    const nextPlan = await getNextSessionPlan(session.id);
+
     return (
       <div className="space-y-10">
         <CompletedSessionView session={session} />
+
+        {nextPlan && (
+          <NextSessionPrompt
+            sessionId={session.id}
+            plan={nextPlan}
+            endedAt={session.endedAt}
+          />
+        )}
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Chamada

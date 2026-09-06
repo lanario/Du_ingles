@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
 import { getGroupTeacherId } from "@/repositories/groups";
 import { listStudentEnrollments } from "@/repositories/enrollments";
-import { createNotification } from "@/repositories/notifications";
+import { notifyGroupChangeRequest } from "@/lib/notifications/events";
 import { groupChangeRequestSchema } from "@/schemas/enrollments";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
@@ -46,17 +46,14 @@ export async function requestGroupChangeAction(
   const teacherId = await getGroupTeacherId(parsed.data.toGroupId);
   if (!teacherId) return fail("NOT_FOUND", "Turma de destino não encontrada.");
 
-  const sent = await createNotification({
+  notifyGroupChangeRequest({
     organizationId: ctx.organizationId,
-    recipientId: teacherId,
-    type: "GROUP_CHANGE_REQUEST",
-    title: "Pedido de troca de turma",
-    body: parsed.data.reason
-      ? `${ctx.email} pediu para mudar de turma: ${parsed.data.reason}`
-      : `${ctx.email} pediu para mudar de turma.`,
-    link: "/turmas",
+    studentId: ctx.userId,
+    studentName: ctx.fullName,
+    toGroupId: parsed.data.toGroupId,
+    fromGroupId: current.groupId,
+    reason: parsed.data.reason,
   });
-  if (!sent) return fail("INTERNAL_ERROR", "Falha ao enviar o pedido.");
 
   await auditLog({
     organizationId: ctx.organizationId,

@@ -55,6 +55,11 @@ const STANDARD_FEATURES = [
   "Aulas ao vivo em grupo, de acordo com o nível do aluno",
   "Acesso à Plataforma Du Inglês",
   "Aulas interativas com edição dos materiais em tempo real",
+  // Gravação é benefício de todos os níveis, e não de um pacote superior —
+  // por isso mora aqui, no bloco herdado por Premium e Elite. Está entre os
+  // quatro primeiros de propósito: a vitrine pública corta a lista em quatro
+  // (`tierFeatures(tier).slice(0, 4)`), e este é um dos argumentos de venda.
+  "Aulas gravadas, disponíveis na biblioteca da turma",
   "Documentos e materiais autorais para acompanhamento das aulas",
   "Acesso ao chat da própria turma e da Diretoria",
   "Exercícios e atividades de fixação",

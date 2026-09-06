@@ -17,7 +17,7 @@ import { env } from "@/lib/env";
 export const metadata: Metadata = {
   title: { absolute: "Du Inglês — Aulas de inglês ao vivo, do A1 ao C2" },
   description:
-    "Escola de inglês com aulas 100% ao vivo, nivelamento pelo padrão CEFR e material de estudo gerado a cada aula. Agende sua aula experimental gratuita.",
+    "Escola de inglês com aulas 100% ao vivo, nivelamento pelo padrão CEFR e material de estudo gerado a cada aula. Agende sua aula experimental gratuita de 30 minutos.",
   openGraph: {
     title: "Du Inglês — Aulas de inglês ao vivo, do A1 ao C2",
     description:

@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { isAdmin, requireRole } from "@/lib/auth/session";
 import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
+import {
+  notifyEnrollmentChange,
+  notifyGroupCreated,
+  notifyGroupHandover,
+  notifyGroupScheduleChanged,
+} from "@/lib/notifications/events";
 import { createGroup, isGroupOwnedByTeacher, updateGroup } from "@/repositories/groups";
 import {
   enrollStudent,
@@ -66,6 +72,15 @@ export async function createGroupAction(
     entityType: "group",
     entityId: result.groupId,
   });
+
+  if (result.groupId) {
+    notifyGroupCreated({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      actorRole: ctx.realRole,
+      groupId: result.groupId,
+    });
+  }
 
   revalidatePath("/turmas");
   return ok(undefined as never);
@@ -132,6 +147,23 @@ export async function updateGroupAction(
       : {}),
   });
 
+  if (result.handover) {
+    notifyGroupHandover({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      groupId,
+      previousTeacherId: result.handover.previousTeacherId ?? "",
+      sessions: result.handover.sessions,
+    });
+  }
+  if (input.schedule) {
+    notifyGroupScheduleChanged({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      groupId,
+    });
+  }
+
   revalidatePath("/turmas");
   // A turma mudou de dono: as aulas futuras saíram de uma agenda e entraram
   // na outra, então as duas telas de agenda estão servindo cache velho.
@@ -190,6 +222,16 @@ export async function enrollStudentInMyGroupAction(
     metadata: { studentId: parsed.data.studentId },
   });
 
+  notifyEnrollmentChange({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    studentId: parsed.data.studentId,
+    kind: result.transferred ? "transferred" : "enrolled",
+    toGroupId: groupId,
+    fromGroupId: result.fromGroupId ?? current?.groupId ?? null,
+  });
+
   revalidatePath("/turmas");
   return ok(undefined as never);
 }
@@ -241,6 +283,18 @@ export async function transferStudentAction(
     },
   });
 
+  if (result.studentId) {
+    notifyEnrollmentChange({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      actorRole: ctx.realRole,
+      studentId: result.studentId,
+      kind: "transferred",
+      toGroupId: parsed.data.toGroupId,
+      fromGroupId,
+    });
+  }
+
   revalidatePath("/turmas");
   return ok(undefined as never);
 }
@@ -253,8 +307,8 @@ export async function unenrollFromMyGroupAction(
   if (!isAdmin(ctx) && !(await isGroupOwnedByTeacher(groupId, ctx.userId)))
     return fail("FORBIDDEN", "Esta turma não é sua.");
 
-  const success = await unenrollStudent(enrollmentId);
-  if (!success) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");
+  const removed = await unenrollStudent(enrollmentId);
+  if (!removed) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -264,6 +318,15 @@ export async function unenrollFromMyGroupAction(
     entityType: "group",
     entityId: groupId,
     metadata: { enrollmentId },
+  });
+
+  notifyEnrollmentChange({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    studentId: removed.studentId,
+    kind: "removed",
+    fromGroupId: removed.groupId,
   });
 
   revalidatePath("/turmas");

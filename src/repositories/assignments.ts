@@ -259,6 +259,7 @@ export async function getMySubmission(
   };
 }
 
+/** Devolve o id da tarefa criada — é o que o aviso ao aluno usa como link. */
 export async function createAssignment(input: {
   groupId: string;
   title: string;
@@ -266,17 +267,21 @@ export async function createAssignment(input: {
   maxScore: number;
   organizationId: string;
   createdBy: string;
-}): Promise<boolean> {
+}): Promise<string | null> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.from("assignments").insert({
-    organization_id: input.organizationId,
-    group_id: input.groupId,
-    title: input.title,
-    due_at: input.dueAt ?? null,
-    max_score: input.maxScore,
-    created_by: input.createdBy,
-  });
-  return !error;
+  const { data, error } = await supabase
+    .from("assignments")
+    .insert({
+      organization_id: input.organizationId,
+      group_id: input.groupId,
+      title: input.title,
+      due_at: input.dueAt ?? null,
+      max_score: input.maxScore,
+      created_by: input.createdBy,
+    })
+    .select("id")
+    .single();
+  return error || !data ? null : data.id;
 }
 
 export interface PlannerAssignmentListItem {
@@ -385,7 +390,7 @@ export async function createAssignmentsForGroups(input: {
   maxScore: number;
   organizationId: string;
   createdBy: string;
-}): Promise<boolean> {
+}): Promise<Array<{ id: string; groupId: string }> | null> {
   const admin = createAdminSupabaseClient();
   const { questions, answerKey } = splitQuestionDrafts(input.questions ?? []);
 
@@ -397,19 +402,26 @@ export async function createAssignmentsForGroups(input: {
         } as unknown as Json)
       : null;
 
-  const { error } = await admin.from("assignments").insert(
-    input.groupIds.map((groupId) => ({
-      organization_id: input.organizationId,
-      group_id: groupId,
-      title: input.title,
-      instructions,
-      answer_key: Object.keys(answerKey).length > 0 ? (answerKey as unknown as Json) : null,
-      due_at: input.dueAt ?? null,
-      max_score: input.maxScore,
-      created_by: input.createdBy,
-    })),
-  );
-  return !error;
+  const { data, error } = await admin
+    .from("assignments")
+    .insert(
+      input.groupIds.map((groupId) => ({
+        organization_id: input.organizationId,
+        group_id: groupId,
+        title: input.title,
+        instructions,
+        answer_key:
+          Object.keys(answerKey).length > 0 ? (answerKey as unknown as Json) : null,
+        due_at: input.dueAt ?? null,
+        max_score: input.maxScore,
+        created_by: input.createdBy,
+      })),
+    )
+    // Uma linha por turma: o aviso de cada turma leva o link da sua tarefa.
+    .select("id, group_id");
+
+  if (error || !data) return null;
+  return data.map((row) => ({ id: row.id, groupId: row.group_id }));
 }
 
 export async function deletePlannerAssignment(

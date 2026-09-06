@@ -6,9 +6,12 @@ import {
   GraduationIcon,
   GroupsIcon,
   type IconProps,
+  KeyIcon,
+  MailIcon,
   MegaphoneIcon,
   MessageIcon,
   ShieldIcon,
+  SparkleIcon,
   SwapIcon,
   TaskIcon,
 } from "@/components/ui/icons";
@@ -57,6 +60,15 @@ const PAYMENT: NotificationVisual = {
   label: "Financeiro",
 };
 
+const ACCOUNT: NotificationVisual = { icon: ShieldIcon, tone: "navy", label: "Conta" };
+
+const LEAD: NotificationVisual = { icon: MailIcon, tone: "gold", label: "Contato" };
+
+/**
+ * Os tipos gravados por `lib/notifications/events.ts`. O que não estiver aqui
+ * ainda cai no fallback por palavra-chave — o mapa é conveniência, não
+ * contrato.
+ */
 const EXACT: Record<string, NotificationVisual> = {
   announcement: ANNOUNCEMENT,
   lgpd_request: LGPD,
@@ -65,10 +77,41 @@ const EXACT: Record<string, NotificationVisual> = {
   group_change_rejected: { icon: SwapIcon, tone: "danger", label: "Turma" },
   message: MESSAGE,
   chat_message: MESSAGE,
+  chat_posting_changed: { icon: MessageIcon, tone: "warning", label: "Mensagem" },
   assignment: TASK,
+  assignment_created: TASK,
+  assignment_deleted: { icon: TaskIcon, tone: "danger", label: "Tarefa" },
+  assignment_submitted: { icon: TaskIcon, tone: "info", label: "Entrega" },
+  assignment_graded: { icon: TaskIcon, tone: "success", label: "Nota" },
   lesson: LESSON,
+  session_scheduled: SCHEDULE,
+  session_rescheduled: { icon: CalendarIcon, tone: "warning", label: "Agenda" },
+  session_cancelled: { icon: CalendarIcon, tone: "danger", label: "Agenda" },
+  session_started: { icon: GraduationIcon, tone: "success", label: "Aula" },
+  session_completed: LESSON,
+  attendance_recorded: { icon: GraduationIcon, tone: "warning", label: "Presença" },
+  enrollment_created: { icon: GroupsIcon, tone: "success", label: "Turma" },
+  enrollment_transferred: { icon: SwapIcon, tone: "info", label: "Turma" },
+  enrollment_removed: { icon: GroupsIcon, tone: "danger", label: "Turma" },
+  group_created: GROUP,
+  group_archived: { icon: GroupsIcon, tone: "danger", label: "Turma" },
+  group_reactivated: { icon: GroupsIcon, tone: "success", label: "Turma" },
+  group_handover: { icon: SwapIcon, tone: "navy", label: "Turma" },
+  group_schedule_changed: { icon: CalendarIcon, tone: "warning", label: "Agenda" },
+  agenda_event_created: SCHEDULE,
+  agenda_event_updated: { icon: CalendarIcon, tone: "warning", label: "Agenda" },
+  agenda_event_deleted: { icon: CalendarIcon, tone: "danger", label: "Agenda" },
+  lead_received: LEAD,
+  trial_request: { icon: SparkleIcon, tone: "gold", label: "Experimental" },
+  invite_created: { icon: MailIcon, tone: "info", label: "Convite" },
+  invite_accepted: { icon: GroupsIcon, tone: "success", label: "Conta" },
+  role_changed: ACCOUNT,
+  password_reset: { icon: ShieldIcon, tone: "warning", label: "Conta" },
+  password_changed: { icon: KeyIcon, tone: "warning", label: "Segurança" },
   schedule: SCHEDULE,
   payment: PAYMENT,
+  payment_succeeded: PAYMENT,
+  payment_failed: { icon: CoinIcon, tone: "danger", label: "Financeiro" },
 };
 
 const KEYWORDS: ReadonlyArray<[readonly string[], NotificationVisual]> = [
@@ -80,6 +123,8 @@ const KEYWORDS: ReadonlyArray<[readonly string[], NotificationVisual]> = [
   [["lesson", "aula", "plan"], LESSON],
   [["schedule", "agenda", "calendar", "remind"], SCHEDULE],
   [["pay", "invoice", "financ", "fatura", "cobran"], PAYMENT],
+  [["lead", "contato", "experimental"], LEAD],
+  [["invite", "convite", "senha", "password", "conta", "acesso"], ACCOUNT],
 ];
 
 const FALLBACK: NotificationVisual = {

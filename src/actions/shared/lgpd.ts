@@ -1,8 +1,8 @@
 "use server";
 
 import { requireRole } from "@/lib/auth/session";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { auditLog } from "@/lib/audit";
+import { notifyLgpdRequest } from "@/lib/notifications/events";
 import { ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -25,26 +25,11 @@ export async function requestDataDeletionAction(): Promise<ActionResult<never>> 
     entityId: ctx.userId,
   });
 
-  const admin = createAdminSupabaseClient();
-  const { data: admins } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("organization_id", ctx.organizationId)
-    .eq("role", "admin")
-    .eq("is_active", true);
-
-  if (admins && admins.length > 0) {
-    await admin.from("notifications").insert(
-      admins.map((a) => ({
-        organization_id: ctx.organizationId,
-        recipient_id: a.id,
-        type: "lgpd_request",
-        title: "Solicitação de exclusão de dados (LGPD)",
-        body: `${ctx.email} solicitou a exclusão dos próprios dados pessoais.`,
-        link: `/admin/usuarios/${ctx.userId}`,
-      })),
-    );
-  }
+  notifyLgpdRequest({
+    organizationId: ctx.organizationId,
+    requesterId: ctx.userId,
+    requesterName: `${ctx.fullName} (${ctx.email})`,
+  });
 
   return ok(undefined as never);
 }

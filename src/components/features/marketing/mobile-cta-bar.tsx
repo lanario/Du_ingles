@@ -66,7 +66,7 @@ export function MobileCtaBar() {
             Aula experimental gratuita
           </p>
           <p className="truncate text-[11px] text-muted-foreground">
-            Ao vivo, sem cartão e sem compromisso
+            30 min ao vivo, sem cartão e sem compromisso
           </p>
         </div>
         <a

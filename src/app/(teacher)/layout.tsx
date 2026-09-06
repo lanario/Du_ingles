@@ -5,7 +5,6 @@ import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
-import { getMyProfile } from "@/repositories/users";
 
 /**
  * Área do professor: o mesmo chrome do painel administrativo (rail navy,
@@ -27,13 +26,14 @@ const TEACHER_NAV_SECTIONS: AdminNavSection[] = [
   {
     label: "Operação",
     items: [
+      { href: "/professor/agenda", label: "Agenda", icon: "calendar" },
       { href: "/professor/planejador", label: "Planejador de aulas", icon: "lesson" },
       { href: "/professor/mensagens", label: "Mensagens", icon: "chat" },
     ],
   },
   {
     label: "Conta",
-    items: [{ href: "/professor/meus-dados", label: "Meus dados", icon: "user" }],
+    items: [{ href: "/professor/meus-dados", label: "Meu Perfil", icon: "user" }],
   },
 ];
 
@@ -48,10 +48,9 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   if (ctx.realRole === "admin") redirect("/admin");
   if (ctx.realRole !== "teacher") redirect("/403");
 
-  const [notifications, unreadCount, profile] = await Promise.all([
+  const [notifications, unreadCount] = await Promise.all([
     listNotifications(),
     countUnreadNotifications(),
-    getMyProfile(ctx.userId),
   ]);
 
   return (
@@ -65,7 +64,6 @@ export default async function TeacherLayout({ children }: { children: React.Reac
         email={ctx.email}
         fullName={ctx.fullName}
         avatarUrl={ctx.avatarUrl}
-        profile={profile}
         initialNotifications={notifications}
         initialUnreadCount={unreadCount}
         sections={TEACHER_NAV_SECTIONS}

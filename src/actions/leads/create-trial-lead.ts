@@ -3,7 +3,9 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getDefaultOrganizationId } from "@/lib/organization";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { trialClassSchema } from "@/schemas/leads";
+import { TRIAL_CLASS_FIELDS, trialClassSchema } from "@/schemas/leads";
+import { describeInvalidFields } from "@/lib/form-errors";
+import { notifyLeadReceived } from "@/lib/notifications/events";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -28,10 +30,11 @@ export async function createTrialLeadAction(
     goal: formData.get("goal") || undefined,
   });
   if (!parsed.success) {
+    const fields = parsed.error.flatten().fieldErrors as Record<string, string[]>;
     return fail(
       "VALIDATION_ERROR",
-      "Verifique os campos destacados.",
-      parsed.error.flatten().fieldErrors,
+      describeInvalidFields(fields, TRIAL_CLASS_FIELDS),
+      fields,
     );
   }
 
@@ -64,6 +67,8 @@ export async function createTrialLeadAction(
       "Não foi possível enviar. Tente novamente em instantes.",
     );
   }
+
+  notifyLeadReceived({ organizationId, name, kind: "trial", contact: phone });
 
   return ok(undefined as never);
 }

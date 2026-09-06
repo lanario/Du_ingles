@@ -45,3 +45,7 @@ next-env.d.ts
 
 # cache local da CLI do Supabase
 supabase/.temp/
+
+# Modelos visuais trazidos de outros projetos: referência de layout, não código
+# do app. Ficam fora do tsconfig/eslint/prettier pelo mesmo motivo.
+/template/

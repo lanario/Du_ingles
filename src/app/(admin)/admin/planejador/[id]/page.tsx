@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import {
   getPlannerPlan,
+  listPlannerFolders,
   listPlannerGroups,
   listPlannerSessions,
 } from "@/repositories/lesson-planner";
@@ -29,10 +30,11 @@ export default async function PlanoDeAulaPage({ params }: PageProps) {
   const plan = await getPlannerPlan(id, ctx.organizationId);
   if (!plan) notFound();
 
-  const [sessions, groups, teachers] = await Promise.all([
+  const [sessions, groups, teachers, folders] = await Promise.all([
     listPlannerSessions(ctx.organizationId),
     listPlannerGroups(ctx.organizationId),
     listUsers(ctx.organizationId, { role: "teacher" }),
+    listPlannerFolders(ctx.organizationId, ctx.userId),
   ]);
 
   return (
@@ -41,6 +43,7 @@ export default async function PlanoDeAulaPage({ params }: PageProps) {
       sessions={sessions.filter((session) => session.lessonPlanId === plan.id)}
       groups={groups}
       teachers={teachers}
+      folders={folders}
     />
   );
 }

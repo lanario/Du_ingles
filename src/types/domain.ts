@@ -15,3 +15,15 @@ export const FINANCE_ENTRY_KINDS: readonly FinanceEntryKind[] = [
   "professional_cost",
   "operating_expense",
 ];
+
+export type AgendaEventKind = Database["public"]["Enums"]["agenda_event_kind"];
+export type AgendaAudience = Database["public"]["Enums"]["agenda_audience"];
+
+export const AGENDA_EVENT_KINDS: readonly AgendaEventKind[] = [
+  "meeting",
+  "event",
+  "exam",
+  "holiday",
+  "reminder",
+];
+export const AGENDA_AUDIENCES: readonly AgendaAudience[] = ["all", "staff", "students"];

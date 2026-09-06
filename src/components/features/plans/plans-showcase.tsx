@@ -36,6 +36,8 @@ import {
   StarIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { whatsappUrl } from "@/lib/phone";
+import { SCHOOL_PHONE } from "@/lib/school-contact";
 import type { PlanTier, PlanWeeklyFrequency } from "@/schemas/student-plans";
 import {
   ACCENT_TONE,
@@ -157,9 +159,7 @@ export function PlansShowcase({
         )}
       </AnimatePresence>
 
-      {subscription && (
-        <CurrentPlan subscription={subscription} readOnly={readOnly} onManage={openPortal} />
-      )}
+      <CurrentPlan subscription={subscription} readOnly={readOnly} onManage={openPortal} />
 
       {plans.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border px-6 py-14 text-center">
@@ -1022,21 +1022,63 @@ const STATUS_TEXT: Record<string, { label: string; tone: string }> = {
   canceled: { label: "Cancelada", tone: "var(--muted-foreground)" },
 };
 
+/**
+ * Link para a coordenação, com a mensagem já escrita. Trocar de plano não é
+ * uma operação que o aluno resolve sozinho na tela: envolve turma, horário e
+ * vaga. O caminho honesto é o mesmo que a escola já usa para tudo — WhatsApp.
+ */
+function ContactCoordination({
+  message,
+  variant = "ghost",
+}: {
+  message: string;
+  variant?: "ghost" | "solid";
+}) {
+  return (
+    <a
+      href={whatsappUrl(SCHOOL_PHONE, message)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        variant === "solid"
+          ? "bg-navy-800 text-white hover:bg-navy-700"
+          : "border border-border bg-background text-foreground hover:bg-muted",
+      )}
+    >
+      Falar com a coordenação
+      <ChevronRightIcon className="h-3.5 w-3.5" />
+    </a>
+  );
+}
+
+/**
+ * O plano atual do aluno, sempre visível — é a primeira pergunta de quem abre
+ * esta tela ("afinal, qual é o meu plano?"), e antes ela só era respondida
+ * para quem tinha assinatura pela plataforma.
+ *
+ * Sem assinatura não significa "sem plano": a maior parte das matrículas é
+ * feita direto com a coordenação, fora da Stripe. Por isso o estado vazio não
+ * diz "você não tem plano" — diz onde o plano está e como falar com quem sabe.
+ */
 function CurrentPlan({
   subscription,
   readOnly,
   onManage,
 }: {
-  subscription: StudentSubscription;
+  subscription: StudentSubscription | null;
   readOnly: boolean;
   onManage: () => void;
 }) {
-  const status = STATUS_TEXT[subscription.status] ?? {
-    label: subscription.status,
-    tone: "var(--muted-foreground)",
-  };
+  const status = subscription
+    ? (STATUS_TEXT[subscription.status] ?? {
+        label: subscription.status,
+        tone: "var(--muted-foreground)",
+      })
+    : { label: "A confirmar", tone: "var(--muted-foreground)" };
 
-  const renews = subscription.currentPeriodEnd
+  const renews = subscription?.currentPeriodEnd
     ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(
         new Date(subscription.currentPeriodEnd),
       )
@@ -1044,56 +1086,97 @@ function CurrentPlan({
 
   return (
     <motion.section
+      aria-label="Seu plano atual"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-muted/40 px-5 py-4"
+      className="mt-6 rounded-2xl border border-border bg-muted/40 px-5 py-4"
     >
-      <span
-        aria-hidden
-        style={{ color: status.tone, backgroundColor: `color-mix(in srgb, ${status.tone} 12%, #ffffff)` }}
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-      >
-        <CheckIcon className="h-5 w-5" strokeWidth={2.2} />
-      </span>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-600">
+        Seu plano atual
+      </p>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground">
-          {subscription.planName ?? "Plano contratado"} ·{" "}
-          <span style={{ color: status.tone }}>{status.label}</span>
-        </p>
-        <p className="mt-0.5 text-[12px] text-muted-foreground">
-          {subscription.amountCents !== null &&
-            `${formatMoney(subscription.amountCents, subscription.currency)} · `}
-          {subscription.cancelAtPeriodEnd
-            ? renews
-              ? `acesso até ${renews}`
-              : "cancelamento agendado"
-            : renews
-              ? `próxima cobrança em ${renews}`
-              : "aguardando confirmação"}
-        </p>
-      </div>
-
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        {subscription.hostedInvoiceUrl && (
-          <a
-            href={subscription.hostedInvoiceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Última fatura
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={onManage}
-          disabled={readOnly}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <span
+          aria-hidden
+          style={{
+            color: status.tone,
+            backgroundColor: `color-mix(in srgb, ${status.tone} 12%, #ffffff)`,
+          }}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
         >
-          Gerenciar assinatura
-        </button>
+          <CheckIcon className="h-5 w-5" strokeWidth={2.2} />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          {subscription ? (
+            <>
+              <p className="text-sm font-semibold text-foreground">
+                {subscription.planName ?? "Plano contratado"} ·{" "}
+                <span style={{ color: status.tone }}>{status.label}</span>
+              </p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                {subscription.amountCents !== null &&
+                  `${formatMoney(subscription.amountCents, subscription.currency)} · `}
+                {subscription.cancelAtPeriodEnd
+                  ? renews
+                    ? `acesso até ${renews}`
+                    : "cancelamento agendado"
+                  : renews
+                    ? `próxima cobrança em ${renews}`
+                    : "aguardando confirmação"}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-foreground">
+                Nenhum plano contratado por aqui
+              </p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+                Se você já estuda com a gente, sua matrícula foi feita direto com a
+                coordenação — fale com ela para confirmar qual é o seu plano.
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {subscription?.hostedInvoiceUrl && (
+            <a
+              href={subscription.hostedInvoiceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Última fatura
+            </a>
+          )}
+          {subscription && (
+            <button
+              type="button"
+              onClick={onManage}
+              disabled={readOnly}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            >
+              Gerenciar assinatura
+            </button>
+          )}
+          <ContactCoordination
+            variant={subscription ? "ghost" : "solid"}
+            message={
+              subscription
+                ? `Olá! Sou aluno(a) da Du Inglês (plano ${subscription.planName ?? "atual"}) e gostaria de alterar o meu plano.`
+                : "Olá! Sou aluno(a) da Du Inglês e gostaria de saber qual é o meu plano atual."
+            }
+          />
+        </div>
       </div>
+
+      {subscription && (
+        <p className="mt-3 border-t border-border/70 pt-3 text-[12px] leading-relaxed text-muted-foreground">
+          Quer mudar de nível, de ritmo ou de horário? A coordenação ajusta com você —
+          é ela que confere vaga e turma antes da troca.
+        </p>
+      )}
     </motion.section>
   );
 }

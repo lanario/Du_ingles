@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/client";
 import { requireStripeWebhookSecret } from "@/lib/env";
+import { notifyInvoiceOutcome } from "@/lib/notifications/events";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getPlanByStripePriceId } from "@/repositories/student-plans";
 import {
@@ -117,14 +118,23 @@ async function resolveStudent(
   return null;
 }
 
-/** Grava (ou regrava) uma assinatura a partir do objeto completo da Stripe. */
+/**
+ * Grava (ou regrava) uma assinatura a partir do objeto completo da Stripe.
+ * Devolve de quem é a cobrança — é o que os avisos de fatura usam para achar
+ * o aluno sem repetir a resolução de dono.
+ */
 async function persistSubscription(
   subscription: Stripe.Subscription,
   checkoutSessionId: string | null,
   fallbackEmail: string | null,
-): Promise<void> {
+): Promise<{
+  studentId: string;
+  organizationId: string;
+  planName: string | null;
+  amountCents: number | null;
+} | null> {
   const customerId = idOf(subscription.customer);
-  if (!customerId) return;
+  if (!customerId) return null;
 
   const item = subscription.items?.data?.[0];
   const priceId = idOf(item?.price?.id ?? null);
@@ -137,7 +147,7 @@ async function persistSubscription(
     console.error(
       `[stripe-webhook] assinatura ${subscription.id} sem aluno identificável.`,
     );
-    return;
+    return null;
   }
 
   const period = periodOf(subscription);
@@ -159,6 +169,13 @@ async function persistSubscription(
     currency: subscription.currency ?? plan?.currency ?? "brl",
     hostedInvoiceUrl: null,
   });
+
+  return {
+    studentId: owner.studentId,
+    organizationId: plan?.organizationId ?? owner.organizationId,
+    planName: plan?.name ?? null,
+    amountCents: item?.price?.unit_amount ?? plan?.priceCents ?? null,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -236,7 +253,24 @@ export async function POST(request: NextRequest) {
         // Uma fatura falhada move a assinatura para `past_due`; reler o objeto
         // é mais barato do que deduzir a transição a partir do tipo do evento.
         const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-        await persistSubscription(subscription, null, invoice.customer_email ?? null);
+        const owner = await persistSubscription(
+          subscription,
+          null,
+          invoice.customer_email ?? null,
+        );
+
+        // O aluno é avisado do desfecho da cobrança e a coordenação também —
+        // é ela quem concilia e cobra. A janela de dedupe cobre a reentrega
+        // do mesmo evento pela Stripe.
+        if (owner) {
+          notifyInvoiceOutcome({
+            organizationId: owner.organizationId,
+            studentId: owner.studentId,
+            paid: event.type === "invoice.paid",
+            amountCents: invoice.amount_paid || invoice.amount_due || owner.amountCents,
+            planName: owner.planName,
+          });
+        }
         break;
       }
     }

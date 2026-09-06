@@ -106,6 +106,8 @@ export interface EnrollResult {
   conflictGroupName?: string;
   /** `true` quando a matrícula anterior foi movida, e não criada do zero. */
   transferred?: boolean;
+  /** Turma de origem numa transferência — o aviso ao professor cita as duas. */
+  fromGroupId?: string;
 }
 
 /**
@@ -135,7 +137,7 @@ export async function enrollStudent(
 
     const moved = await transferStudent(current.enrollmentId, groupId);
     return moved.success
-      ? { success: true, transferred: true }
+      ? { success: true, transferred: true, fromGroupId: current.groupId }
       : { success: false, message: moved.message };
   }
 
@@ -378,13 +380,23 @@ export async function transferStudent(
   return { success: true, studentId: enrollment.student_id };
 }
 
-export async function unenrollStudent(enrollmentId: string): Promise<boolean> {
+/**
+ * Encerra a matrícula. Devolve de quem e de qual turma era — quem chama
+ * conhece só o id da linha, e o aviso ao aluno e ao professor precisa dos dois.
+ */
+export async function unenrollStudent(
+  enrollmentId: string,
+): Promise<{ studentId: string; groupId: string } | null> {
   const admin = createAdminSupabaseClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("enrollments")
     .update({ status: "cancelled" })
-    .eq("id", enrollmentId);
-  return !error;
+    .eq("id", enrollmentId)
+    .select("student_id, group_id")
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return { studentId: data.student_id, groupId: data.group_id };
 }
 
 /**

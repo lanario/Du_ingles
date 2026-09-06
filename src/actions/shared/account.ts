@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { auditLog } from "@/lib/audit";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { deleteAvatar } from "@/lib/avatars";
+import { notifyPasswordChanged } from "@/lib/notifications/events";
 import {
   getProfileAvatarPath,
   setProfileAvatar,
@@ -141,6 +142,8 @@ export async function changeMyPasswordAction(
     entityType: "profile",
     entityId: ctx.userId,
   });
+
+  notifyPasswordChanged({ organizationId: ctx.organizationId, userId: ctx.userId });
 
   return ok(undefined as never);
 }

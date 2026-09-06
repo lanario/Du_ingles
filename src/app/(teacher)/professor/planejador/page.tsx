@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
 import {
+  listPlannerFolders,
   listPlannerGroups,
   listPlannerPlans,
   listPlannerSessions,
@@ -8,6 +9,7 @@ import {
 import { listOrgAssignments } from "@/repositories/assignments";
 import { listUsers } from "@/repositories/users";
 import { AreaProvider, TEACHER_AREA } from "@/components/features/admin/area-context";
+import { folderKeyFromParam } from "@/components/features/admin/planner/planner-utils";
 import { PlannerView } from "@/components/features/admin/planner/planner-view";
 
 export const metadata: Metadata = { title: "Planejador de aulas" };
@@ -15,7 +17,7 @@ export const metadata: Metadata = { title: "Planejador de aulas" };
 const VALID_TABS = new Set(["atelie", "agenda", "tarefas"]);
 
 interface PageProps {
-  searchParams: Promise<{ nova?: string; tab?: string }>;
+  searchParams: Promise<{ nova?: string; tab?: string; pasta?: string }>;
 }
 
 /**
@@ -29,14 +31,15 @@ interface PageProps {
  */
 export default async function ProfessorPlanejadorPage({ searchParams }: PageProps) {
   const ctx = await requireRole(["teacher"]);
-  const { nova, tab } = await searchParams;
+  const { nova, tab, pasta } = await searchParams;
 
-  const [plans, sessions, allGroups, me, assignments] = await Promise.all([
+  const [plans, sessions, allGroups, me, assignments, folders] = await Promise.all([
     listPlannerPlans(ctx.organizationId),
     listPlannerSessions(ctx.organizationId),
     listPlannerGroups(ctx.organizationId),
     listUsers(ctx.organizationId, { role: "teacher" }),
     listOrgAssignments(ctx.organizationId),
+    listPlannerFolders(ctx.organizationId, ctx.userId),
   ]);
 
   const groups = allGroups.filter((group) => group.teacherId === ctx.userId);
@@ -46,6 +49,7 @@ export default async function ProfessorPlanejadorPage({ searchParams }: PageProp
     <AreaProvider value={TEACHER_AREA}>
       <PlannerView
         plans={plans.filter((plan) => plan.authorId === ctx.userId || plan.isShared)}
+        folders={folders}
         sessions={sessions.filter((session) => session.teacherId === ctx.userId)}
         groups={groups}
         teachers={me.filter((user) => user.id === ctx.userId)}
@@ -53,6 +57,7 @@ export default async function ProfessorPlanejadorPage({ searchParams }: PageProp
         editableAuthorId={ctx.userId}
         openCreate={nova !== undefined}
         initialTab={tab && VALID_TABS.has(tab) ? (tab as "atelie" | "agenda" | "tarefas") : undefined}
+        initialFolderKey={folderKeyFromParam(pasta, folders)}
       />
     </AreaProvider>
   );

@@ -5,6 +5,10 @@ import { getSessionContext } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit";
+import {
+  notifyChatMessage,
+  notifyChatPostingChanged,
+} from "@/lib/notifications/events";
 import { sendMessageSchema, togglePostingSchema } from "@/schemas/messaging";
 import {
   canModerateChat,
@@ -73,6 +77,17 @@ export async function sendChatMessageAction(
 
   if (error) return fail("INTERNAL_ERROR", "Falha ao enviar a mensagem.");
 
+  // A conversa aberta já recebe a mensagem pelo Realtime; a notificação é
+  // para quem está em outra tela — e some em uma linha por conversa enquanto
+  // não for lida (ver `notifyChatMessage`).
+  notifyChatMessage({
+    organizationId: ctx.organizationId,
+    conversationId,
+    senderId: ctx.userId,
+    senderName: ctx.fullName,
+    body: parsed.data.body,
+  });
+
   return ok(undefined as never);
 }
 
@@ -110,6 +125,13 @@ export async function toggleStudentPostingAction(
     action: allowed ? "chat.students_unmuted" : "chat.students_muted",
     entityType: "conversation",
     entityId: conversationId,
+  });
+
+  notifyChatPostingChanged({
+    organizationId: ctx.organizationId,
+    conversationId,
+    actorId: ctx.userId,
+    allowed,
   });
 
   revalidatePath("/mensagens");

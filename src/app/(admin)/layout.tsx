@@ -5,7 +5,6 @@ import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
-import { getMyProfile } from "@/repositories/users";
 
 /**
  * Tema visualmente distinto (§8.1) — requisito explícito do cliente para que
@@ -17,10 +16,9 @@ import { getMyProfile } from "@/repositories/users";
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireRole(["admin"]);
-  const [notifications, unreadCount, profile] = await Promise.all([
+  const [notifications, unreadCount] = await Promise.all([
     listNotifications(),
     countUnreadNotifications(),
-    getMyProfile(ctx.userId),
   ]);
 
   return (
@@ -37,7 +35,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         email={ctx.email}
         fullName={ctx.fullName}
         avatarUrl={ctx.avatarUrl}
-        profile={profile}
         initialNotifications={notifications}
         initialUnreadCount={unreadCount}
       />

@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
+import {
+  notifyAttendanceRecorded,
+  notifySessionEnded,
+  notifySessionStarted,
+} from "@/lib/notifications/events";
 import * as repo from "@/repositories/live-session";
 import { recordAttendance } from "@/repositories/attendance";
 import { recordAttendanceSchema } from "@/schemas/attendance";
@@ -43,6 +48,14 @@ export async function startSessionAction(
     entityId: sessionId,
   });
 
+  notifySessionStarted({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    sessionId,
+    groupId: session.groupId,
+    title: session.title,
+  });
+
   revalidatePath(`/aula/${sessionId}`);
   return ok(undefined as never);
 }
@@ -65,6 +78,14 @@ export async function endSessionAction(sessionId: string): Promise<ActionResult<
     action: "SESSION_END",
     entityType: "class_session",
     entityId: sessionId,
+  });
+
+  notifySessionEnded({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    sessionId,
+    groupId: session.groupId,
+    title: session.title,
   });
 
   // Geração assíncrona: `after()` roda depois da resposta ser enviada, sem
@@ -150,6 +171,14 @@ export async function recordAttendanceAction(
     action: "ATTENDANCE_RECORD",
     entityType: "class_session",
     entityId: sessionId,
+  });
+
+  notifyAttendanceRecorded({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    sessionId,
+    title: session.title,
+    entries: parsed.data.entries,
   });
 
   revalidatePath(`/aula/${sessionId}`);

@@ -1,8 +1,9 @@
 import Link from "next/link";
-
-const EMAIL = "contato@duingles.com.br";
-const PHONE_LABEL = "(11) 0000-0000";
-const PHONE_HREF = "tel:+551100000000";
+import {
+  SCHOOL_EMAIL as EMAIL,
+  SCHOOL_PHONE_HREF as PHONE_HREF,
+  SCHOOL_PHONE_LABEL as PHONE_LABEL,
+} from "@/lib/school-contact";
 
 export function MarketingFooter() {
   return (

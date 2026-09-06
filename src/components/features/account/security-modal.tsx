@@ -2,9 +2,9 @@
 
 /**
  * Modal de "Segurança" aberto a partir do menu da conta — substitui as
- * antigas páginas `/seguranca` e `/admin/seguranca`, no mesmo modelo do
- * `AccountModal`. GSAP cuida do selo (gira e solta um halo só na abertura);
- * Framer Motion cuida do resto: o `Dialog` e a entrada escalonada dos blocos.
+ * antigas páginas `/seguranca` e `/admin/seguranca`. GSAP cuida do selo (gira
+ * e solta um halo só na abertura); Framer Motion cuida do resto: o `Dialog` e
+ * a entrada escalonada dos blocos.
  */
 
 import { useEffect, useRef } from "react";
@@ -122,7 +122,7 @@ export function SecurityModal({ open, onClose, theme, dataHref }: SecurityModalP
             onClick={onClose}
             className={cn("font-medium underline", theme === "app" && "text-navy-900")}
           >
-            Meus dados
+            Meu Perfil
           </Link>
           .
         </motion.p>

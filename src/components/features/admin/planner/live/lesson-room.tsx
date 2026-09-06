@@ -25,6 +25,7 @@ import {
 } from "@/actions/admin/lesson-planner";
 import { LessonCanvas } from "@/components/features/admin/planner/editor/lesson-canvas-dynamic";
 import { AutosaveIndicator } from "@/components/features/live-session/autosave-indicator";
+import { NextSessionPrompt } from "@/components/features/live-session/next-session-prompt";
 import { DownloadPdfButton } from "@/components/features/library/download-pdf-button";
 import { useAutosave } from "@/hooks/use-autosave";
 import { Select } from "@/components/ui/select";
@@ -34,8 +35,10 @@ import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
 import { BackLink } from "@/components/ui/back-link";
 import { RosterPanel } from "./roster-panel";
+import { RecordingPanel } from "./recording-panel";
 import { STATUS_META, formatDay, formatTime, formatWeekday } from "../planner-utils";
 import type { AttendanceRow } from "@/repositories/attendance";
+import type { NextSessionPlan } from "@/repositories/class-sessions";
 import type { LiveSessionDetail } from "@/repositories/live-session";
 import type { PlannerPlan, PlannerSession } from "@/repositories/lesson-planner";
 import type { Json } from "@/types/database.types";
@@ -49,6 +52,8 @@ export interface LessonRoomProps {
   live: LiveSessionDetail;
   plans: PlannerPlan[];
   attendance: AttendanceRow[];
+  /** Só a aula encerrada usa: o que oferecer para marcar a próxima. */
+  nextPlan?: NextSessionPlan | null;
 }
 
 export function LessonRoom(props: LessonRoomProps) {
@@ -495,13 +500,26 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
 }
 
 /** Depois: registro fechado — leitura, PDF e a chamada como ficou. */
-function AfterLesson({ session, live, attendance }: LessonRoomProps) {
+function AfterLesson({ session, live, attendance, nextPlan }: LessonRoomProps) {
   return (
     <div className="mx-auto w-full max-w-[1800px] pb-10">
       <RoomHeader
         session={session}
         right={<DownloadPdfButton sessionId={session.id} hasPdf={!!live.pdfPath} />}
       />
+
+      {/* A agenda só anda quando alguém marca a próxima: a pergunta vem antes
+          do registro, enquanto o professor ainda está com a aula na cabeça. */}
+      {nextPlan && (
+        <div className="mb-5">
+          <NextSessionPrompt
+            sessionId={session.id}
+            plan={nextPlan}
+            endedAt={live.endedAt}
+            tone="admin"
+          />
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-5">
@@ -527,6 +545,8 @@ function AfterLesson({ session, live, attendance }: LessonRoomProps) {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-[4.75rem] lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:pb-2">
+          <RecordingPanel sessionId={session.id} initialUrl={live.recordingUrl} />
+
           <section className="rounded-2xl border border-admin-border bg-admin-surface p-4">
             <h2 className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-admin-foreground/55">
               Encerrada

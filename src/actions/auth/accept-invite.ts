@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit";
+import { notifyInviteAccepted } from "@/lib/notifications/events";
 import * as invitesService from "@/services/invites";
-import { acceptInviteSchema } from "@/schemas/invites";
+import { ACCEPT_INVITE_FIELDS, acceptInviteSchema } from "@/schemas/invites";
+import { describeInvalidFields } from "@/lib/form-errors";
 import { fail, type ActionResult } from "@/types/action-result";
 
 /**
@@ -32,10 +34,11 @@ export async function acceptInviteAction(
     confirmPassword: formData.get("confirmPassword"),
   });
   if (!parsed.success) {
+    const fields = parsed.error.flatten().fieldErrors as Record<string, string[]>;
     return fail(
       "VALIDATION_ERROR",
-      "Verifique os campos.",
-      parsed.error.flatten().fieldErrors,
+      describeInvalidFields(fields, ACCEPT_INVITE_FIELDS),
+      fields,
     );
   }
 
@@ -53,11 +56,16 @@ export async function acceptInviteAction(
   const result = await invitesService.acceptInvite(token, parsed.data);
 
   if (!result.success) {
-    if (result.reason === "email_taken") {
+    // Recusa do banco também aponta o campo: sem isso a pessoa lê "e-mail já
+    // em uso" no topo e fica procurando qual dos seis campos precisa mudar.
+    if (result.reason === "email_taken" || result.reason === "email_invalid") {
       return fail("CONFLICT", result.message, { email: [result.message] });
     }
     if (result.reason === "cpf_taken") {
       return fail("CONFLICT", result.message, { cpf: [result.message] });
+    }
+    if (result.reason === "password_weak") {
+      return fail("VALIDATION_ERROR", result.message, { password: [result.message] });
     }
     if (result.reason === "invite_invalid") {
       return fail("NOT_FOUND", result.message);
@@ -72,6 +80,15 @@ export async function acceptInviteAction(
     action: "USER_INVITE_ACCEPT",
     entityType: "profile",
     entityId: result.userId,
+  });
+
+  // A coordenação convidou por WhatsApp e não tem como saber quando a pessoa
+  // concluiu o cadastro — o sino é o retorno desse fluxo.
+  notifyInviteAccepted({
+    organizationId: result.organizationId,
+    userId: result.userId,
+    userName: parsed.data.fullName,
+    role: result.role,
   });
 
   const supabase = await createServerSupabaseClient();

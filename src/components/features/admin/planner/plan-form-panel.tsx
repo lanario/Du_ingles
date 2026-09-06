@@ -18,7 +18,7 @@ import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { CEFR_LEVELS } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import { LEVEL_HINT } from "./planner-utils";
-import type { PlannerPlan } from "@/repositories/lesson-planner";
+import type { PlannerFolder, PlannerPlan } from "@/repositories/lesson-planner";
 import { LogoLoader } from "@/components/ui/logo-loader";
 
 const DURATIONS = [30, 45, 60, 90, 120];
@@ -27,11 +27,17 @@ export function PlanFormPanel({
   open,
   onClose,
   plan,
+  folders,
+  defaultFolderId = null,
 }: {
   open: boolean;
   onClose: () => void;
   /** Presente = edição da ficha; ausente = criação. */
   plan?: PlannerPlan;
+  /** Estante de quem está criando — vazia enquanto ninguém criou pasta. */
+  folders: PlannerFolder[];
+  /** Pasta aberta no ateliê: é onde a aula nova nasce. */
+  defaultFolderId?: string | null;
 }) {
   const action = plan
     ? updatePlannerPlanMetaAction.bind(null, plan.id)
@@ -40,6 +46,21 @@ export function PlanFormPanel({
 
   const [level, setLevel] = useState<string>(plan?.level ?? CEFR_LEVELS[1] ?? "A2");
   const [duration, setDuration] = useState<number>(plan?.durationMinutes ?? 60);
+
+  /**
+   * A pasta viaja no formulário (e não só pelo "mover") porque a action de
+   * edição reescreve a ficha inteira: campo ausente aqui significaria
+   * desarquivar a aula a cada salvamento.
+   */
+  const [folderId, setFolderId] = useState<string | null>(
+    plan ? plan.folderId : defaultFolderId,
+  );
+
+  // O painel fica montado entre aberturas — sem isto, abrir a ficha de outra
+  // aula mostraria a pasta da anterior.
+  useEffect(() => {
+    if (open) setFolderId(plan ? plan.folderId : defaultFolderId);
+  }, [open, plan, defaultFolderId]);
 
   const fields = state && !state.success ? state.error.fields : undefined;
 
@@ -155,6 +176,28 @@ export function PlanFormPanel({
             <FieldError messages={fields?.["durationMinutes"]} />
           </fieldset>
 
+          {folders.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium text-admin-foreground">Pasta</legend>
+              <input type="hidden" name="folderId" value={folderId ?? ""} />
+              <div className="flex flex-wrap gap-2">
+                <FolderChip
+                  label="Sem pasta"
+                  active={folderId === null}
+                  onSelect={() => setFolderId(null)}
+                />
+                {folders.map((folder) => (
+                  <FolderChip
+                    key={folder.id}
+                    label={folder.name}
+                    active={folderId === folder.id}
+                    onSelect={() => setFolderId(folder.id)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+          )}
+
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-admin-border bg-admin-background p-3.5">
             <input
               type="checkbox"
@@ -203,5 +246,32 @@ export function PlanFormPanel({
         </div>
       </form>
     </SidePanel>
+  );
+}
+
+function FolderChip({
+  label,
+  active,
+  onSelect,
+}: {
+  label: string;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      className={cn(
+        "h-9 max-w-[14rem] truncate rounded-full border px-3.5 text-sm font-medium transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
+        active
+          ? "border-gold-400 bg-gold-50 text-admin-foreground"
+          : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted",
+      )}
+    >
+      {label}
+    </button>
   );
 }

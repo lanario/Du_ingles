@@ -12,6 +12,7 @@ import {
   CloseIcon,
   GroupsIcon,
   LibraryIcon,
+  PlayIcon,
   SearchIcon,
   SparkleIcon,
 } from "@/components/ui/icons";
@@ -200,8 +201,27 @@ function MaterialCard({ entry }: { entry: LibraryEntry }) {
         </span>
       </p>
 
-      <div className="relative mt-5 border-t border-border pt-4">
+      <div className="relative mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <DownloadPdfButton sessionId={entry.id} hasPdf={entry.hasPdf} />
+
+        {/* A gravação abre fora da plataforma (Meet/Drive), então é um link de
+            verdade e não um botão — quem quiser abrir em outra aba consegue. */}
+        {entry.recordingUrl && (
+          <a
+            href={entry.recordingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border border-navy-200 bg-navy-50 px-3.5 py-2",
+              "text-xs font-semibold text-navy-800 transition-colors",
+              "hover:border-navy-700 hover:bg-navy-800 hover:text-white",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            )}
+          >
+            <PlayIcon className="h-4 w-4" />
+            Assistir aula
+          </a>
+        )}
       </div>
     </motion.li>
   );
@@ -339,8 +359,9 @@ export function LibraryView({ entries, groups, selectedGroupId }: LibraryViewPro
           Biblioteca
         </h1>
         <p data-hero-line className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-          Todo o material das aulas já realizadas fica guardado aqui. Baixe o PDF para
-          revisar o conteúdo quando quiser — inclusive offline.
+          O material das aulas que você teve fica guardado aqui. Baixe o PDF para revisar
+          quando quiser — e, quando o professor publica a gravação, assista à aula de novo
+          por aqui.
         </p>
         <span
           data-hero-rule

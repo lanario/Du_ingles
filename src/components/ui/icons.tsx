@@ -467,3 +467,51 @@ export function SparkleIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** Triângulo de "play" num círculo — a gravação da aula, na biblioteca. */
+export function PlayIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M10.4 9.3 15 12l-4.6 2.7V9.3Z" />
+    </Icon>
+  );
+}
+
+/** Pasta — as estantes do ateliê do planejador. */
+export function FolderIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.2c0-1 .8-1.7 1.7-1.7h3.5l2 2.3h7.1c1 0 1.7.8 1.7 1.7v7.8c0 1-.8 1.7-1.7 1.7H5.2c-1 0-1.7-.8-1.7-1.7V7.2Z" />
+    </Icon>
+  );
+}
+
+/** Pasta com "+" — criar uma estante nova. */
+export function FolderPlusIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.2c0-1 .8-1.7 1.7-1.7h3.5l2 2.3h7.1c1 0 1.7.8 1.7 1.7v7.8c0 1-.8 1.7-1.7 1.7H5.2c-1 0-1.7-.8-1.7-1.7V7.2Z" />
+      <path d="M12 11.4v4.8M9.6 13.8h4.8" />
+    </Icon>
+  );
+}
+
+/** Aula saindo para outra pasta — o "mover para" do cartão. */
+export function FolderMoveIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.2c0-1 .8-1.7 1.7-1.7h3.5l2 2.3h7.1c1 0 1.7.8 1.7 1.7v7.8c0 1-.8 1.7-1.7 1.7H5.2c-1 0-1.7-.8-1.7-1.7V7.2Z" />
+      <path d="M9.4 13.8h5.2m-2-2.2 2.2 2.2-2.2 2.2" />
+    </Icon>
+  );
+}
+
+/** Alça de arrasto — os seis pontos que dizem "isto se pega e se leva". */
+export function GripIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth={2.4} {...props}>
+      <path d="M9 6.5h.01M9 12h.01M9 17.5h.01M15 6.5h.01M15 12h.01M15 17.5h.01" />
+    </Icon>
+  );
+}

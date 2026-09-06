@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import {
   getPlannerPlan,
+  listPlannerFolders,
   listPlannerGroups,
   listPlannerSessions,
 } from "@/repositories/lesson-planner";
@@ -34,10 +35,11 @@ export default async function ProfessorPlanoDeAulaPage({ params }: PageProps) {
   const plan = await getPlannerPlan(id, ctx.organizationId);
   if (!plan || (plan.authorId !== ctx.userId && !plan.isShared)) notFound();
 
-  const [sessions, allGroups, teachers] = await Promise.all([
+  const [sessions, allGroups, teachers, folders] = await Promise.all([
     listPlannerSessions(ctx.organizationId),
     listPlannerGroups(ctx.organizationId),
     listUsers(ctx.organizationId, { role: "teacher" }),
+    listPlannerFolders(ctx.organizationId, ctx.userId),
   ]);
 
   return (
@@ -49,6 +51,7 @@ export default async function ProfessorPlanoDeAulaPage({ params }: PageProps) {
         )}
         groups={allGroups.filter((group) => group.teacherId === ctx.userId)}
         teachers={teachers.filter((user) => user.id === ctx.userId)}
+        folders={folders}
         readOnly={plan.authorId !== ctx.userId}
       />
     </AreaProvider>

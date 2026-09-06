@@ -8,6 +8,7 @@ import {
   listGroupEnrollments,
 } from "@/repositories/enrollments";
 import { listGroupSessions } from "@/repositories/class-sessions";
+import { projectSessions } from "@/lib/schedule/session-preview";
 import { listUsers } from "@/repositories/users";
 import { AreaProvider, TEACHER_AREA } from "@/components/features/admin/area-context";
 import { GroupHeader } from "@/components/features/admin/groups/group-header";
@@ -43,6 +44,23 @@ export default async function ProfessorTurmaDetailPage({ params }: PageProps) {
 
   const activeCount = enrollments.filter((item) => item.status === "active").length;
 
+  // Prévia: as datas que a grade desenha depois da próxima aula já marcada.
+  // Nada disto existe no banco (ver `0035_next_session_only.sql`) — a lista
+  // mostra pontilhado, como previsão.
+  const previews = projectSessions({
+    schedule: group.schedule,
+    startDate: group.startDate,
+    endDate: group.endDate,
+    exclude: sessions.map((session) => session.scheduledAt),
+    keyPrefix: group.id,
+    limit: 8,
+  }).map((item) => ({
+    ...item,
+    groupId: group.id,
+    groupName: group.name,
+    title: group.name,
+  }));
+
   return (
     <AreaProvider value={TEACHER_AREA}>
       <div className="max-w-5xl space-y-8 pb-10">
@@ -65,7 +83,13 @@ export default async function ProfessorTurmaDetailPage({ params }: PageProps) {
 
           <section>
             <SectionTitle hint={`${sessions.length} no total`}>Sessões</SectionTitle>
-            <GroupSessions sessions={sessions} />
+            <GroupSessions
+              sessions={sessions}
+              previews={previews}
+              groupId={group.id}
+              groupName={group.name}
+              canManage
+            />
           </section>
         </div>
       </div>

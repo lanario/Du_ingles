@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { passwordRules } from "@/schemas/auth";
+import { confirmPasswordMatches } from "@/schemas/field-messages";
 
 /**
  * O que a pessoa edita na própria conta. Nome, telefone e nascimento — papel,
@@ -34,12 +35,12 @@ export const changeMyPasswordSchema = z
     password: passwordRules,
     confirmPassword: z.string().min(1, "Confirme a nova senha."),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "As senhas não coincidem.",
-    path: ["confirmPassword"],
-  })
-  .refine((data) => data.password !== data.currentPassword, {
-    message: "A nova senha precisa ser diferente da atual.",
-    path: ["password"],
-  });
+  .superRefine(confirmPasswordMatches)
+  .refine(
+    (data) => data.password.length === 0 || data.password !== data.currentPassword,
+    {
+      message: "A nova senha precisa ser diferente da atual.",
+      path: ["password"],
+    },
+  );
 export type ChangeMyPasswordInput = z.infer<typeof changeMyPasswordSchema>;

@@ -6,6 +6,13 @@ import { canTouchGroup, requireStaff } from "@/lib/auth/staff";
 import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
 import {
+  notifyEnrollmentChange,
+  notifyGroupActiveChanged,
+  notifyGroupCreated,
+  notifyGroupHandover,
+  notifyGroupScheduleChanged,
+} from "@/lib/notifications/events";
+import {
   createGroup,
   getGroupById,
   setGroupActive,
@@ -53,6 +60,15 @@ export async function createGroupAction(
     entityId: result.groupId,
   });
 
+  if (result.groupId) {
+    notifyGroupCreated({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      actorRole: ctx.realRole,
+      groupId: result.groupId,
+    });
+  }
+
   revalidateStaffPath("/turmas");
   redirect(`/admin/turmas/${result.groupId}`);
 }
@@ -96,6 +112,16 @@ export async function enrollStudentAction(
     metadata: { studentId: parsed.data.studentId },
   });
 
+  notifyEnrollmentChange({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    studentId: parsed.data.studentId,
+    kind: result.transferred ? "transferred" : "enrolled",
+    toGroupId: groupId,
+    fromGroupId: result.fromGroupId ?? null,
+  });
+
   revalidateStaffPath(`/turmas/${groupId}`);
   revalidateStaffPath("/turmas");
   revalidateStaffPath("/alunos");
@@ -110,8 +136,8 @@ export async function unenrollStudentAction(
   if (!(await canTouchGroup(ctx, groupId)))
     return fail("FORBIDDEN", "Esta turma não é sua.");
 
-  const success = await unenrollStudent(enrollmentId);
-  if (!success) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");
+  const removed = await unenrollStudent(enrollmentId);
+  if (!removed) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -121,6 +147,15 @@ export async function unenrollStudentAction(
     entityType: "group",
     entityId: groupId,
     metadata: { enrollmentId },
+  });
+
+  notifyEnrollmentChange({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    studentId: removed.studentId,
+    kind: "removed",
+    fromGroupId: removed.groupId,
   });
 
   revalidateStaffPath(`/turmas/${groupId}`);
@@ -194,6 +229,25 @@ export async function updateGroupAction(
       : {}),
   });
 
+  if (result.handover) {
+    notifyGroupHandover({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      groupId: parsed.data.id,
+      previousTeacherId: result.handover.previousTeacherId ?? "",
+      sessions: result.handover.sessions,
+    });
+  }
+  // Grade regerada: os horários que aluno e professor tinham na agenda podem
+  // não valer mais.
+  if (input.schedule) {
+    notifyGroupScheduleChanged({
+      organizationId: ctx.organizationId,
+      actorId: ctx.userId,
+      groupId: parsed.data.id,
+    });
+  }
+
   revalidateStaffPath("/turmas");
   revalidateStaffPath(`/turmas/${parsed.data.id}`);
   // A turma mudou de dono: as aulas futuras saíram de uma agenda e entraram
@@ -258,6 +312,12 @@ export async function removeScheduleEntryAction(
     metadata: { removedScheduleEntry: entry },
   });
 
+  notifyGroupScheduleChanged({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    groupId,
+  });
+
   revalidateStaffPath("/turmas");
   revalidateStaffPath(`/turmas/${groupId}`);
   return ok(undefined as never);
@@ -284,6 +344,13 @@ export async function setGroupActiveAction(
     entityType: "group",
     entityId: groupId,
     metadata: { isActive },
+  });
+
+  notifyGroupActiveChanged({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    groupId,
+    isActive,
   });
 
   revalidateStaffPath("/turmas");

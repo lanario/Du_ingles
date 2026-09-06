@@ -13,8 +13,8 @@ import { UserMenu } from "@/components/features/account/user-menu";
 import { RoleSwitch } from "@/components/features/admin/role-switch";
 import { NotificationBell } from "@/components/features/notification-bell";
 import type { NotificationItem } from "@/repositories/notifications";
-import type { MyProfile } from "@/repositories/users";
 import {
+  CalendarIcon,
   CloseIcon,
   GroupsIcon,
   HomeIcon,
@@ -63,6 +63,12 @@ const NAV_SECTIONS: readonly NavSection[] = [
         label: "Planos de aula",
         icon: PlanIcon,
         roles: ["teacher"],
+      },
+      {
+        href: "/agenda",
+        label: "Agenda",
+        icon: CalendarIcon,
+        roles: ["student"],
       },
       {
         href: "/tarefas",
@@ -114,7 +120,7 @@ const NAV_SECTIONS: readonly NavSection[] = [
       },
       {
         href: "/meus-dados",
-        label: "Meus dados",
+        label: "Meu Perfil",
         icon: UserIcon,
         roles: ["teacher", "student"],
       },
@@ -182,8 +188,6 @@ interface SidebarProps {
   fullName: string;
   /** Foto de perfil já pronta para o `src` (`/api/avatars/...`) ou `null`. */
   avatarUrl: string | null;
-  /** Dados editáveis do modal de perfil (telefone, nascimento etc). */
-  profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
   /** Admin navegando dentro da área de professor/aluno: mostra o botão de
@@ -224,7 +228,6 @@ function Sidebar({
   email,
   fullName,
   avatarUrl,
-  profile,
   initialNotifications,
   initialUnreadCount,
 }: SidebarProps) {
@@ -465,7 +468,6 @@ function Sidebar({
               email={email}
               role={role}
               avatarUrl={avatarUrl}
-              profile={profile}
               theme="app"
               dataHref="/meus-dados"
               compact
@@ -492,7 +494,6 @@ function NavMobile({
   email,
   fullName,
   avatarUrl,
-  profile,
   initialNotifications,
   initialUnreadCount,
   showAdminSwitch,
@@ -654,7 +655,6 @@ function NavMobile({
                   email={email}
                   role={role}
                   avatarUrl={avatarUrl}
-                  profile={profile}
                   theme="app"
                   dataHref="/meus-dados"
                 />

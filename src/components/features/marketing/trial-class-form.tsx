@@ -25,6 +25,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createTrialLeadAction } from "@/actions/leads/create-trial-lead";
+import { TRIAL_CLASS_FIELDS } from "@/schemas/leads";
 import {
   CheckIcon,
   ClockIcon,
@@ -75,7 +76,7 @@ interface FieldProps {
   optional?: boolean;
   multiline?: boolean;
   hint?: string;
-  error?: string;
+  errors?: string[];
 }
 
 function Field({
@@ -90,12 +91,15 @@ function Field({
   optional = false,
   multiline = false,
   hint,
-  error,
+  errors,
 }: FieldProps) {
   const id = useId();
   const [focused, setFocused] = useState(false);
   const reduceMotion = useReducedMotion();
   const raised = focused || value.length > 0;
+  // Uma senha pode falhar por dois motivos ao mesmo tempo; o campo mostra
+  // todos, senão a pessoa corrige um por envio.
+  const error = errors?.length ? errors.join(" ") : undefined;
 
   const shared = {
     id,
@@ -103,6 +107,7 @@ function Field({
     value,
     autoComplete,
     inputMode,
+    "data-error-anchor": name,
     "aria-invalid": error ? true : undefined,
     "aria-describedby": error ? `${id}-message` : hint ? `${id}-message` : undefined,
     onFocus: () => setFocused(true),
@@ -182,10 +187,17 @@ function Field({
         />
       </div>
 
-      <AnimatePresence initial={false} mode="wait">
+      {/*
+        `mode="wait"` com a chave no próprio texto travava aqui: num campo que
+        já tem dica (telefone, objetivo), a dica era o filho a sair e o erro
+        nunca chegava a entrar — a recusa do servidor ficava invisível
+        justamente nos dois campos que mais precisam dela. A chave agora é o
+        tipo da mensagem, e a troca é síncrona.
+      */}
+      <AnimatePresence initial={false}>
         {(error ?? hint) && (
           <motion.p
-            key={error ?? hint}
+            key={error ? "error" : "hint"}
             id={`${id}-message`}
             role={error ? "alert" : undefined}
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
@@ -212,14 +224,15 @@ function Field({
 function AgeChoice({
   value,
   onChange,
-  error,
+  errors,
 }: {
   value: string;
   onChange: (value: "sim" | "nao") => void;
-  error?: string;
+  errors?: string[];
 }) {
   const groupId = useId();
   const reduceMotion = useReducedMotion();
+  const error = errors?.length ? errors.join(" ") : undefined;
 
   return (
     <div data-field>
@@ -243,13 +256,16 @@ function AgeChoice({
         </p>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          {(["sim", "nao"] as const).map((option) => {
+          {(["sim", "nao"] as const).map((option, index) => {
             const active = value === option;
             return (
               <button
                 key={option}
                 type="button"
                 role="radio"
+                // Âncora do foco quando o servidor recusa: o campo real é
+                // um input escondido, que não recebe foco.
+                data-error-anchor={index === 0 ? "isAdult" : undefined}
                 aria-checked={active}
                 onClick={() => onChange(option)}
                 className={cn(
@@ -388,7 +404,7 @@ function SuccessPanel({ name }: { name: string }) {
       </h3>
       <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/60">
         Nossa coordenação entra em contato pelo telefone informado para escolher o melhor
-        horário da sua aula experimental — sem custo e sem compromisso.
+        horário da sua aula experimental de 30 minutos — sem custo e sem compromisso.
       </p>
 
       <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-xs text-white/60">
@@ -417,8 +433,13 @@ export function TrialClassForm() {
   const barRef = useRef<HTMLSpanElement>(null);
 
   const fieldErrors = state && !state.success ? state.error.fields : undefined;
-  const bannerError =
-    state && !state.success && !state.error.fields ? state.error.message : undefined;
+  const bannerError = state && !state.success ? state.error.message : undefined;
+
+  /** Campos recusados, na ordem da tela — é a ordem em que o visitante lê. */
+  const invalidFields = TRIAL_CLASS_FIELDS.filter(
+    ([name]) => fieldErrors?.[name]?.length,
+  );
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Progresso: só os quatro obrigatórios contam — o objetivo é opcional e
   // marcá-lo como pendente daria a impressão errada de formulário incompleto.
@@ -501,6 +522,21 @@ export function TrialClassForm() {
     };
   }, [state]);
 
+  // ...e o foco vai para o primeiro campo recusado. O tremor diz que algo
+  // deu errado; só o foco diz onde.
+  useEffect(() => {
+    const first = invalidFields[0]?.[0];
+    if (!first) return;
+    const element = formRef.current?.querySelector<HTMLElement>(
+      `[data-error-anchor="${first}"]`,
+    );
+    element?.focus({ preventScroll: true });
+    element?.scrollIntoView({ block: "center", behavior: "smooth" });
+    // `state` é um objeto novo a cada envio: reenviar sem corrigir nada
+    // reposiciona o foco em vez de parecer que nada aconteceu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
   return (
     <div
       ref={cardRef}
@@ -526,7 +562,7 @@ export function TrialClassForm() {
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 rounded-full border border-gold-500/30 bg-gold-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-300">
             <ShieldIcon className="h-3.5 w-3.5" />
-            Aula experimental gratuita
+            Aula experimental gratuita · 30 min
           </span>
           <span className="text-xs tabular-nums text-white/40">
             {state?.success ? "concluído" : `${filled}/4`}
@@ -561,21 +597,36 @@ export function TrialClassForm() {
                 Agende sua aula experimental
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-white/55">
-                Uma aula ao vivo com professor certificado, mais o diagnóstico do seu
+                30 minutos ao vivo com professor certificado, mais o diagnóstico do seu
                 nível CEFR. Leva menos de um minuto para pedir.
               </p>
             </div>
 
-            <form action={formAction} noValidate className="relative mt-6 space-y-3.5">
+            <form
+              ref={formRef}
+              action={formAction}
+              noValidate
+              className="relative mt-6 space-y-3.5"
+            >
               {bannerError && (
-                <motion.p
+                <motion.div
                   role="alert"
                   initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="rounded-xl border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-red-200"
                 >
-                  {bannerError}
-                </motion.p>
+                  <p className="font-medium">{bannerError}</p>
+                  {invalidFields.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5 text-xs text-red-200/85">
+                      {invalidFields.map(([name, label]) => (
+                        <li key={name}>
+                          <strong className="font-medium">{label}</strong>
+                          {`: ${fieldErrors?.[name]?.[0] ?? ""}`}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </motion.div>
               )}
 
               <Field
@@ -585,7 +636,7 @@ export function TrialClassForm() {
                 onChange={setName}
                 autoComplete="name"
                 icon={<UserIcon className="h-[18px] w-[18px]" />}
-                error={fieldErrors?.["name"]?.[0]}
+                errors={fieldErrors?.["name"]}
               />
 
               <Field
@@ -597,7 +648,7 @@ export function TrialClassForm() {
                 onChange={setEmail}
                 autoComplete="email"
                 icon={<MailIcon className="h-[18px] w-[18px]" />}
-                error={fieldErrors?.["email"]?.[0]}
+                errors={fieldErrors?.["email"]}
               />
 
               <Field
@@ -610,13 +661,13 @@ export function TrialClassForm() {
                 autoComplete="tel"
                 icon={<MessageIcon className="h-[18px] w-[18px]" />}
                 hint="Usamos este número no WhatsApp para confirmar o horário."
-                error={fieldErrors?.["phone"]?.[0]}
+                errors={fieldErrors?.["phone"]}
               />
 
               <AgeChoice
                 value={isAdult}
                 onChange={setIsAdult}
-                error={fieldErrors?.["isAdult"]?.[0]}
+                errors={fieldErrors?.["isAdult"]}
               />
 
               <Field
@@ -628,7 +679,7 @@ export function TrialClassForm() {
                 optional
                 icon={<MessageIcon className="h-[18px] w-[18px]" />}
                 hint="Ex.: entrevistas de trabalho, viagem, intercâmbio, conversação."
-                error={fieldErrors?.["goal"]?.[0]}
+                errors={fieldErrors?.["goal"]}
               />
 
               <div data-field className="pt-1.5">

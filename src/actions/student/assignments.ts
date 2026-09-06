@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
+import { notifyAssignmentSubmitted } from "@/lib/notifications/events";
 import * as repo from "@/repositories/assignments";
 import { answersToPlainText, type StudentAnswers } from "@/lib/assignments/exercises";
 import { answersFieldSchema, submitAssignmentSchema } from "@/schemas/assignments";
@@ -44,6 +45,20 @@ export async function submitAssignmentAction(
     entityType: "assignment",
     entityId: assignmentId,
   });
+
+  // Título e turma saem do banco (o formulário não os manda) — é o que o
+  // professor lê no aviso para saber o que tem para corrigir.
+  const assignment = await repo.getAssignmentById(assignmentId);
+  if (assignment) {
+    notifyAssignmentSubmitted({
+      organizationId: ctx.organizationId,
+      assignmentId,
+      groupId: assignment.groupId,
+      studentId: ctx.userId,
+      studentName: ctx.fullName,
+      title: assignment.title,
+    });
+  }
 
   revalidatePath("/tarefas");
   revalidatePath(`/tarefas/${assignmentId}`);
@@ -135,6 +150,16 @@ export async function submitExerciseAction(
       action: "ASSIGNMENT_SUBMIT",
       entityType: "assignment",
       entityId: assignmentId,
+    });
+
+    // Rascunho não avisa ninguém: só a entrega fechada vira fila de correção.
+    notifyAssignmentSubmitted({
+      organizationId: ctx.organizationId,
+      assignmentId,
+      groupId: assignment.groupId,
+      studentId: ctx.userId,
+      studentName: ctx.fullName,
+      title: assignment.title,
     });
   }
 
