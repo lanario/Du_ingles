@@ -31,7 +31,7 @@ import styles from "./agenda.module.css";
 import { buildToneMap } from "./agenda-card";
 import { AgendaDetail } from "./agenda-detail";
 import { AgendaEventDialog, type AgendaEventDraft } from "./agenda-event-dialog";
-import { useRevealOnScroll, useScrollProgress, useScrollToNow } from "./agenda-motion";
+import { useScrollProgress, useScrollToNow } from "./agenda-motion";
 import {
   AGENDA_KIND_FILTERS,
   EVENT_TONES,
@@ -250,9 +250,10 @@ export function AgendaView({
 
   // ---------------------------------------------------------- movimento ---
 
-  const gridDeps = [view, cursor, visible.length];
-  useRevealOnScroll(scrollerRef, gridDeps);
-  const progressRef = useScrollProgress(scrollerRef, gridDeps);
+  // Uma chave só para os dois: o que muda a altura do conteúdo da grade é a
+  // vista, a data e quantos itens sobraram do filtro.
+  const gridKey = `${view}|${cursor}|${visible.length}`;
+  const progressRef = useScrollProgress(scrollerRef, gridKey);
 
   /**
    * Só as vistas de grade rolam até "agora", e só quando hoje está na tela:
@@ -262,7 +263,7 @@ export function AgendaView({
     (view === "dia" || view === "semana") && today >= needed.from && today <= needed.to
       ? Math.max(0, (nowMinutes() - bounds.start) * PIXELS_PER_MINUTE)
       : null;
-  useScrollToNow(scrollerRef, scrollToNowOffset, [view, cursor]);
+  useScrollToNow(scrollerRef, scrollToNowOffset, `${view}|${cursor}`);
 
   // ------------------------------------------------------------- ações ----
 
@@ -343,19 +344,20 @@ export function AgendaView({
             <NavButton label="Próximo" onClick={() => navigate(1)} />
           </div>
 
+          {/* Sem `AnimatePresence`: só o que entra é animado. Ver a nota
+              sobre `mode="wait"` na área da grade, logo abaixo. */}
           <div className="min-w-0 flex-1">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.p
-                key={`${view}-${cursor}`}
-                initial={reduceMotion ? false : { opacity: 0, y: direction * 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: direction * -8 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="truncate text-sm font-semibold capitalize sm:text-base"
-              >
-                {rangeLabel(view, cursor)}
-              </motion.p>
-            </AnimatePresence>
+            <motion.p
+              key={`${view}-${cursor}`}
+              initial={reduceMotion ? false : { opacity: 0, y: direction * 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              // `capitalize` põe maiúscula em toda palavra e escreve
+              // "6 De Setembro De 2026"; só a primeira letra é nossa.
+              className="truncate text-sm font-semibold first-letter:uppercase sm:text-base"
+            >
+              {rangeLabel(view, cursor)}
+            </motion.p>
           </div>
 
           {loadingWindow && <LogoLoader size={18} label={null} />}
@@ -453,12 +455,24 @@ export function AgendaView({
             ref={scrollerRef}
             className={cn("min-h-0 min-w-0 flex-1 overflow-auto", styles.scroll)}
           >
-            <AnimatePresence mode="wait" initial={false}>
+            {/*
+             * Só a vista que entra é animada — sem `AnimatePresence`, e sem
+             * `exit`.
+             *
+             * Com `mode="wait"` aqui, duas trocas de vista em sequência rápida
+             * travavam: a segunda espera a saída da primeira, que nunca
+             * termina porque foi interrompida no meio da entrada, e a grade
+             * simplesmente não montava. Acontecia toda vez que a preferência
+             * salva (`localStorage`) trocava a vista logo depois do primeiro
+             * render — ou seja, em toda visita de quem já tinha escolhido uma
+             * vista. Trocar a vista é navegação, não transição narrativa:
+             * some a antiga, entra a nova.
+             */}
+            <div>
               <motion.div
                 key={view}
                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
                 transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
                 className="min-h-full"
               >
@@ -505,7 +519,7 @@ export function AgendaView({
                   />
                 )}
               </motion.div>
-            </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>

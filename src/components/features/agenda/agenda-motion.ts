@@ -4,16 +4,22 @@
  * Movimento da agenda.
  *
  * A divisão entre as duas bibliotecas é a mesma do resto do painel
- * (`components/motion/list-motion.ts`), e existe para que elas não disputem o
- * mesmo `transform`:
+ * (`components/motion/list-motion.ts`), e aqui ela não é estilo: é o que
+ * impede as duas de brigarem pelo mesmo `opacity`/`transform`.
  *
- * - **Framer Motion** cuida do que entra e sai (cartões, painéis, troca de
- *   vista) — está nos componentes.
+ * - **Framer Motion** anima o que entra e sai — cartões, células do mês,
+ *   linhas da lista, painéis. É a única biblioteca que escreve opacidade de
+ *   conteúdo.
  * - **GSAP + ScrollTrigger** cuidam do que depende da rolagem da grade, que
- *   aqui não é a da página: a agenda rola dentro do próprio quadro, então
- *   todo trigger precisa do `scroller` apontado para esse container. Sem
- *   isso o ScrollTrigger observa a janela, nada nunca "entra em cena", e as
- *   linhas ficam invisíveis para sempre.
+ *   não é a da página: a agenda rola dentro do próprio quadro, então todo
+ *   trigger precisa do `scroller` apontado para esse container.
+ *
+ * Uma versão anterior revelava as células do mês com `ScrollTrigger` +
+ * `fromTo(opacity: 0)` enquanto o Framer animava as mesmas células. Onde o
+ * trigger não disparava (o mês cabe na tela e quase não rola), o GSAP deixava
+ * o `opacity: 0` inline e metade do mês simplesmente não aparecia. Por isso
+ * nada aqui escreve opacidade de conteúdo — o GSAP só mexe no fio de
+ * progresso e na posição de rolagem.
  */
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
@@ -35,61 +41,15 @@ export function prefersReducedMotion(): boolean {
 }
 
 /**
- * Revela em cascata os filhos marcados com `[data-reveal]` conforme eles
- * sobem pela grade. `deps` remonta os triggers quando a vista ou o filtro
- * troca — os elementos observados deixaram de existir.
- */
-export function useRevealOnScroll(
-  scrollerRef: RefObject<HTMLElement | null>,
-  deps: unknown[],
-) {
-  useIsomorphicLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const targets = Array.from(scroller.querySelectorAll<HTMLElement>("[data-reveal]"));
-    if (targets.length === 0) return;
-
-    if (prefersReducedMotion()) {
-      gsap.set(targets, { opacity: 1, y: 0 });
-      return;
-    }
-
-    const context = gsap.context(() => {
-      for (const target of targets) {
-        gsap.fromTo(
-          target,
-          { opacity: 0, y: 14 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.45,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: target,
-              scroller,
-              // A grade é alta e a rolagem é curta: disparar bem cedo evita
-              // que a linha só apareça depois de já estar visível.
-              start: "top 96%",
-              once: true,
-            },
-          },
-        );
-      }
-    }, scroller);
-
-    ScrollTrigger.refresh();
-    return () => context.revert();
-  }, [scrollerRef, ...deps]);
-}
-
-/**
- * Fio de progresso da rolagem, preso à barra de ferramentas. `scrub` de
- * verdade (via `onUpdate`): o traço acompanha o dedo, sem inércia.
+ * Fio de progresso sob a barra de ferramentas, amarrado à rolagem da grade.
+ * `onUpdate` em vez de `scrub`: o traço acompanha o dedo, sem inércia.
+ *
+ * Se o trigger não conseguir se instalar, o pior que acontece é o fio ficar
+ * parado — nenhum conteúdo depende dele para estar visível.
  */
 export function useScrollProgress(
   scrollerRef: RefObject<HTMLElement | null>,
-  deps: unknown[],
+  key: string,
 ) {
   const lineRef = useRef<HTMLSpanElement>(null);
 
@@ -98,37 +58,57 @@ export function useScrollProgress(
     const line = lineRef.current;
     if (!scroller || !line) return;
 
+    const content = scroller.firstElementChild;
     gsap.set(line, { scaleX: 0, transformOrigin: "left center" });
 
-    const update = () => {
-      const total = scroller.scrollHeight - scroller.clientHeight;
-      const progress = total > 8 ? scroller.scrollTop / total : 0;
+    const draw = (progress: number) =>
       gsap.set(line, { scaleX: Math.min(1, Math.max(0, progress)) });
-    };
 
-    update();
-    scroller.addEventListener("scroll", update, { passive: true });
-    return () => scroller.removeEventListener("scroll", update);
-  }, [scrollerRef, ...deps]);
+    if (!content) return;
+
+    const trigger = ScrollTrigger.create({
+      scroller,
+      trigger: content as HTMLElement,
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: (self) => draw(self.progress),
+    });
+
+    // A troca de vista muda a altura do conteúdo; sem o refresh o trigger
+    // continuaria medindo a vista anterior.
+    ScrollTrigger.refresh();
+
+    return () => trigger.kill();
+  }, [scrollerRef, key]);
 
   return lineRef;
 }
 
 /**
  * Leva a grade até a hora atual quando ela abre. Quem entra na agenda quer
- * ver "agora", não sete horas de madrugada vazia — e a rolagem animada
- * mostra que existe conteúdo acima, coisa que um salto seco esconde.
+ * ver "agora", não sete horas de madrugada vazia.
+ *
+ * Roda **uma vez por vista/dia** (`key`), e não a cada render: como tween de
+ * rolagem, repetir significa arrancar a grade da mão de quem já estava
+ * rolando. E se o alvo é o topo — de madrugada, com "agora" antes do começo
+ * da grade — não há nada para animar.
  */
 export function useScrollToNow(
   scrollerRef: RefObject<HTMLElement | null>,
   offsetPx: number | null,
-  deps: unknown[],
+  key: string,
 ) {
+  const doneFor = useRef<string | null>(null);
+
   useIsomorphicLayoutEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || offsetPx === null) return;
+    if (doneFor.current === key) return;
+    doneFor.current = key;
 
     const target = Math.max(0, offsetPx - scroller.clientHeight / 3);
+    if (target < 1) return;
+
     if (prefersReducedMotion()) {
       scroller.scrollTop = target;
       return;
@@ -142,5 +122,5 @@ export function useScrollToNow(
     return () => {
       tween.kill();
     };
-  }, [scrollerRef, offsetPx, ...deps]);
+  }, [scrollerRef, offsetPx, key]);
 }

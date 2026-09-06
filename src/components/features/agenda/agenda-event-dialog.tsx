@@ -30,7 +30,7 @@ import { LogoLoader } from "@/components/ui/logo-loader";
 import { cn } from "@/lib/utils";
 import type { AgendaGroupRef, AgendaItem } from "@/repositories/agenda";
 import { AGENDA_AUDIENCES, AGENDA_EVENT_KINDS } from "@/types/domain";
-import { AUDIENCE_LABEL, EVENT_KIND_LABEL, minutesLabel } from "./agenda-utils";
+import { AUDIENCE_LABEL, EVENT_KIND_LABEL, durationLabel } from "./agenda-utils";
 
 const DURATIONS = [30, 45, 60, 90, 120, 180];
 
@@ -262,9 +262,7 @@ function EventForm({
                     : "border-border text-foreground/70 hover:bg-muted",
                 )}
               >
-                {minutes >= 60
-                  ? minutesLabel(minutes).replace(":", "h")
-                  : `${minutes} min`}
+                {durationLabel(minutes)}
               </button>
             ))}
           </div>

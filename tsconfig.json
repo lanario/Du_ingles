@@ -32,5 +32,5 @@
     "next-env.d.ts",
     ".next-verify/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "template"]
+  "exclude": ["node_modules"]
 }

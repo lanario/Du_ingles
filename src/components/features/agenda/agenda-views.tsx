@@ -480,10 +480,16 @@ export function MonthView({
               const inMonth = isSameMonth(day, anchor);
               const items = byDay.get(day) ?? [];
               return (
-                <motion.button
+                /*
+                 * A célula é um `div`, não um `button`: ela contém os chips,
+                 * que são botões, e botão dentro de botão é HTML inválido —
+                 * o React quebra a hidratação e a grade do mês vem torta.
+                 * Quem carrega o papel de controle é o número do dia; o
+                 * clique no vazio da célula é atalho de mouse, e o teclado
+                 * chega pelo botão.
+                 */
+                <motion.div
                   key={day}
-                  type="button"
-                  data-reveal
                   onClick={() => onPickDay(day)}
                   initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -493,17 +499,22 @@ export function MonthView({
                     delay: reduceMotion ? 0 : weekIndex * 0.035,
                   }}
                   className={cn(
-                    "flex min-h-[96px] flex-col rounded-xl border p-1.5 text-left transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--agenda-accent)]",
+                    "flex min-h-[96px] cursor-pointer flex-col rounded-xl border p-1.5 text-left transition-colors",
                     inMonth
                       ? "border-[var(--agenda-border)] bg-[var(--agenda-surface)] hover:border-[var(--agenda-accent)]"
                       : "border-transparent bg-[var(--agenda-canvas)]",
                   )}
-                  aria-label={longDateLabel(day)}
                 >
-                  <span
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onPickDay(day);
+                    }}
+                    aria-label={longDateLabel(day)}
                     className={cn(
                       "mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold tabular-nums",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--agenda-accent)]",
                       day === today
                         ? "bg-[var(--agenda-primary)] text-[var(--agenda-primary-fg)]"
                         : inMonth
@@ -512,8 +523,8 @@ export function MonthView({
                     )}
                   >
                     {dayNumber(day)}
-                  </span>
-                  <span className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
+                  </button>
+                  <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
                     {items.slice(0, MONTH_CHIP_LIMIT).map((entry) => (
                       <AgendaChip
                         key={entry.item.key}
@@ -527,8 +538,8 @@ export function MonthView({
                         +{items.length - MONTH_CHIP_LIMIT} mais
                       </span>
                     )}
-                  </span>
-                </motion.button>
+                  </div>
+                </motion.div>
               );
             })}
           </Fragment>

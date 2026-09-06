@@ -218,7 +218,6 @@ export function AgendaRow({
   return (
     <motion.button
       type="button"
-      data-reveal
       onClick={() => onSelect(item)}
       initial={reduceMotion ? false : { opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
