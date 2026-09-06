@@ -411,23 +411,6 @@ const CATALOG: Record<string, Descriptor> = {
     icon: "dinheiro",
     phrase: (ctx) => `iniciou a assinatura do plano${ctx.target ? ` ${ctx.target}` : ""}`,
   },
-  STRIPE_CONNECT_ONBOARDING: {
-    category: "financeiro",
-    severity: "atencao",
-    icon: "dinheiro",
-    phrase: () => "abriu o cadastro da conta de recebimentos",
-  },
-  STRIPE_CONNECT_SETTINGS_UPDATE: {
-    category: "financeiro",
-    severity: "atencao",
-    icon: "dinheiro",
-    phrase: (ctx) => {
-      const taxa = ctx.metadata.applicationFeePercent;
-      return typeof taxa === "number"
-        ? `alterou as regras de cobrança (taxa de ${taxa}%)`
-        : "alterou as regras de cobrança";
-    },
-  },
 
   // Comunicação -------------------------------------------------------------
   ANNOUNCEMENT_SEND: {
@@ -492,10 +475,6 @@ const FALLBACK_NOUNS: Record<string, { vago: string; nomeado: string }> = {
   class_session: { vago: "uma aula", nomeado: "a aula" },
   conversation: { vago: "uma conversa", nomeado: "a conversa" },
   user_invite: { vago: "um convite", nomeado: "o convite de" },
-  stripe_account: {
-    vago: "a conta de recebimentos",
-    nomeado: "a conta de recebimentos",
-  },
 };
 
 export interface AuditDescription {
@@ -567,7 +546,6 @@ function guessCategory(entityType: string | null): AuditCategory {
       return "aulas";
     case "finance_entry":
     case "student_plan":
-    case "stripe_account":
       return "financeiro";
     case "conversation":
       return "comunicacao";
@@ -602,8 +580,6 @@ const FIELD_LABEL: Record<string, string> = {
   occurred_on: "Competência",
   name: "Nome",
   priceCents: "Preço",
-  chargeModel: "Modelo de cobrança",
-  applicationFeePercent: "Taxa da escola",
   removedScheduleEntry: "Horário removido",
   direction: "Tipo",
 };
@@ -620,8 +596,6 @@ const VALUE_LABEL: Record<string, string> = {
   admin: "Administrador",
   teacher: "Professor",
   student: "Aluno",
-  direct: "Cobrança direta",
-  platform: "Cobrança pela escola",
 };
 
 const MONEY_FIELDS = new Set([

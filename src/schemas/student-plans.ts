@@ -187,20 +187,3 @@ export function planFieldsFromFormData(formData: FormData) {
     sortOrder: formData.get("sortOrder"),
   };
 }
-
-export const connectSettingsSchema = z.object({
-  chargeModel: z.enum(["destination", "direct"]),
-  applicationFeePercent: z
-    .string()
-    .trim()
-    .optional()
-    .transform((raw, ctx) => {
-      const value = Number((raw || "0").replace(",", "."));
-      if (!Number.isFinite(value) || value < 0 || value > 100) {
-        ctx.addIssue({ code: "custom", message: "Informe um percentual entre 0 e 100." });
-        return z.NEVER;
-      }
-      // Duas casas: é a precisão que a Stripe aceita em `application_fee_percent`.
-      return Math.round(value * 100) / 100;
-    }),
-});

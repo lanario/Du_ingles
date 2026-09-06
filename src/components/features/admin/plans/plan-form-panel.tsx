@@ -152,9 +152,9 @@ export function PlanFormPanel({ open, onClose, plan, canPublish }: PlanFormPanel
 
           {!canPublish && !partial && (
             <div className="rounded-xl border border-gold-300 bg-gold-50 p-3.5 text-xs leading-relaxed text-admin-foreground/70">
-              A conta Stripe ainda não está habilitada a receber pagamentos. O plano será
-              salvo como <strong className="font-medium">rascunho</strong> e publicado
-              assim que o onboarding for concluído.
+              A Stripe ainda não está configurada neste ambiente. O plano será salvo como{" "}
+              <strong className="font-medium">rascunho</strong> e publicado assim que{" "}
+              <code className="font-mono">STRIPE_SECRET_KEY</code> estiver definida.
             </div>
           )}
 

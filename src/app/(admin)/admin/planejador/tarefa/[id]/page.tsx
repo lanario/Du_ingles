@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import {
@@ -8,6 +7,7 @@ import {
   getOrgAssignmentById,
 } from "@/repositories/assignments";
 import { SubmissionReview } from "@/components/features/assignments/submission-review";
+import { BackLink } from "@/components/ui/back-link";
 import { ArrowLeftIcon, CalendarIcon, TaskIcon } from "@/components/ui/icons";
 
 interface PageProps {
@@ -45,13 +45,13 @@ export default async function AdminTarefaPage({ params }: PageProps) {
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
       <header>
-        <Link
-          href="/admin/planejador"
+        <BackLink
+          fallbackHref="/admin/planejador"
           className="inline-flex items-center gap-1.5 text-sm text-admin-foreground/60 transition-colors hover:text-admin-foreground"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Planejador
-        </Link>
+        </BackLink>
 
         <p className="mt-4 text-sm font-medium uppercase tracking-wide text-gold-600">
           {assignment.groupName}

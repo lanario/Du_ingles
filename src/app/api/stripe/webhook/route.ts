@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/client";
 import { requireStripeWebhookSecret } from "@/lib/env";
-import { syncConnectAccountFromEvent } from "@/lib/stripe/connect";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getPlanByStripePriceId } from "@/repositories/student-plans";
 import {
@@ -34,7 +33,6 @@ const HANDLED = new Set([
   "customer.subscription.deleted",
   "invoice.paid",
   "invoice.payment_failed",
-  "account.updated",
 ]);
 
 function toIso(seconds: number | null | undefined): string | null {
@@ -202,13 +200,7 @@ export async function POST(request: NextRequest) {
 
         // A sessão traz a assinatura só como id; o objeto completo é o que tem
         // status, ciclo e preço.
-        const subscription = await getStripe().subscriptions.retrieve(
-          subscriptionId,
-          undefined,
-          // Em `direct` a assinatura vive na conta conectada — sem este
-          // contexto a busca devolveria 404.
-          event.account ? { stripeAccount: event.account } : {},
-        );
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
 
         // A metadata da sessão é mais rica que a da assinatura quando o
         // checkout veio da nossa plataforma.
@@ -243,17 +235,8 @@ export async function POST(request: NextRequest) {
 
         // Uma fatura falhada move a assinatura para `past_due`; reler o objeto
         // é mais barato do que deduzir a transição a partir do tipo do evento.
-        const subscription = await getStripe().subscriptions.retrieve(
-          subscriptionId,
-          undefined,
-          event.account ? { stripeAccount: event.account } : {},
-        );
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
         await persistSubscription(subscription, null, invoice.customer_email ?? null);
-        break;
-      }
-
-      case "account.updated": {
-        await syncConnectAccountFromEvent(event.data.object);
         break;
       }
     }

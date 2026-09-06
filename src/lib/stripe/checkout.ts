@@ -2,9 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { env } from "@/lib/env";
 import { getStripe } from "@/lib/stripe/client";
-import { connectSubscriptionData } from "@/lib/stripe/plans";
 import { findStripeCustomerId } from "@/repositories/student-subscriptions";
-import type { ConnectAccount } from "@/repositories/stripe-connect";
 import type { StudentPlan } from "@/repositories/student-plans";
 
 /**
@@ -37,47 +35,33 @@ async function ensureCustomer(
   studentName: string,
   studentEmail: string,
   organizationId: string,
-  options: Stripe.RequestOptions,
 ): Promise<string> {
   const existing = await findStripeCustomerId(studentId);
   if (existing) return existing;
 
-  const customer = await getStripe().customers.create(
-    {
-      email: studentEmail,
-      name: studentName,
-      metadata: {
-        student_id: studentId,
-        organization_id: organizationId,
-        platform: "du-ingles",
-      },
+  const customer = await getStripe().customers.create({
+    email: studentEmail,
+    name: studentName,
+    metadata: {
+      student_id: studentId,
+      organization_id: organizationId,
+      platform: "du-ingles",
     },
-    options,
-  );
+  });
   return customer.id;
 }
 
 export interface CheckoutInput {
   plan: StudentPlan;
-  account: ConnectAccount;
   studentId: string;
   studentName: string;
   studentEmail: string;
   organizationId: string;
 }
 
-/**
- * Cria a sessão de checkout e devolve a URL hospedada pela Stripe.
- *
- * Em `destination` a sessão nasce na conta plataforma (nenhum `stripeAccount`
- * nas opções) e o repasse vai em `subscription_data.transfer_data` — é isso
- * que mantém Customers, faturas e disputas todos sob a conta da plataforma.
- * Em `direct` a sessão inteira roda na conta conectada.
- */
+/** Cria a sessão de checkout e devolve a URL hospedada pela Stripe. */
 export async function createCheckoutSession(input: CheckoutInput): Promise<string> {
-  const { plan, account } = input;
-  const options: Stripe.RequestOptions =
-    account.chargeModel === "direct" ? { stripeAccount: account.stripeAccountId } : {};
+  const { plan } = input;
 
   if (!plan.stripePriceId) {
     throw new Error("Plano ainda não sincronizado com a Stripe.");
@@ -88,7 +72,6 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<strin
     input.studentName,
     input.studentEmail,
     input.organizationId,
-    options,
   );
 
   const { success, cancel } = urls(plan.id);
@@ -116,29 +99,12 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<strin
     params.subscription_data = {
       metadata,
       ...(plan.trialDays > 0 ? { trial_period_days: plan.trialDays } : {}),
-      ...connectSubscriptionData(account),
     };
   } else {
-    params.payment_intent_data = {
-      metadata,
-      ...(account.chargeModel === "destination"
-        ? {
-            transfer_data: { destination: account.stripeAccountId },
-            on_behalf_of: account.stripeAccountId,
-          }
-        : {}),
-      ...(account.applicationFeePercent > 0
-        ? {
-            // Cobrança avulsa exige a comissão em centavos, não em percentual.
-            application_fee_amount: Math.round(
-              (plan.priceCents * account.applicationFeePercent) / 100,
-            ),
-          }
-        : {}),
-    };
+    params.payment_intent_data = { metadata };
   }
 
-  const session = await getStripe().checkout.sessions.create(params, options);
+  const session = await getStripe().checkout.sessions.create(params);
   if (!session.url) throw new Error("A Stripe não devolveu a URL do checkout.");
   return session.url;
 }
@@ -148,20 +114,11 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<strin
  * cancela sozinho. Construir essas telas à mão custaria semanas e ainda
  * obrigaria a plataforma a tocar em dado de cartão.
  */
-export async function createBillingPortalSession(
-  customerId: string,
-  account: ConnectAccount,
-): Promise<string> {
-  const options: Stripe.RequestOptions =
-    account.chargeModel === "direct" ? { stripeAccount: account.stripeAccountId } : {};
-
-  const session = await getStripe().billingPortal.sessions.create(
-    {
-      customer: customerId,
-      return_url: `${env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")}/planos`,
-      locale: "pt-BR",
-    },
-    options,
-  );
+export async function createBillingPortalSession(customerId: string): Promise<string> {
+  const session = await getStripe().billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")}/planos`,
+    locale: "pt-BR",
+  });
   return session.url;
 }

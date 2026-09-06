@@ -5,7 +5,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15";
+    PostgrestVersion: "14.5";
   };
   public: {
     Tables: {
@@ -1098,71 +1098,6 @@ export type Database = {
           },
         ];
       };
-      stripe_connect_accounts: {
-        Row: {
-          application_fee_percent: number;
-          business_name: string | null;
-          charge_model: Database["public"]["Enums"]["stripe_charge_model"];
-          charges_enabled: boolean;
-          connected_at: string | null;
-          country: string;
-          created_at: string;
-          default_currency: string;
-          details_submitted: boolean;
-          id: string;
-          livemode: boolean;
-          organization_id: string;
-          payouts_enabled: boolean;
-          requirements: Json;
-          stripe_account_id: string;
-          updated_at: string;
-        };
-        Insert: {
-          application_fee_percent?: number;
-          business_name?: string | null;
-          charge_model?: Database["public"]["Enums"]["stripe_charge_model"];
-          charges_enabled?: boolean;
-          connected_at?: string | null;
-          country?: string;
-          created_at?: string;
-          default_currency?: string;
-          details_submitted?: boolean;
-          id?: string;
-          livemode?: boolean;
-          organization_id: string;
-          payouts_enabled?: boolean;
-          requirements?: Json;
-          stripe_account_id: string;
-          updated_at?: string;
-        };
-        Update: {
-          application_fee_percent?: number;
-          business_name?: string | null;
-          charge_model?: Database["public"]["Enums"]["stripe_charge_model"];
-          charges_enabled?: boolean;
-          connected_at?: string | null;
-          country?: string;
-          created_at?: string;
-          default_currency?: string;
-          details_submitted?: boolean;
-          id?: string;
-          livemode?: boolean;
-          organization_id?: string;
-          payouts_enabled?: boolean;
-          requirements?: Json;
-          stripe_account_id?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "stripe_connect_accounts_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: true;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       student_plans: {
         Row: {
           accent: string;
@@ -1616,6 +1551,7 @@ export type Database = {
         Returns: number;
       };
       teaches_group: { Args: { p_group: string }; Returns: boolean };
+      teaches_student: { Args: { p_student: string }; Returns: boolean };
     };
     Enums: {
       app_role: "admin" | "teacher" | "student";
@@ -1631,7 +1567,6 @@ export type Database = {
       plan_sync_status: "draft" | "synced" | "error";
       plan_tier: "standard" | "premium" | "elite";
       session_status: "scheduled" | "in_progress" | "completed" | "cancelled";
-      stripe_charge_model: "destination" | "direct";
       subscription_status:
         | "incomplete"
         | "incomplete_expired"
@@ -1785,7 +1720,6 @@ export const Constants = {
       plan_sync_status: ["draft", "synced", "error"],
       plan_tier: ["standard", "premium", "elite"],
       session_status: ["scheduled", "in_progress", "completed", "cancelled"],
-      stripe_charge_model: ["destination", "direct"],
       subscription_status: [
         "incomplete",
         "incomplete_expired",

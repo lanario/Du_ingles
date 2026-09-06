@@ -12,8 +12,10 @@ import { PlannerView } from "@/components/features/admin/planner/planner-view";
 
 export const metadata: Metadata = { title: "Planejador de aulas" };
 
+const VALID_TABS = new Set(["atelie", "agenda", "tarefas"]);
+
 interface PageProps {
-  searchParams: Promise<{ nova?: string }>;
+  searchParams: Promise<{ nova?: string; tab?: string }>;
 }
 
 /**
@@ -27,7 +29,7 @@ interface PageProps {
  */
 export default async function ProfessorPlanejadorPage({ searchParams }: PageProps) {
   const ctx = await requireRole(["teacher"]);
-  const { nova } = await searchParams;
+  const { nova, tab } = await searchParams;
 
   const [plans, sessions, allGroups, me, assignments] = await Promise.all([
     listPlannerPlans(ctx.organizationId),
@@ -50,6 +52,7 @@ export default async function ProfessorPlanejadorPage({ searchParams }: PageProp
         assignments={assignments.filter((item) => myGroupIds.has(item.groupId))}
         editableAuthorId={ctx.userId}
         openCreate={nova !== undefined}
+        initialTab={tab && VALID_TABS.has(tab) ? (tab as "atelie" | "agenda" | "tarefas") : undefined}
       />
     </AreaProvider>
   );

@@ -115,9 +115,14 @@ export const FREQUENCY_TAGLINE: Record<PlanWeeklyFrequency, string> = {
 /** Ritmo em destaque no seletor — o "⭐" do PDF. */
 export const RECOMMENDED_FREQUENCY: PlanWeeklyFrequency = 2;
 
-/** Os três eixos de compromisso vendidos pela escola, entre os cinco do enum. */
+/**
+ * A escola vendia três compromissos (mensal/semestral/anual); hoje só o
+ * mensal está à venda. O tipo continua com os três porque o enum do banco
+ * (`plan_interval`) ainda os conhece e um plano avulso pode usá-los — só a
+ * grade gerada automaticamente ([[buildTierCatalogSeeds]]) ficou mensal.
+ */
 export type CommitmentInterval = "month" | "semester" | "year";
-export const COMMITMENT_INTERVALS: CommitmentInterval[] = ["month", "semester", "year"];
+export const COMMITMENT_INTERVALS: CommitmentInterval[] = ["month"];
 
 export const COMMITMENT_LABEL: Record<CommitmentInterval, string> = {
   month: "Mensal",
@@ -226,10 +231,9 @@ export function tierPlanKey(
 }
 
 /**
- * As 27 combinações (3 níveis × 3 ritmos × 3 compromissos) prontas para
- * inserir no catálogo, com preço, benefícios e legendas já preenchidos a
- * partir do PDF comercial e do desconto de longo prazo definido para a
- * escola. `skip` filtra combinações que já existem, para o gerador não
+ * As 9 combinações (3 níveis × 3 ritmos × mensal) prontas para inserir no
+ * catálogo, com preço, benefícios e legendas já preenchidos a partir do PDF
+ * comercial. `skip` filtra combinações que já existem, para o gerador não
  * duplicar planos já publicados.
  */
 export function buildTierCatalogSeeds(skip: Set<string> = new Set()): TierPlanSeed[] {

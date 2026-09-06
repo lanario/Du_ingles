@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/session";
 import { isStripeConfigured, isStripeLiveMode } from "@/lib/stripe/client";
-import { getConnectAccount } from "@/repositories/stripe-connect";
 import { ensureTierCatalog } from "@/lib/plans/ensure-tier-catalog";
 import { getSubscriptionSummary } from "@/repositories/student-subscriptions";
 import { PlansView } from "@/components/features/admin/plans/plans-view";
@@ -13,9 +12,9 @@ export const metadata: Metadata = { title: "Planos de alunos" };
 /**
  * Catálogo comercial da escola.
  *
- * As três leituras vão em paralelo: o cartão do Connect, os indicadores e a
- * lista aparecem juntos ou não aparecem — encadear as queries só somaria
- * latência sem melhorar nada na tela.
+ * As duas leituras vão em paralelo: os indicadores e a lista aparecem juntos
+ * ou não aparecem — encadear as queries só somaria latência sem melhorar nada
+ * na tela.
  *
  * `ensureTierCatalog` no lugar de um simples `listStudentPlans`: a grade
  * padrão da escola é o produto que ela vende, não uma decisão a tomar toda
@@ -24,16 +23,14 @@ export const metadata: Metadata = { title: "Planos de alunos" };
 async function PlansPageContent() {
   const ctx = await requireRole(["admin"]);
 
-  const [plans, account, summary] = await Promise.all([
+  const [plans, summary] = await Promise.all([
     ensureTierCatalog(ctx.organizationId, ctx.userId),
-    getConnectAccount(ctx.organizationId),
     getSubscriptionSummary(ctx.organizationId),
   ]);
 
   return (
     <PlansView
       plans={plans}
-      account={account}
       summary={summary}
       stripeConfigured={isStripeConfigured()}
       stripeLiveMode={isStripeLiveMode()}
@@ -41,11 +38,6 @@ async function PlansPageContent() {
   );
 }
 
-/**
- * `PlansView` lê `?connect=retorno` com `useSearchParams`, o que exige um
- * limite de Suspense acima dele — sem isto o build falha ao pré-renderizar
- * esta rota.
- */
 export default function PlanosDeAlunosPage() {
   return (
     <Suspense fallback={<PlansSkeleton />}>

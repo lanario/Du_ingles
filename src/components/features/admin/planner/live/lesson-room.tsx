@@ -12,7 +12,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -33,6 +32,7 @@ import { ArrowLeftIcon, CloseIcon, EyeIcon, PencilIcon } from "@/components/ui/i
 import type { Route } from "next";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
+import { BackLink } from "@/components/ui/back-link";
 import { RosterPanel } from "./roster-panel";
 import { STATUS_META, formatDay, formatTime, formatWeekday } from "../planner-utils";
 import type { AttendanceRow } from "@/repositories/attendance";
@@ -69,13 +69,13 @@ function RoomHeader({
   return (
     <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-admin-border/70 bg-admin-background/85 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href={`${base}/planejador` as Route}
+        <BackLink
+          fallbackHref={`${base}/planejador` as Route}
           aria-label="Voltar ao planejador"
           className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
         >
           <ArrowLeftIcon className="h-4 w-4" />
-        </Link>
+        </BackLink>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

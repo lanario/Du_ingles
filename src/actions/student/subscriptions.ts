@@ -3,10 +3,8 @@
 import { requireRole, getSessionContext } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
 import { isStripeConfigured, stripeErrorMessage } from "@/lib/stripe/client";
-import { canCollectPayments } from "@/lib/stripe/connect";
 import { createBillingPortalSession, createCheckoutSession } from "@/lib/stripe/checkout";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { getConnectAccount } from "@/repositories/stripe-connect";
 import { getStudentPlan } from "@/repositories/student-plans";
 import { findStripeCustomerId } from "@/repositories/student-subscriptions";
 import { fail, ok, type ActionResult } from "@/types/action-result";
@@ -48,11 +46,6 @@ export async function startPlanCheckoutAction(
     return fail("NOT_FOUND", "Este plano não está disponível.");
   }
 
-  const account = await getConnectAccount(ctx.organizationId);
-  if (!canCollectPayments(account)) {
-    return fail("INTERNAL_ERROR", "A escola ainda não habilitou os pagamentos.");
-  }
-
   const admin = createAdminSupabaseClient();
 
   // Vaga esgotada é a última checagem antes da Stripe: o teto é comercial e
@@ -78,7 +71,6 @@ export async function startPlanCheckoutAction(
   try {
     const url = await createCheckoutSession({
       plan,
-      account: account!,
       studentId: ctx.userId,
       studentName: profile?.full_name ?? "Aluno",
       studentEmail: profile?.email ?? ctx.email,
@@ -118,11 +110,8 @@ export async function openBillingPortalAction(): Promise<ActionResult<{ url: str
   const customerId = await findStripeCustomerId(ctx.userId);
   if (!customerId) return fail("NOT_FOUND", "Nenhuma assinatura encontrada.");
 
-  const account = await getConnectAccount(ctx.organizationId);
-  if (!account) return fail("NOT_FOUND", "A escola ainda não conectou uma conta Stripe.");
-
   try {
-    return ok({ url: await createBillingPortalSession(customerId, account) });
+    return ok({ url: await createBillingPortalSession(customerId) });
   } catch (error) {
     return fail("INTERNAL_ERROR", stripeErrorMessage(error));
   }

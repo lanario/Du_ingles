@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import {
@@ -13,6 +12,7 @@ import { ExercisePlayer } from "@/components/features/assignments/exercise-playe
 import { StudentAnswersView } from "@/components/features/assignments/student-answers-view";
 import { SubmissionReview } from "@/components/features/assignments/submission-review";
 import { StatusPill } from "@/components/features/assignments/status-pill";
+import { BackLink } from "@/components/ui/back-link";
 import { ArrowLeftIcon, CalendarIcon, TaskIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = { title: "Tarefa" };
@@ -34,13 +34,13 @@ export default async function TarefaDetailPage({ params }: PageProps) {
 
   const header = (
     <header>
-      <Link
-        href="/tarefas"
+      <BackLink
+        fallbackHref="/tarefas"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-navy-900"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Tarefas
-      </Link>
+      </BackLink>
 
       <p className="mt-4 text-sm font-medium uppercase tracking-wide text-gold-600">
         {assignment.groupName}

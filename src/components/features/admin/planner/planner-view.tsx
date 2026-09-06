@@ -84,6 +84,8 @@ export interface PlannerViewProps {
   editableAuthorId?: string;
   /** `?nova` na URL abre o painel de criação já na primeira pintura. */
   openCreate?: boolean;
+  /** `?tab=` na URL — em qual aba a tela deve nascer. */
+  initialTab?: Tab;
 }
 
 export function PlannerView({
@@ -94,11 +96,30 @@ export function PlannerView({
   assignments,
   editableAuthorId,
   openCreate = false,
+  initialTab = "atelie",
 }: PlannerViewProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
+  const { base } = useArea();
 
-  const [tab, setTab] = useState<Tab>("atelie");
+  const [tab, setTabState] = useState<Tab>(initialTab);
+
+  /**
+   * Troca de aba grava `?tab=` na URL (via `replace`, sem empilhar histórico
+   * novo). É o que faz "abrir uma tarefa e voltar" devolver a mesma aba: o
+   * botão de voltar das telas de aula/tarefa usa o histórico do navegador
+   * ([[BackLink]]), e a entrada anterior no histórico já carrega a aba certa
+   * — sem isso, o `useState` reiniciaria em "Ateliê" a cada remontagem.
+   */
+  function setTab(next: Tab) {
+    setTabState(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next === "atelie") params.delete("tab");
+    else params.set("tab", next);
+    const query = params.toString();
+    router.replace(`${base}/planejador${query ? `?${query}` : ""}` as Route, { scroll: false });
+  }
+
   const [search, setSearch] = useState("");
   const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>("proximas");
 

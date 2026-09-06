@@ -31,6 +31,7 @@ import {
 import type { Route } from "next";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
+import { BackLink } from "@/components/ui/back-link";
 import { PlanFormPanel } from "../plan-form-panel";
 import { SchedulePanel } from "../schedule-panel";
 import { LEVEL_HINT, STATUS_META, formatDay, formatTime } from "../planner-utils";
@@ -166,13 +167,13 @@ export function LessonStudio({
         className="sticky top-0 z-30 -mx-4 mb-6 border-b border-admin-border/70 bg-admin-background/85 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6"
       >
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href={`${base}/planejador` as Route}
+          <BackLink
+            fallbackHref={`${base}/planejador` as Route}
             className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             aria-label="Voltar ao planejador"
           >
             <ArrowLeftIcon className="h-4 w-4" />
-          </Link>
+          </BackLink>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">

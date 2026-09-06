@@ -1,10 +1,9 @@
 "use client";
 
 /**
- * Área de planos de alunos: estado do Connect no topo, indicadores de receita,
- * barra de ferramentas, e as duas visualizações (cartões e lista) — o
- * mesmo modelo já usado em Usuários, Alunos e Turmas, com preço e assinantes
- * no lugar de lotação.
+ * Área de planos de alunos: indicadores de receita, barra de ferramentas, e
+ * as duas visualizações (cartões e lista) — o mesmo modelo já usado em
+ * Usuários, Alunos e Turmas, com preço e assinantes no lugar de lotação.
  *
  * Busca e filtros são locais: a página entrega o catálogo inteiro de uma vez
  * (uma escola tem dezenas de planos, não milhares), então filtrar em memória
@@ -17,7 +16,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   setPlanActiveAction,
@@ -33,9 +32,9 @@ import {
   PlusIcon,
   RowsIcon,
   SearchIcon,
+  ShieldIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { ConnectCard } from "./connect-card";
 import { PlanCard } from "./plan-card";
 import { PlanDetailPanel } from "./plan-detail-panel";
 import { PlanFormPanel } from "./plan-form-panel";
@@ -52,7 +51,6 @@ import {
   type StatusFilter,
   type StudentPlan,
 } from "./plans-utils";
-import type { ConnectAccount } from "@/repositories/stripe-connect";
 import type { SubscriptionSummary } from "@/repositories/student-subscriptions";
 
 const STATUS_TABS: StatusFilter[] = ["all", "active", "draft", "archived"];
@@ -61,7 +59,6 @@ const VIEW_MODE_KEY = "du:planos:modo";
 
 interface PlansViewProps {
   plans: StudentPlan[];
-  account: ConnectAccount | null;
   summary: SubscriptionSummary;
   stripeConfigured: boolean;
   stripeLiveMode: boolean;
@@ -69,13 +66,11 @@ interface PlansViewProps {
 
 export function PlansView({
   plans,
-  account,
   summary,
   stripeConfigured,
   stripeLiveMode,
 }: PlansViewProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
 
   const [search, setSearch] = useState("");
@@ -97,17 +92,7 @@ export function PlansView({
   const listRef = useRef<HTMLDivElement>(null);
   const lineRef = useListProgress(listRef);
 
-  const canPublish = Boolean(account?.chargesEnabled);
-
-  // Volta do onboarding da Stripe (`?connect=retorno`): a conta pode ter sido
-  // liberada segundos atrás, então o servidor precisa reler antes de a tela
-  // afirmar qualquer coisa.
-  const connectParam = searchParams.get("connect");
-  useEffect(() => {
-    if (!connectParam) return;
-    router.replace("/admin/planos-de-alunos");
-    router.refresh();
-  }, [connectParam, router]);
+  const canPublish = stripeConfigured;
 
   // Os painéis seguem a lista: depois de salvar ou arquivar, o plano aberto
   // tem que refletir o dado novo, não o snapshot de quando abriu.
@@ -180,7 +165,14 @@ export function PlansView({
     <div className="pb-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-admin-foreground">Planos de alunos</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-admin-foreground">
+            Planos de alunos
+            {stripeConfigured && !stripeLiveMode && (
+              <span className="rounded-full bg-[color-mix(in_srgb,var(--warning)_12%,#ffffff)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--warning)]">
+                modo de teste
+              </span>
+            )}
+          </h1>
           <p className="mt-2 max-w-xl text-sm text-admin-foreground/60">
             Monte os pacotes que a escola vende. Cada plano publicado vira um produto na
             Stripe, com link de pagamento pronto para enviar — e aparece na vitrine do
@@ -207,13 +199,31 @@ export function PlansView({
         </dl>
       </div>
 
-      <div className="mt-5">
-        <ConnectCard
-          account={account}
-          configured={stripeConfigured}
-          liveMode={stripeLiveMode}
-        />
-      </div>
+      {!stripeConfigured && (
+        <div className="mt-5 flex gap-4 rounded-2xl border border-[color-mix(in_srgb,var(--warning)_32%,transparent)] bg-[color-mix(in_srgb,var(--warning)_6%,#ffffff)] p-4">
+          <span
+            aria-hidden
+            style={{
+              color: "var(--warning)",
+              backgroundColor: "color-mix(in srgb, var(--warning) 12%, #ffffff)",
+            }}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+          >
+            <ShieldIcon className="h-4.5 w-4.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-admin-foreground">
+              Stripe não configurada neste ambiente
+            </p>
+            <p className="mt-1 text-[13px] leading-relaxed text-admin-foreground/60">
+              Defina <code className="font-mono text-[12px]">STRIPE_SECRET_KEY</code> e{" "}
+              <code className="font-mono text-[12px]">STRIPE_WEBHOOK_SECRET</code> no
+              ambiente. Enquanto isso, os planos podem ser desenhados e salvos como
+              rascunho — nada é cobrado.
+            </p>
+          </div>
+        </div>
+      )}
 
       {(summary.pastDueCount > 0 || summary.trialingCount > 0) && (
         <div className="mt-2 flex flex-wrap gap-2">
