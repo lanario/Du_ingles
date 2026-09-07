@@ -14,10 +14,21 @@
  * remarcada (`moveSessionAction`) ou desmarcada (`removeSessionAction`),
  * porque ela tem plano, chamada e histórico pendurados; o compromisso é
  * editado e excluído no próprio formulário da agenda.
+ *
+ * A aula tem ainda uma porta que o compromisso não tem: a sala de aula
+ * (`/planejador/aula/<id>`). É o mesmo link que a lista do planejador
+ * oferece (`SessionRow`), e por isso o mesmo texto conforme o status —
+ * "Dar aula" agendada, "Continuar aula" ao vivo, "Ver registro" depois.
+ * A checagem de verdade (a aula é sua, ou você é admin) é da própria sala;
+ * o link aqui só decide se mostra, não se autoriza — igual ao resto do
+ * painel. O prefixo (`/admin` ou `/professor`) segue de onde a pessoa já
+ * está, não do papel: o "ver como" do admin não muda a URL da agenda.
  */
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import type { Route } from "next";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   deleteAgendaEventAction,
@@ -30,7 +41,7 @@ import { TimeField } from "@/components/ui/time-field";
 import { FormBanner } from "@/components/ui/form-message";
 import { Label } from "@/components/ui/label";
 import { LogoLoader } from "@/components/ui/logo-loader";
-import { CalendarIcon, PencilIcon, TrashIcon } from "@/components/ui/icons";
+import { CalendarIcon, PencilIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { AgendaItem } from "@/repositories/agenda";
 import type { ActionResult } from "@/types/action-result";
@@ -47,6 +58,29 @@ import {
 
 const DURATIONS = [30, 45, 60, 90, 120];
 
+/** Rótulo e cor do link da sala, pelo status da aula — mesmo mapa do `SessionRow`. */
+function roomLinkMeta(status: AgendaItem["status"]): {
+  label: string;
+  className: string;
+} {
+  if (status === "in_progress") {
+    return {
+      label: "Continuar aula",
+      className: "bg-[var(--success)] text-white hover:opacity-90",
+    };
+  }
+  if (status === "scheduled") {
+    return {
+      label: "Dar aula",
+      className: "bg-navy-900 text-white hover:opacity-90",
+    };
+  }
+  return {
+    label: "Ver registro",
+    className: "border border-border text-foreground/80 hover:bg-muted",
+  };
+}
+
 export function AgendaDetail({
   placed,
   tones,
@@ -62,6 +96,8 @@ export function AgendaDetail({
   onEditEvent: (item: AgendaItem) => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const staffBase = pathname.startsWith("/professor") ? "/professor" : "/admin";
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
@@ -169,134 +205,163 @@ export function AgendaDetail({
 
           {/* ------------------------------------------------- ações ----- */}
 
-          {(item.canEdit || item.canDelete) && (
-            <div className="space-y-3 border-t border-border pt-4">
-              <AnimatePresence initial={false} mode="wait">
-                {rescheduling && item.kind === "session" ? (
-                  <motion.div
-                    key="reschedule"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.22, ease: "easeOut" }}
-                    className="space-y-4 overflow-hidden"
-                  >
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="agenda-move-date">Nova data</Label>
-                        <DateField
-                          id="agenda-move-date"
-                          tone={tone}
-                          value={date}
-                          onChange={setDate}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="agenda-move-time">Novo horário</Label>
-                        <TimeField
-                          id="agenda-move-time"
-                          tone={tone}
-                          value={time}
-                          onChange={setTime}
-                        />
-                      </div>
-                    </div>
+          {/*
+           * A sala abre independente de `canEdit`/`canDelete`: os dois só
+           * valem enquanto a aula está "scheduled" (ver `sessionRights` no
+           * repositório), mas uma aula ao vivo ou já dada continua
+           * clicável — é "Continuar aula" e "Ver registro", não mais
+           * remarcável nem apagável, e sem isto o painel ficaria sem botão
+           * nenhum assim que a aula começasse.
+           */}
+          {(() => {
+            const showRoom = tone === "admin" && item.kind === "session" && item.id;
+            if (!item.canEdit && !item.canDelete && !showRoom) return null;
+            const roomHref = showRoom
+              ? (`${staffBase}/planejador/aula/${item.id}` as Route)
+              : null;
+            const roomMeta = roomLinkMeta(item.status);
 
-                    <div className="flex flex-wrap gap-2">
-                      {DURATIONS.map((minutes) => (
+            return (
+              <div className="space-y-3 border-t border-border pt-4">
+                <AnimatePresence initial={false} mode="wait">
+                  {rescheduling && item.kind === "session" ? (
+                    <motion.div
+                      key="reschedule"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      className="space-y-4 overflow-hidden"
+                    >
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="agenda-move-date">Nova data</Label>
+                          <DateField
+                            id="agenda-move-date"
+                            tone={tone}
+                            value={date}
+                            onChange={setDate}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="agenda-move-time">Novo horário</Label>
+                          <TimeField
+                            id="agenda-move-time"
+                            tone={tone}
+                            value={time}
+                            onChange={setTime}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {DURATIONS.map((minutes) => (
+                          <button
+                            key={minutes}
+                            type="button"
+                            onClick={() => setDuration(minutes)}
+                            aria-pressed={duration === minutes}
+                            className={cn(
+                              "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
+                              duration === minutes
+                                ? "border-navy-900 bg-navy-900 text-white"
+                                : "border-border text-foreground/70 hover:bg-muted",
+                            )}
+                          >
+                            {minutes} min
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-end gap-3">
                         <button
-                          key={minutes}
                           type="button"
-                          onClick={() => setDuration(minutes)}
-                          aria-pressed={duration === minutes}
+                          onClick={() => setRescheduling(false)}
+                          className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
+                        >
+                          Voltar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={pending || !item.id}
+                          onClick={() => {
+                            const id = item.id;
+                            if (!id) return;
+                            run(() => moveSessionAction(id, date, time, duration));
+                          }}
+                          className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                        >
+                          {pending ? (
+                            <>
+                              <LogoLoader size={16} label={null} />
+                              Remarcando…
+                            </>
+                          ) : (
+                            "Remarcar"
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="actions"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="flex flex-wrap gap-2"
+                    >
+                      {roomHref && (
+                        <Link
+                          href={roomHref}
                           className={cn(
-                            "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
-                            duration === minutes
-                              ? "border-navy-900 bg-navy-900 text-white"
-                              : "border-border text-foreground/70 hover:bg-muted",
+                            "inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-opacity",
+                            roomMeta.className,
                           )}
                         >
-                          {minutes} min
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRescheduling(false)}
-                        className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
-                      >
-                        Voltar
-                      </button>
-                      <button
-                        type="button"
-                        disabled={pending || !item.id}
-                        onClick={() => {
-                          const id = item.id;
-                          if (!id) return;
-                          run(() => moveSessionAction(id, date, time, duration));
-                        }}
-                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                      >
-                        {pending ? (
-                          <>
-                            <LogoLoader size={16} label={null} />
-                            Remarcando…
-                          </>
-                        ) : (
-                          "Remarcar"
-                        )}
-                      </button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="actions"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    className="flex flex-wrap gap-2"
-                  >
-                    {item.canEdit && item.kind === "session" && (
-                      <PanelAction icon={CalendarIcon} onClick={openReschedule}>
-                        Remarcar
-                      </PanelAction>
-                    )}
-                    {item.canEdit && item.kind === "event" && (
-                      <PanelAction icon={PencilIcon} onClick={() => onEditEvent(item)}>
-                        Editar
-                      </PanelAction>
-                    )}
-                    {item.canDelete && (
-                      <PanelAction
-                        icon={TrashIcon}
-                        tone="danger"
-                        disabled={pending}
-                        onClick={() => {
-                          const id = item.id;
-                          if (!id) return;
-                          const isSession = item.kind === "session";
-                          const question = isSession
-                            ? "Desmarcar esta aula? A turma é avisada."
-                            : "Excluir este compromisso?";
-                          if (!window.confirm(question)) return;
-                          run(() =>
-                            isSession
-                              ? removeSessionAction(id)
-                              : deleteAgendaEventAction(id),
-                          );
-                        }}
-                      >
-                        {item.kind === "session" ? "Desmarcar" : "Excluir"}
-                      </PanelAction>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+                          <PlayIcon className="h-4 w-4" />
+                          {roomMeta.label}
+                        </Link>
+                      )}
+                      {item.canEdit && item.kind === "session" && (
+                        <PanelAction icon={CalendarIcon} onClick={openReschedule}>
+                          Remarcar
+                        </PanelAction>
+                      )}
+                      {item.canEdit && item.kind === "event" && (
+                        <PanelAction icon={PencilIcon} onClick={() => onEditEvent(item)}>
+                          Editar
+                        </PanelAction>
+                      )}
+                      {item.canDelete && (
+                        <PanelAction
+                          icon={TrashIcon}
+                          tone="danger"
+                          disabled={pending}
+                          onClick={() => {
+                            const id = item.id;
+                            if (!id) return;
+                            const isSession = item.kind === "session";
+                            const question = isSession
+                              ? "Desmarcar esta aula? A turma é avisada."
+                              : "Excluir este compromisso?";
+                            if (!window.confirm(question)) return;
+                            run(() =>
+                              isSession
+                                ? removeSessionAction(id)
+                                : deleteAgendaEventAction(id),
+                            );
+                          }}
+                        >
+                          {item.kind === "session" ? "Desmarcar" : "Excluir"}
+                        </PanelAction>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })()}
         </div>
       )}
     </SidePanel>
