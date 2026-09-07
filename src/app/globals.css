@@ -419,22 +419,29 @@ body {
  * de sobrepor esse estilo nativo; `--autofill-bg` deixa cada campo declarar
  * a cor que deveria aparecer por baixo (o padrão é o fundo da página, que já
  * é o caso comum das telas claras).
+ *
+ * `currentColor` não serve para o texto: o navegador força a propriedade
+ * `color` do campo para preto nesse estado (é ele quem "ganha" o cascade,
+ * não o CSS do site), e `currentColor` herdaria esse preto forçado — em
+ * fundo claro isso passava batido (preto já era a cor certa), mas em campo
+ * de fundo escuro o texto ficava ilegível. `--autofill-color` existe à parte
+ * de `color` justamente para escapar dessa imposição.
  */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-text-fill-color: currentColor;
+  -webkit-text-fill-color: var(--autofill-color, var(--foreground));
   -webkit-box-shadow: 0 0 0 1000px var(--autofill-bg, var(--background)) inset;
   box-shadow: 0 0 0 1000px var(--autofill-bg, var(--background)) inset;
-  caret-color: currentColor;
+  caret-color: var(--autofill-color, var(--foreground));
   transition: background-color 9999s ease-in-out 0s;
 }
 
 input:autofill {
-  -webkit-text-fill-color: currentColor;
+  -webkit-text-fill-color: var(--autofill-color, var(--foreground));
   box-shadow: 0 0 0 1000px var(--autofill-bg, var(--background)) inset;
-  caret-color: currentColor;
+  caret-color: var(--autofill-color, var(--foreground));
 }
 
 /* Números de métrica não devem "dançar" enquanto o count-up roda. */
