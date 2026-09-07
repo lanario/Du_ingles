@@ -24,9 +24,8 @@ export function SettingsView({
   stripeConfigured: boolean;
   stripeLiveMode: boolean;
 }) {
-  const [tab, setTab] = usePersistedChoice<Tab>(
-    "du:configuracoes:tab",
-    (raw) => (raw === "financeiro" ? "financeiro" : "geral"),
+  const [tab, setTab] = usePersistedChoice<Tab>("du:configuracoes:tab", (raw) =>
+    raw === "financeiro" ? "financeiro" : "geral",
   );
 
   return (

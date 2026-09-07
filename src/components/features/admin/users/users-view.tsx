@@ -61,9 +61,8 @@ export function UsersView({
   const reduceMotion = useReducedMotion();
 
   const [search, setSearch] = useState("");
-  const [tab, setTab] = usePersistedChoice<RoleFilter>(
-    "du:usuarios:tab",
-    (raw) => (raw && TAB_IDS.includes(raw as RoleFilter) ? (raw as RoleFilter) : "all"),
+  const [tab, setTab] = usePersistedChoice<RoleFilter>("du:usuarios:tab", (raw) =>
+    raw && TAB_IDS.includes(raw as RoleFilter) ? (raw as RoleFilter) : "all",
   );
 
   const [detail, setDetail] = useState<UserDetailData | null>(null);

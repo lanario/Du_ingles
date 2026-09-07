@@ -98,9 +98,8 @@ export function TurmasView({
   // responde por ela) continua sendo coordenação.
   const { base, canManageGroups } = useArea();
 
-  const [page, setPage] = usePersistedChoice<PageTab>(
-    "du:turmas:pagina",
-    (raw) => (raw === "agenda" ? "agenda" : "turmas"),
+  const [page, setPage] = usePersistedChoice<PageTab>("du:turmas:pagina", (raw) =>
+    raw === "agenda" ? "agenda" : "turmas",
   );
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");

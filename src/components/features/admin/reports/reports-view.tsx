@@ -90,9 +90,8 @@ export function ReportsView({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [tab, setTab] = usePersistedChoice<TabId>(
-    "du:relatorios:tab",
-    (raw) => (raw && TAB_IDS.includes(raw as TabId) ? (raw as TabId) : "overview"),
+  const [tab, setTab] = usePersistedChoice<TabId>("du:relatorios:tab", (raw) =>
+    raw && TAB_IDS.includes(raw as TabId) ? (raw as TabId) : "overview",
   );
 
   function navigate(next: { mes?: string; janela?: ReportWindow }) {

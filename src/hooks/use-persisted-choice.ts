@@ -3,7 +3,9 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : (() => {}) as typeof useLayoutEffect;
+  typeof window !== "undefined"
+    ? useLayoutEffect
+    : ((() => {}) as typeof useLayoutEffect);
 
 /**
  * "Onde a pessoa parou" — a aba, a pasta, o filtro que estava aberto numa
