@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import gsap from "gsap";
 import { CheckIcon, StarIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import {
@@ -43,6 +44,11 @@ export function Pricing() {
   const [frequency, setFrequency] = useState<PlanWeeklyFrequency>(1);
   const [selectedTier, setSelectedTier] = useState<PlanTier | null>(null);
 
+  const pillGroupRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const pillButtonRefs = useRef(new Map<PlanWeeklyFrequency, HTMLButtonElement>());
+  const pillMounted = useRef(false);
+
   const plans = useMemo(
     () =>
       TIER_ORDER.map((tier) => ({
@@ -56,6 +62,65 @@ export function Pricing() {
     [frequency],
   );
 
+  /**
+   * A chave que desliza sob o ritmo ativo é GSAP puro (mede o botão de
+   * verdade e faz o tween), não a animação de layout do Framer: o grupo tem
+   * três larguras diferentes ("1x" cabe em menos espaço que "3x por semana"),
+   * e o `power3.out` do GSAP desliza *e* redimensiona no mesmo gesto sem o
+   * solavanco elástico que o spring padrão do Framer daria aqui. O Framer
+   * fica com o que é dele: o toque no botão e a estrela do ritmo
+   * recomendado aparecendo/sumindo.
+   *
+   * `x/y/width/height` (não só `x/width`) porque em telas estreitas o grupo
+   * pode quebrar para duas linhas — sem a posição vertical a chave prenderia
+   * na primeira linha enquanto o botão ativo estivesse na segunda.
+   */
+  useLayoutEffect(() => {
+    const pill = pillRef.current;
+    const button = pillButtonRefs.current.get(frequency);
+    if (!pill || !button) return;
+
+    const target = {
+      x: button.offsetLeft,
+      y: button.offsetTop,
+      width: button.offsetWidth,
+      height: button.offsetHeight,
+    };
+
+    if (!pillMounted.current || reduceMotion) {
+      gsap.set(pill, target);
+    } else {
+      gsap.to(pill, { ...target, duration: 0.5, ease: "power3.out" });
+    }
+    pillMounted.current = true;
+  }, [frequency, reduceMotion]);
+
+  // A largura dos botões muda com a fonte carregando e com o grupo
+  // quebrando linha em telas estreitas; sem reobservar isso a chave fica
+  // desalinhada até o próximo clique.
+  useLayoutEffect(() => {
+    const group = pillGroupRef.current;
+    if (!group || typeof ResizeObserver === "undefined") return;
+
+    const snap = () => {
+      const pill = pillRef.current;
+      const button = pillButtonRefs.current.get(frequency);
+      if (!pill || !button) return;
+      gsap.set(pill, {
+        x: button.offsetLeft,
+        y: button.offsetTop,
+        width: button.offsetWidth,
+        height: button.offsetHeight,
+      });
+    };
+
+    const observer = new ResizeObserver(snap);
+    observer.observe(group);
+    for (const button of pillButtonRefs.current.values()) observer.observe(button);
+    document.fonts?.ready.then(snap).catch(() => {});
+    return () => observer.disconnect();
+  }, [frequency]);
+
   return (
     <section id="planos">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
@@ -67,49 +132,59 @@ export function Pricing() {
         </p>
 
         {/* Seletor de ritmo — 1x aparece primeiro e já vem selecionado por
-            ser o mais barato; o 2x carrega a estrela do ritmo recomendado. */}
-        <div
-          role="radiogroup"
-          aria-label="Ritmo das aulas por semana"
-          className="mt-6 inline-flex flex-wrap gap-1 rounded-2xl border border-border bg-background p-1 shadow-[var(--shadow-card)]"
-        >
-          {WEEKLY_FREQUENCIES.map((item) => {
-            const active = frequency === item;
-            return (
-              <button
-                key={item}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setFrequency(item)}
-                className={cn(
-                  "relative flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2",
-                  active ? "text-navy-950" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="pricing-frequency-pill"
-                    aria-hidden
-                    className="absolute inset-0 -z-10 rounded-xl bg-gold-400"
-                    transition={
-                      reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }
-                    }
-                  />
-                )}
-                {FREQUENCY_LABEL[item]}
-                {item === RECOMMENDED_FREQUENCY && (
-                  <StarIcon
-                    className="h-3 w-3"
-                    fill="currentColor"
-                    strokeWidth={0}
-                    style={{ color: active ? "var(--navy-950)" : "var(--gold-500)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
+            ser o mais barato; o 2x carrega a estrela do ritmo recomendado.
+            Centralizado no container: é a mesma largura da grade de planos
+            logo abaixo, então a chave nasce alinhada ao meio dos três
+            cartões, não presa à esquerda do parágrafo. */}
+        <div className="mt-6 flex justify-center">
+          <div
+            ref={pillGroupRef}
+            role="radiogroup"
+            aria-label="Ritmo das aulas por semana"
+            className="relative flex flex-wrap justify-center gap-1 rounded-2xl border border-border bg-background p-1 shadow-[var(--shadow-card)]"
+          >
+            {/* Chave única, deslizada pelo GSAP — ver o efeito acima. */}
+            <span
+              ref={pillRef}
+              aria-hidden
+              className="absolute left-0 top-0 z-0 rounded-xl bg-gold-400"
+            />
+
+            {WEEKLY_FREQUENCIES.map((item) => {
+              const active = frequency === item;
+              return (
+                <motion.button
+                  key={item}
+                  ref={(node) => {
+                    if (node) pillButtonRefs.current.set(item, node);
+                    else pillButtonRefs.current.delete(item);
+                  }}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setFrequency(item)}
+                  whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                  className={cn(
+                    "relative z-10 flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2",
+                    active
+                      ? "text-navy-950"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {FREQUENCY_LABEL[item]}
+                  {item === RECOMMENDED_FREQUENCY && (
+                    <StarIcon
+                      className="h-3 w-3"
+                      fill="currentColor"
+                      strokeWidth={0}
+                      style={{ color: active ? "var(--navy-950)" : "var(--gold-500)" }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground lg:hidden" aria-hidden>
@@ -128,7 +203,8 @@ export function Pricing() {
             const selected = selectedTier === plan.tier;
             // Sem seleção explícita, o Premium continua em destaque — é o que
             // a escola recomenda por padrão.
-            const highlighted = selected || (selectedTier === null && plan.tier === "premium");
+            const highlighted =
+              selected || (selectedTier === null && plan.tier === "premium");
 
             return (
               <article
@@ -187,7 +263,9 @@ export function Pricing() {
                     className={cn(
                       "grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950",
-                      selected ? "border-transparent" : "border-white/25 hover:border-white/50",
+                      selected
+                        ? "border-transparent"
+                        : "border-white/25 hover:border-white/50",
                     )}
                     style={selected ? { backgroundColor: plan.tone } : undefined}
                   >
