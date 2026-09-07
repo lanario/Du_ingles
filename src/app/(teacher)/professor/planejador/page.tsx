@@ -6,7 +6,7 @@ import {
   listPlannerPlans,
   listPlannerSessions,
 } from "@/repositories/lesson-planner";
-import { listOrgAssignments } from "@/repositories/assignments";
+import { listAssignmentTemplates, listOrgAssignments } from "@/repositories/assignments";
 import { listUsers } from "@/repositories/users";
 import { AreaProvider, TEACHER_AREA } from "@/components/features/admin/area-context";
 import { folderKeyFromParam } from "@/components/features/admin/planner/planner-utils";
@@ -33,14 +33,16 @@ export default async function ProfessorPlanejadorPage({ searchParams }: PageProp
   const ctx = await requireRole(["teacher"]);
   const { nova, tab, pasta } = await searchParams;
 
-  const [plans, sessions, allGroups, me, assignments, folders] = await Promise.all([
-    listPlannerPlans(ctx.organizationId),
-    listPlannerSessions(ctx.organizationId),
-    listPlannerGroups(ctx.organizationId),
-    listUsers(ctx.organizationId, { role: "teacher" }),
-    listOrgAssignments(ctx.organizationId),
-    listPlannerFolders(ctx.organizationId, ctx.userId),
-  ]);
+  const [plans, sessions, allGroups, me, assignments, templates, folders] =
+    await Promise.all([
+      listPlannerPlans(ctx.organizationId),
+      listPlannerSessions(ctx.organizationId),
+      listPlannerGroups(ctx.organizationId),
+      listUsers(ctx.organizationId, { role: "teacher" }),
+      listOrgAssignments(ctx.organizationId),
+      listAssignmentTemplates(ctx.organizationId),
+      listPlannerFolders(ctx.organizationId, ctx.userId),
+    ]);
 
   const groups = allGroups.filter((group) => group.teacherId === ctx.userId);
   const myGroupIds = new Set(groups.map((group) => group.id));
@@ -54,6 +56,7 @@ export default async function ProfessorPlanejadorPage({ searchParams }: PageProp
         groups={groups}
         teachers={me.filter((user) => user.id === ctx.userId)}
         assignments={assignments.filter((item) => myGroupIds.has(item.groupId))}
+        templates={templates.filter((item) => item.ownerId === ctx.userId)}
         editableAuthorId={ctx.userId}
         openCreate={nova !== undefined}
         initialTab={

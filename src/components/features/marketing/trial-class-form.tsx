@@ -123,6 +123,7 @@ function Field({
   return (
     <div data-field>
       <div
+        style={{ "--autofill-bg": "var(--navy-900)" } as React.CSSProperties}
         className={cn(
           "relative rounded-2xl border px-11 backdrop-blur-sm transition-colors duration-300",
           "bg-white/[0.04]",

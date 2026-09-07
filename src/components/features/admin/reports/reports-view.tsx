@@ -44,6 +44,7 @@ import {
   WalletIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 import type { AdminReport } from "@/repositories/reports";
 import type {
   FinancialReport,
@@ -66,6 +67,7 @@ const TABS: { id: TabId; label: string; hint: string }[] = [
   { id: "teachers", label: "Professores", hint: "Comissão e salário" },
   { id: "pedagogy", label: "Pedagógico", hint: "Frequência e tarefas" },
 ];
+const TAB_IDS: readonly TabId[] = TABS.map((item) => item.id);
 
 /** Variação percentual entre duas competências. `null` sem base de comparação. */
 function delta(current: number, previous: number): number | null {
@@ -88,7 +90,10 @@ export function ReportsView({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [tab, setTab] = useState<TabId>("overview");
+  const [tab, setTab] = usePersistedChoice<TabId>(
+    "du:relatorios:tab",
+    (raw) => (raw && TAB_IDS.includes(raw as TabId) ? (raw as TabId) : "overview"),
+  );
 
   function navigate(next: { mes?: string; janela?: ReportWindow }) {
     const params = new URLSearchParams({

@@ -1,45 +1,117 @@
-import { CheckIcon } from "@/components/ui/icons";
+"use client";
+
+import { useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { CheckIcon, StarIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import {
   BASE_MONTHLY_PRICE_CENTS,
+  FREQUENCY_LABEL,
   RECOMMENDED_FREQUENCY,
+  TIER_ACCENT,
   TIER_ORDER,
   TIER_TAGLINE,
+  WEEKLY_FREQUENCIES,
   tierFeatures,
 } from "@/lib/plans/tier-catalog";
+import { ACCENT_TONE } from "@/components/features/admin/plans/plans-utils";
+import type { PlanTier, PlanWeeklyFrequency } from "@/schemas/student-plans";
+
+const TIER_NAME: Record<PlanTier, string> = {
+  standard: "Standard",
+  premium: "Premium",
+  elite: "Elite",
+};
 
 /**
- * Preço no ritmo recomendado (2x/semana), mensal — a mesma referência que a
- * vitrine do aluno usa como ritmo em destaque. Aqui é só a vitrine curta,
- * pública, que convida a pedir a aula-teste; a grade completa (com todos os
- * ritmos e compromissos, e desconto por semestre/ano) só existe depois do
- * cadastro, em `/planos`.
- */
-const PLANS = TIER_ORDER.map((tier) => ({
-  tier,
-  name: tier === "standard" ? "Standard" : tier === "premium" ? "Premium" : "Elite",
-  cycle: "2x por semana",
-  priceCents: BASE_MONTHLY_PRICE_CENTS[tier][RECOMMENDED_FREQUENCY],
-  description: TIER_TAGLINE[tier],
-  features: tierFeatures(tier).slice(0, 4),
-  highlight: tier === "premium",
-}));
-
-/**
- * Seção de preços da landing — cartões escuros no estilo "vitrine premium",
- * sem GlowCard para evitar a borda colorida pelo hover. O layout é inspirado
- * no modelo de referência: badge no topo, nome grande, descrição, preço em
- * destaque, lista de benefícios com check dourado, e botão CTA no rodapé.
+ * Seção de preços da landing — cartões escuros no estilo "vitrine premium".
+ *
+ * Diferente da vitrine completa (`/planos`, só depois do cadastro), esta é
+ * pública e não fala com o catálogo do banco: os preços vêm direto da tabela
+ * comercial (`BASE_MONTHLY_PRICE_CENTS`). Ainda assim é o mesmo construtor
+ * nível × ritmo — o visitante troca o ritmo (1x/2x/3x) e já vê o preço de
+ * cada nível mudar, e pode marcar o nível que mais combina antes de pedir a
+ * aula experimental (o CTA continua levando ao formulário em `#faq`; não há
+ * checkout sem conta).
+ *
+ * O ritmo começa em 1x — o mais barato — de propósito: é a porta de entrada
+ * mais convidativa para quem ainda está decidindo, e o 2x (ritmo recomendado
+ * internamente) fica marcado com a estrela para quem quiser mais.
  */
 export function Pricing() {
+  const reduceMotion = useReducedMotion();
+  const [frequency, setFrequency] = useState<PlanWeeklyFrequency>(1);
+  const [selectedTier, setSelectedTier] = useState<PlanTier | null>(null);
+
+  const plans = useMemo(
+    () =>
+      TIER_ORDER.map((tier) => ({
+        tier,
+        name: TIER_NAME[tier],
+        priceCents: BASE_MONTHLY_PRICE_CENTS[tier][frequency],
+        description: TIER_TAGLINE[tier],
+        features: tierFeatures(tier).slice(0, 4),
+        tone: ACCENT_TONE[TIER_ACCENT[tier]],
+      })),
+    [frequency],
+  );
+
   return (
     <section id="planos">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Planos</h2>
         <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground sm:text-base">
-          Três níveis de acompanhamento. Preço a partir do ritmo mais escolhido — na
-          vitrine completa dá pra ajustar ritmo e compromisso, com condição especial para
-          semestre e ano.
+          Três níveis de acompanhamento. Escolha o ritmo das aulas em grupo e já veja o
+          preço de cada nível — na vitrine completa dá pra ajustar também o compromisso,
+          com condição especial para semestre e ano.
         </p>
+
+        {/* Seletor de ritmo — 1x aparece primeiro e já vem selecionado por
+            ser o mais barato; o 2x carrega a estrela do ritmo recomendado. */}
+        <div
+          role="radiogroup"
+          aria-label="Ritmo das aulas por semana"
+          className="mt-6 inline-flex flex-wrap gap-1 rounded-2xl border border-border bg-background p-1 shadow-[var(--shadow-card)]"
+        >
+          {WEEKLY_FREQUENCIES.map((item) => {
+            const active = frequency === item;
+            return (
+              <button
+                key={item}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setFrequency(item)}
+                className={cn(
+                  "relative flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2",
+                  active ? "text-navy-950" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="pricing-frequency-pill"
+                    aria-hidden
+                    className="absolute inset-0 -z-10 rounded-xl bg-gold-400"
+                    transition={
+                      reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }
+                    }
+                  />
+                )}
+                {FREQUENCY_LABEL[item]}
+                {item === RECOMMENDED_FREQUENCY && (
+                  <StarIcon
+                    className="h-3 w-3"
+                    fill="currentColor"
+                    strokeWidth={0}
+                    style={{ color: active ? "var(--navy-950)" : "var(--gold-500)" }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         <p className="mt-4 text-xs text-muted-foreground lg:hidden" aria-hidden>
           Deslize para ver os três planos →
         </p>
@@ -50,55 +122,87 @@ export function Pricing() {
             borda da tela para que o `px-4` continue alinhando o primeiro
             cartão com o título. A partir de `lg` é a grade de sempre. */}
         <div className="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-4 pb-4 sm:mt-10 lg:mx-0 lg:mt-12 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0">
-          {PLANS.map((plan) => {
+          {plans.map((plan) => {
             const whole = Math.floor(plan.priceCents / 100);
             const fraction = String(plan.priceCents % 100).padStart(2, "0");
+            const selected = selectedTier === plan.tier;
+            // Sem seleção explícita, o Premium continua em destaque — é o que
+            // a escola recomenda por padrão.
+            const highlighted = selected || (selectedTier === null && plan.tier === "premium");
 
             return (
               <article
                 key={plan.name}
                 className="pricing-card group relative flex w-[85%] max-w-sm shrink-0 snap-center flex-col overflow-hidden rounded-2xl p-6 transition-all duration-300 sm:w-[62%] lg:w-auto lg:max-w-none"
                 style={{
-                  background: plan.highlight
+                  background: highlighted
                     ? "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-800) 100%)"
                     : "linear-gradient(168deg, var(--navy-950) 0%, var(--navy-900) 100%)",
-                  boxShadow: plan.highlight
-                    ? "inset 0 0 0 1px color-mix(in srgb, var(--gold-500) 28%, transparent), 0 24px 60px -16px rgba(5,15,34,0.7)"
+                  boxShadow: highlighted
+                    ? `inset 0 0 0 1px color-mix(in srgb, ${plan.tone} 32%, transparent), 0 24px 60px -16px rgba(5,15,34,0.7)`
                     : "inset 0 0 0 1px color-mix(in srgb, var(--navy-600) 32%, transparent), 0 16px 40px -20px rgba(5,15,34,0.5)",
                 }}
               >
                 {/* Brilho sutil no topo do card em destaque */}
-                {plan.highlight && (
+                {highlighted && (
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-x-0 -top-px h-px"
                     style={{
-                      background:
-                        "linear-gradient(90deg, transparent, var(--gold-500), transparent)",
+                      background: `linear-gradient(90deg, transparent, ${plan.tone}, transparent)`,
                     }}
                   />
                 )}
 
-                {/* Badge do ritmo de referência */}
-                <span
-                  className="mb-4 inline-flex w-fit items-center rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
-                  style={{
-                    color: plan.highlight ? "var(--gold-400)" : "var(--navy-300)",
-                    border: `1px solid ${
-                      plan.highlight
-                        ? "color-mix(in srgb, var(--gold-500) 32%, transparent)"
-                        : "color-mix(in srgb, var(--navy-500) 28%, transparent)"
-                    }`,
-                    background: plan.highlight
-                      ? "color-mix(in srgb, var(--gold-500) 8%, transparent)"
-                      : "color-mix(in srgb, var(--navy-600) 12%, transparent)",
-                  }}
-                >
-                  {plan.cycle}
-                </span>
+                <div className="flex items-start justify-between gap-2">
+                  {/* Badge do ritmo escolhido */}
+                  <span
+                    className="inline-flex w-fit items-center rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
+                    style={{
+                      color: highlighted ? plan.tone : "var(--navy-300)",
+                      border: `1px solid ${
+                        highlighted
+                          ? `color-mix(in srgb, ${plan.tone} 32%, transparent)`
+                          : "color-mix(in srgb, var(--navy-500) 28%, transparent)"
+                      }`,
+                      background: highlighted
+                        ? `color-mix(in srgb, ${plan.tone} 8%, transparent)`
+                        : "color-mix(in srgb, var(--navy-600) 12%, transparent)",
+                    }}
+                  >
+                    {FREQUENCY_LABEL[frequency]}
+                  </span>
+
+                  {/* Personalizar: marcar este nível como o plano escolhido */}
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    aria-label={
+                      selected
+                        ? `Remover seleção do plano ${plan.name}`
+                        : `Selecionar o plano ${plan.name}`
+                    }
+                    title={selected ? "Plano selecionado" : "Selecionar este plano"}
+                    onClick={() => setSelectedTier(selected ? null : plan.tier)}
+                    className={cn(
+                      "grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950",
+                      selected ? "border-transparent" : "border-white/25 hover:border-white/50",
+                    )}
+                    style={selected ? { backgroundColor: plan.tone } : undefined}
+                  >
+                    {selected && (
+                      <CheckIcon
+                        className="h-4 w-4"
+                        style={{ color: "var(--navy-950)" }}
+                        strokeWidth={3}
+                      />
+                    )}
+                  </button>
+                </div>
 
                 {/* Nome do plano */}
-                <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                <h3 className="mt-4 text-xl font-bold text-white">{plan.name}</h3>
 
                 {/* Descrição */}
                 <p
@@ -137,8 +241,8 @@ export function Pricing() {
                 <div
                   className="my-5 h-px w-full"
                   style={{
-                    background: plan.highlight
-                      ? "color-mix(in srgb, var(--gold-500) 18%, transparent)"
+                    background: highlighted
+                      ? `color-mix(in srgb, ${plan.tone} 18%, transparent)`
                       : "color-mix(in srgb, var(--navy-600) 28%, transparent)",
                   }}
                 />
@@ -150,9 +254,7 @@ export function Pricing() {
                       <CheckIcon
                         className="mt-0.5 h-4 w-4 shrink-0"
                         strokeWidth={2.4}
-                        style={{
-                          color: plan.highlight ? "var(--gold-500)" : "var(--gold-400)",
-                        }}
+                        style={{ color: highlighted ? plan.tone : "var(--gold-400)" }}
                       />
                       <span className="font-medium text-white/80">{f}</span>
                     </li>
@@ -164,16 +266,16 @@ export function Pricing() {
                   href="#faq"
                   className="mt-6 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200"
                   style={{
-                    background: plan.highlight
-                      ? "var(--gold-500)"
+                    background: highlighted
+                      ? plan.tone
                       : "color-mix(in srgb, var(--navy-600) 40%, transparent)",
-                    color: plan.highlight ? "var(--navy-950)" : "white",
-                    border: plan.highlight
-                      ? "1px solid var(--gold-400)"
+                    color: highlighted ? "var(--navy-950)" : "white",
+                    border: highlighted
+                      ? `1px solid ${plan.tone}`
                       : "1px solid color-mix(in srgb, var(--navy-500) 40%, transparent)",
                   }}
                 >
-                  Quero esse plano
+                  {selected ? "Continuar com esse plano" : "Quero esse plano"}
                 </a>
               </article>
             );

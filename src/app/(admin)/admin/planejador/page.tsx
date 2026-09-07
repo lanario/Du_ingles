@@ -6,7 +6,7 @@ import {
   listPlannerPlans,
   listPlannerSessions,
 } from "@/repositories/lesson-planner";
-import { listOrgAssignments } from "@/repositories/assignments";
+import { listAssignmentTemplates, listOrgAssignments } from "@/repositories/assignments";
 import { listUsers } from "@/repositories/users";
 import { folderKeyFromParam } from "@/components/features/admin/planner/planner-utils";
 import { PlannerView } from "@/components/features/admin/planner/planner-view";
@@ -29,14 +29,16 @@ export default async function PlanejadorPage({ searchParams }: PageProps) {
   const ctx = await requireRole(["admin"]);
   const { nova, tab, pasta } = await searchParams;
 
-  const [plans, sessions, groups, teachers, assignments, folders] = await Promise.all([
-    listPlannerPlans(ctx.organizationId),
-    listPlannerSessions(ctx.organizationId),
-    listPlannerGroups(ctx.organizationId),
-    listUsers(ctx.organizationId, { role: "teacher" }),
-    listOrgAssignments(ctx.organizationId),
-    listPlannerFolders(ctx.organizationId, ctx.userId),
-  ]);
+  const [plans, sessions, groups, teachers, assignments, templates, folders] =
+    await Promise.all([
+      listPlannerPlans(ctx.organizationId),
+      listPlannerSessions(ctx.organizationId),
+      listPlannerGroups(ctx.organizationId),
+      listUsers(ctx.organizationId, { role: "teacher" }),
+      listOrgAssignments(ctx.organizationId),
+      listAssignmentTemplates(ctx.organizationId),
+      listPlannerFolders(ctx.organizationId, ctx.userId),
+    ]);
 
   return (
     <PlannerView
@@ -46,6 +48,7 @@ export default async function PlanejadorPage({ searchParams }: PageProps) {
       groups={groups}
       teachers={teachers}
       assignments={assignments}
+      templates={templates}
       openCreate={nova !== undefined}
       initialTab={
         tab && VALID_TABS.has(tab) ? (tab as "atelie" | "agenda" | "tarefas") : undefined

@@ -24,6 +24,7 @@ import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useArea } from "@/components/features/admin/area-context";
 import { useListProgress, useStickyBar } from "@/components/motion/list-motion";
 import { useNarrowScreen, useViewMode } from "@/components/motion/use-view-mode";
+import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 import { Select } from "@/components/ui/select";
 import {
   CalendarIcon,
@@ -97,7 +98,10 @@ export function TurmasView({
   // responde por ela) continua sendo coordenação.
   const { base, canManageGroups } = useArea();
 
-  const [page, setPage] = useState<PageTab>("turmas");
+  const [page, setPage] = usePersistedChoice<PageTab>(
+    "du:turmas:pagina",
+    (raw) => (raw === "agenda" ? "agenda" : "turmas"),
+  );
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [teacherFilter, setTeacherFilter] = useState<TeacherFilter>({ type: "all" });

@@ -380,6 +380,18 @@ export function splitQuestionDrafts(drafts: QuestionDraft[]): {
   return { questions, answerKey };
 }
 
+/** Monta o `instructions` jsonb a partir do texto livre e das questões já separadas. */
+function buildInstructionsJson(
+  text: string | undefined,
+  questions: Question[],
+): Json | null {
+  if (!text && questions.length === 0) return null;
+  return {
+    ...(text ? { text } : {}),
+    ...(questions.length > 0 ? { questions } : {}),
+  } as unknown as Json;
+}
+
 /** Uma linha em `assignments` por turma selecionada — ver nota acima. */
 export async function createAssignmentsForGroups(input: {
   groupIds: string[];
@@ -393,14 +405,7 @@ export async function createAssignmentsForGroups(input: {
 }): Promise<Array<{ id: string; groupId: string }> | null> {
   const admin = createAdminSupabaseClient();
   const { questions, answerKey } = splitQuestionDrafts(input.questions ?? []);
-
-  const instructions =
-    input.instructions || questions.length > 0
-      ? ({
-          ...(input.instructions ? { text: input.instructions } : {}),
-          ...(questions.length > 0 ? { questions } : {}),
-        } as unknown as Json)
-      : null;
+  const instructions = buildInstructionsJson(input.instructions, questions);
 
   const { data, error } = await admin
     .from("assignments")
@@ -418,6 +423,161 @@ export async function createAssignmentsForGroups(input: {
       })),
     )
     // Uma linha por turma: o aviso de cada turma leva o link da sua tarefa.
+    .select("id, group_id");
+
+  if (error || !data) return null;
+  return data.map((row) => ({ id: row.id, groupId: row.group_id }));
+}
+
+// ------------------------------------------------------- tarefas padrão ----
+
+/**
+ * Ateliê de tarefas: o mesmo exercício, pronto, sem turma nenhuma até
+ * alguém atribuir. `instructions`/`answer_key` guardam o mesmo formato final
+ * de `assignments` — atribuir é só copiar as duas colunas.
+ */
+export interface AssignmentTemplateListItem {
+  id: string;
+  ownerId: string;
+  title: string;
+  instructionsText: string | null;
+  questionCount: number;
+  maxScore: number | null;
+  createdAt: string;
+  /** Quantas turmas já receberam esta tarefa padrão. */
+  assignedGroupCount: number;
+}
+
+export async function listAssignmentTemplates(
+  organizationId: string,
+): Promise<AssignmentTemplateListItem[]> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("assignment_templates")
+    .select(
+      "id, owner_id, title, instructions, max_score, created_at, assignments:assignments(count)",
+    )
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    title: row.title,
+    instructionsText: readInstructionsText(row.instructions),
+    questionCount: readQuestions(row.instructions).length,
+    maxScore: row.max_score,
+    createdAt: row.created_at,
+    assignedGroupCount: row.assignments?.[0]?.count ?? 0,
+  }));
+}
+
+export interface AssignmentTemplateAccess {
+  ownerId: string;
+  title: string;
+  instructions: Json | null;
+  answerKey: Json | null;
+  maxScore: number | null;
+}
+
+/** Posse + conteúdo pronto para copiar — usado tanto para autorizar quanto para atribuir. */
+export async function getAssignmentTemplateForAssign(
+  id: string,
+  organizationId: string,
+): Promise<AssignmentTemplateAccess | null> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("assignment_templates")
+    .select("owner_id, title, instructions, answer_key, max_score")
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    ownerId: data.owner_id,
+    title: data.title,
+    instructions: data.instructions,
+    answerKey: data.answer_key,
+    maxScore: data.max_score,
+  };
+}
+
+export async function createAssignmentTemplate(input: {
+  title: string;
+  instructions?: string;
+  questions?: QuestionDraft[];
+  maxScore: number;
+  organizationId: string;
+  ownerId: string;
+}): Promise<string | null> {
+  const admin = createAdminSupabaseClient();
+  const { questions, answerKey } = splitQuestionDrafts(input.questions ?? []);
+  const instructions = buildInstructionsJson(input.instructions, questions);
+
+  const { data, error } = await admin
+    .from("assignment_templates")
+    .insert({
+      organization_id: input.organizationId,
+      owner_id: input.ownerId,
+      title: input.title,
+      instructions,
+      answer_key:
+        Object.keys(answerKey).length > 0 ? (answerKey as unknown as Json) : null,
+      max_score: input.maxScore,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return null;
+  return data.id;
+}
+
+export async function deleteAssignmentTemplate(
+  id: string,
+  organizationId: string,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("assignment_templates")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", organizationId);
+  return !error;
+}
+
+/**
+ * Atribuir a tarefa padrão a turmas: mesmo padrão de `createAssignmentsForGroups`
+ * (uma linha por turma), só que `instructions`/`answer_key` já vêm prontos do
+ * template em vez de serem recalculados a partir de um rascunho.
+ */
+export async function createAssignmentsFromTemplate(input: {
+  templateId: string;
+  groupIds: string[];
+  title: string;
+  instructions: Json | null;
+  answerKey: Json | null;
+  dueAt?: string;
+  maxScore: number | null;
+  organizationId: string;
+  createdBy: string;
+}): Promise<Array<{ id: string; groupId: string }> | null> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("assignments")
+    .insert(
+      input.groupIds.map((groupId) => ({
+        organization_id: input.organizationId,
+        group_id: groupId,
+        template_id: input.templateId,
+        title: input.title,
+        instructions: input.instructions,
+        answer_key: input.answerKey,
+        due_at: input.dueAt ?? null,
+        max_score: input.maxScore,
+        created_by: input.createdBy,
+      })),
+    )
     .select("id, group_id");
 
   if (error || !data) return null;

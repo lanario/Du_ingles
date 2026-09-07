@@ -412,6 +412,31 @@ body {
   }
 }
 
+/*
+ * Autofill do Chrome/Edge pinta o campo de branco/amarelo com texto escuro
+ * assim que o navegador reconhece um valor salvo, ignorando o fundo e a cor
+ * de texto definidos em CSS. `box-shadow` interno é o único jeito confiável
+ * de sobrepor esse estilo nativo; `--autofill-bg` deixa cada campo declarar
+ * a cor que deveria aparecer por baixo (o padrão é o fundo da página, que já
+ * é o caso comum das telas claras).
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: currentColor;
+  -webkit-box-shadow: 0 0 0 1000px var(--autofill-bg, var(--background)) inset;
+  box-shadow: 0 0 0 1000px var(--autofill-bg, var(--background)) inset;
+  caret-color: currentColor;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+input:autofill {
+  -webkit-text-fill-color: currentColor;
+  box-shadow: 0 0 0 1000px var(--autofill-bg, var(--background)) inset;
+  caret-color: currentColor;
+}
+
 /* Números de métrica não devem "dançar" enquanto o count-up roda. */
 .tabular {
   font-variant-numeric: tabular-nums;

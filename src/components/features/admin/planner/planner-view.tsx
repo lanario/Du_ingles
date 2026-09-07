@@ -27,10 +27,14 @@ import {
   duplicatePlannerPlanAction,
   movePlannerPlanAction,
 } from "@/actions/admin/lesson-planner";
-import { deletePlannerAssignmentAction } from "@/actions/admin/assignments";
+import {
+  deleteAssignmentTemplateAction,
+  deletePlannerAssignmentAction,
+} from "@/actions/admin/assignments";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useListProgress } from "@/components/motion/list-motion";
 import { ActionMenu } from "@/components/ui/action-menu";
+import { Select } from "@/components/ui/select";
 import { SlideTabs } from "@/components/ui/slide-tabs";
 import {
   CalendarIcon,
@@ -56,8 +60,15 @@ import { PlanFormPanel } from "./plan-form-panel";
 import { SchedulePanel } from "./schedule-panel";
 import { EditSessionDialog } from "./session-edit-dialog";
 import {
+  AssignTemplatePanel,
+  NewTemplateButton,
+  TaskTemplateCard,
+  TaskTemplateFormPanel,
+} from "./task-templates";
+import {
   STATUS_META,
   dayKey,
+  folderKeyFromParam,
   formatDay,
   formatTime,
   formatWeekday,
@@ -71,11 +82,16 @@ import type {
   PlannerPlan,
   PlannerSession,
 } from "@/repositories/lesson-planner";
-import type { PlannerAssignmentListItem } from "@/repositories/assignments";
+import type {
+  AssignmentTemplateListItem,
+  PlannerAssignmentListItem,
+} from "@/repositories/assignments";
 import type { UserListItem } from "@/repositories/users";
 import { LogoLoader } from "@/components/ui/logo-loader";
+import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 
 type Tab = "atelie" | "agenda" | "tarefas";
+const TAB_VALUES: readonly Tab[] = ["atelie", "agenda", "tarefas"];
 type AgendaFilter = "proximas" | "hoje" | "aovivo" | "concluidas";
 
 const AGENDA_FILTERS: { value: AgendaFilter; label: string }[] = [
@@ -97,6 +113,8 @@ export interface PlannerViewProps {
   groups: PlannerGroupOption[];
   teachers: UserListItem[];
   assignments: PlannerAssignmentListItem[];
+  /** Ateliê de tarefas — exercícios prontos, ainda sem turma. */
+  templates: AssignmentTemplateListItem[];
   /**
    * Quando presente, só os planos deste autor mostram editar/excluir — é
    * assim que o professor usa um plano compartilhado sem poder reescrevê-lo
@@ -118,26 +136,36 @@ export function PlannerView({
   groups,
   teachers,
   assignments,
+  templates,
   editableAuthorId,
   openCreate = false,
-  initialTab = "atelie",
-  initialFolderKey = "todas",
+  initialTab,
+  initialFolderKey,
 }: PlannerViewProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
-  const { base } = useArea();
-
-  const [tab, setTabState] = useState<Tab>(initialTab);
+  const { base, role } = useArea();
 
   /**
-   * Troca de aba grava `?tab=` na URL (via `replace`, sem empilhar histórico
-   * novo). É o que faz "abrir uma tarefa e voltar" devolver a mesma aba: o
-   * botão de voltar das telas de aula/tarefa usa o histórico do navegador
-   * ([[BackLink]]), e a entrada anterior no histórico já carrega a aba certa
-   * — sem isso, o `useState` reiniciaria em "Ateliê" a cada remontagem.
+   * Aba e pasta sobrevivem a duas saídas diferentes da tela, e cada uma
+   * precisa da sua muleta:
+   *
+   * - **Voltar de um detalhe** (aula, tarefa) usa o histórico do navegador
+   *   ([[BackLink]]) — a entrada anterior já carrega `?tab=`/`?pasta=` na
+   *   URL, gravados aqui via `replace` sem empilhar histórico novo.
+   * - **Sair pelo menu e voltar** remonta a tela do zero, sem essa URL — é
+   *   o `usePersistedChoice` (localStorage) que devolve onde a pessoa
+   *   parou. A URL, quando presente, sempre manda mais: um link com
+   *   `?tab=agenda` tem que abrir na aba pedida, não na última usada.
    */
+  const [tab, setStoredTab] = usePersistedChoice<Tab>(
+    `du:planejador:${role}:tab`,
+    (raw) => (raw && TAB_VALUES.includes(raw as Tab) ? (raw as Tab) : "atelie"),
+    initialTab,
+  );
+
   function setTab(next: Tab) {
-    setTabState(next);
+    setStoredTab(next);
     const params = new URLSearchParams(window.location.search);
     if (next === "atelie") params.delete("tab");
     else params.set("tab", next);
@@ -150,15 +178,17 @@ export function PlannerView({
   const [search, setSearch] = useState("");
   const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>("proximas");
 
-  /**
-   * Recorte do ateliê. Vai para a URL pelo mesmo motivo da aba: abrir uma
-   * aula e voltar tem que devolver a pasta em que se estava, e o histórico é
-   * quem guarda isso.
-   */
-  const [folderKey, setFolderKeyState] = useState<AtelieKey>(initialFolderKey);
+  const [folderKey, setStoredFolderKey] = usePersistedChoice<AtelieKey>(
+    `du:planejador:${role}:pasta`,
+    (raw) => folderKeyFromParam(raw ?? undefined, folders),
+    // "todas" é o que a página computa sem `?pasta=` na URL — não dá para
+    // distinguir do usuário pedindo "todas" de propósito, então os dois
+    // caem no mesmo lugar: deixa o storage decidir.
+    initialFolderKey && initialFolderKey !== "todas" ? initialFolderKey : undefined,
+  );
 
   function setFolderKey(next: AtelieKey) {
-    setFolderKeyState(next);
+    setStoredFolderKey(next);
     const params = new URLSearchParams(window.location.search);
     if (next === "todas") params.delete("pasta");
     else params.set("pasta", next);
@@ -186,6 +216,14 @@ export function PlannerView({
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedulePlanId, setSchedulePlanId] = useState<string | undefined>(undefined);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
+
+  /** Sub-recorte da aba Tarefas: turmas já atribuídas, ou o ateliê de tarefas padrão. */
+  const [taskView, setTaskView] = useState<"turmas" | "atelie">("turmas");
+  const [taskGroupFilter, setTaskGroupFilter] = useState<string>("todas");
+  const [templateFormOpen, setTemplateFormOpen] = useState(false);
+  const [assigningTemplate, setAssigningTemplate] =
+    useState<AssignmentTemplateListItem | null>(null);
+
   const [editingSession, setEditingSession] = useState<PlannerSession | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -336,13 +374,27 @@ export function PlannerView({
     });
   }, [sessions, agendaFilter, today]);
 
+  /** Quantas tarefas cada turma já recebeu — alimenta o filtro do recorte "Turmas". */
+  const taskCountByGroup = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const item of assignments) map[item.groupId] = (map[item.groupId] ?? 0) + 1;
+    return map;
+  }, [assignments]);
+
   const visibleAssignments = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return assignments;
-    return assignments.filter((item) =>
-      [item.title, item.groupName].join(" ").toLowerCase().includes(term),
-    );
-  }, [assignments, search]);
+    return assignments.filter((item) => {
+      if (taskGroupFilter !== "todas" && item.groupId !== taskGroupFilter) return false;
+      if (!term) return true;
+      return [item.title, item.groupName].join(" ").toLowerCase().includes(term);
+    });
+  }, [assignments, search, taskGroupFilter]);
+
+  const visibleTemplates = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return templates;
+    return templates.filter((item) => item.title.toLowerCase().includes(term));
+  }, [templates, search]);
 
   const groupedSessions = useMemo(() => {
     const map = new Map<string, PlannerSession[]>();
@@ -497,6 +549,53 @@ export function PlannerView({
           </label>
         )}
       </div>
+
+      {tab === "tarefas" && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 rounded-full border border-admin-border bg-admin-surface p-1">
+            {(
+              [
+                { value: "turmas", label: "Turmas" },
+                { value: "atelie", label: "Ateliê" },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setTaskView(item.value)}
+                aria-pressed={taskView === item.value}
+                className={cn(
+                  "h-8 rounded-full px-3.5 text-xs font-semibold uppercase tracking-[0.08em] transition-colors",
+                  taskView === item.value
+                    ? "bg-navy-900 text-white"
+                    : "text-admin-foreground/60 hover:bg-admin-muted",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {taskView === "turmas" ? (
+            <Select
+              value={taskGroupFilter}
+              onChange={setTaskGroupFilter}
+              tone="admin"
+              aria-label="Filtrar por turma"
+              className="w-full max-w-[14rem]"
+            >
+              <option value="todas">Todas as turmas</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name} ({taskCountByGroup[group.id] ?? 0})
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <NewTemplateButton onClick={() => setTemplateFormOpen(true)} />
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         {error && (
@@ -720,20 +819,64 @@ export function PlannerView({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: reduceMotion ? 0 : 0.24 }}
-              className="space-y-2.5"
+              className={taskView === "atelie" ? "" : "space-y-2.5"}
             >
-              {visibleAssignments.length === 0 ? (
+              {taskView === "atelie" ? (
+                visibleTemplates.length === 0 ? (
+                  <EmptyBoard
+                    title={
+                      search
+                        ? "Nenhuma tarefa padrão encontrada"
+                        : "Nenhuma tarefa padrão ainda"
+                    }
+                    body={
+                      search
+                        ? "Tente outro termo — busca por título."
+                        : "Monte um exercício aqui e atribua a quantas turmas quiser, quando quiser."
+                    }
+                    action={
+                      search ? undefined : (
+                        <NewTemplateButton onClick={() => setTemplateFormOpen(true)} />
+                      )
+                    }
+                  />
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {visibleTemplates.map((template) => (
+                      <TaskTemplateCard
+                        key={template.id}
+                        template={template}
+                        busy={busyId === template.id}
+                        onAssign={() => setAssigningTemplate(template)}
+                        onDelete={() => {
+                          if (
+                            !window.confirm(
+                              `Excluir a tarefa padrão "${template.title}"? As turmas que já a receberam não são afetadas.`,
+                            )
+                          )
+                            return;
+                          runPlanAction(template.id, () =>
+                            deleteAssignmentTemplateAction(template.id),
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                )
+              ) : visibleAssignments.length === 0 ? (
                 <EmptyBoard
                   title={
-                    search ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa enviada ainda"
+                    search || taskGroupFilter !== "todas"
+                      ? "Nenhuma tarefa encontrada"
+                      : "Nenhuma tarefa enviada ainda"
                   }
                   body={
-                    search
-                      ? "Tente outro termo — busca por título ou turma."
+                    search || taskGroupFilter !== "todas"
+                      ? "Tente outro termo ou outra turma."
                       : "Crie um exercício e escolha para quais turmas ele vai — cada turma recebe sua própria entrega."
                   }
                   action={
-                    search ? undefined : (
+                    search || taskGroupFilter !== "todas" ? undefined : (
                       <button
                         type="button"
                         onClick={() => setAssignmentOpen(true)}
@@ -797,6 +940,18 @@ export function PlannerView({
       <AssignmentPanel
         open={assignmentOpen}
         onClose={() => setAssignmentOpen(false)}
+        groups={groups}
+      />
+
+      <TaskTemplateFormPanel
+        open={templateFormOpen}
+        onClose={() => setTemplateFormOpen(false)}
+      />
+
+      <AssignTemplatePanel
+        open={assigningTemplate !== null}
+        onClose={() => setAssigningTemplate(null)}
+        template={assigningTemplate}
         groups={groups}
       />
 

@@ -175,6 +175,57 @@ export type Database = {
           },
         ];
       };
+      assignment_templates: {
+        Row: {
+          answer_key: Json | null;
+          created_at: string;
+          id: string;
+          instructions: Json | null;
+          max_score: number | null;
+          organization_id: string;
+          owner_id: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          answer_key?: Json | null;
+          created_at?: string;
+          id?: string;
+          instructions?: Json | null;
+          max_score?: number | null;
+          organization_id: string;
+          owner_id: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          answer_key?: Json | null;
+          created_at?: string;
+          id?: string;
+          instructions?: Json | null;
+          max_score?: number | null;
+          organization_id?: string;
+          owner_id?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assignment_templates_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignment_templates_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       assignments: {
         Row: {
           answer_key: Json | null;
@@ -187,6 +238,7 @@ export type Database = {
           max_score: number | null;
           organization_id: string;
           session_id: string | null;
+          template_id: string | null;
           title: string;
         };
         Insert: {
@@ -200,6 +252,7 @@ export type Database = {
           max_score?: number | null;
           organization_id: string;
           session_id?: string | null;
+          template_id?: string | null;
           title: string;
         };
         Update: {
@@ -213,6 +266,7 @@ export type Database = {
           max_score?: number | null;
           organization_id?: string;
           session_id?: string | null;
+          template_id?: string | null;
           title?: string;
         };
         Relationships: [
@@ -242,6 +296,13 @@ export type Database = {
             columns: ["session_id"];
             isOneToOne: false;
             referencedRelation: "class_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assignments_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "assignment_templates";
             referencedColumns: ["id"];
           },
         ];
@@ -846,6 +907,7 @@ export type Database = {
           color: string;
           created_at: string;
           id: string;
+          is_public: boolean;
           name: string;
           organization_id: string;
           owner_id: string;
@@ -855,6 +917,7 @@ export type Database = {
           color?: string;
           created_at?: string;
           id?: string;
+          is_public?: boolean;
           name: string;
           organization_id: string;
           owner_id: string;
@@ -864,6 +927,7 @@ export type Database = {
           color?: string;
           created_at?: string;
           id?: string;
+          is_public?: boolean;
           name?: string;
           organization_id?: string;
           owner_id?: string;

@@ -10,7 +10,6 @@
  *   inteira ou uma turma. Não é conversa e nunca foi.
  */
 
-import { useState } from "react";
 import { GroupsIcon, MegaphoneIcon } from "@/components/ui/icons";
 import { SlideTabs } from "@/components/ui/slide-tabs";
 import { AnnouncementForm } from "@/components/features/admin/announcement-form";
@@ -18,6 +17,7 @@ import {
   MessagesView,
   type SelectedChat,
 } from "@/components/features/messaging/messages-view";
+import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 import type { GroupChatSummary } from "@/repositories/group-chats";
 import type { GroupListItem } from "@/repositories/groups";
 
@@ -41,7 +41,13 @@ export function AdminMessagesView({
   currentUserId: string;
   currentUserName: string;
 }) {
-  const [tab, setTab] = useState<Tab>("chats");
+  // Um chat aberto por `?c=` manda mais que a aba lembrada — vim para cá com
+  // um link de "ver a conversa", não para reabrir onde parei da última vez.
+  const [tab, setTab] = usePersistedChoice<Tab>(
+    "du:mensagens:tab",
+    (raw) => (raw === "announcements" ? "announcements" : "chats"),
+    selected ? "chats" : undefined,
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">

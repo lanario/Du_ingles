@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BellIcon, CheckIcon, CloseIcon, EyeIcon } from "@/components/ui/icons";
@@ -214,58 +215,13 @@ export function NotificationPanel({
         )}
       </header>
 
-      <div className="px-3 pb-2">
-        <div className="flex gap-1 rounded-full bg-muted p-0.5">
-          {(
-            [
-              ["all", "Todas", items.length],
-              ["unread", "Não lidas", unread],
-            ] as const
-          ).map(([value, label, count]) => {
-            const active = filter === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onFilterChange(value)}
-                aria-pressed={active}
-                className={cn(
-                  "relative flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  active
-                    ? "text-navy-900"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="notif-filter-pill"
-                    aria-hidden
-                    transition={
-                      reduceMotion
-                        ? { duration: 0 }
-                        : { type: "spring", stiffness: 520, damping: 40, mass: 0.7 }
-                    }
-                    className="absolute inset-0 -z-10 rounded-full bg-background shadow-[0_1px_2px_rgba(11,26,51,0.10)]"
-                  />
-                )}
-                <span className="relative">
-                  {label}
-                  {count > 0 && (
-                    <span
-                      className={cn(
-                        "ml-1.5 text-[10px] tabular-nums",
-                        active ? "text-navy-600" : "text-muted-foreground/70",
-                      )}
-                    >
-                      {count > 99 ? "99+" : count}
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <FilterTabs
+        filter={filter}
+        onChange={onFilterChange}
+        total={items.length}
+        unread={unread}
+        reduceMotion={Boolean(reduceMotion)}
+      />
 
       <div className="relative min-h-0 flex-1">
         <div
@@ -369,6 +325,179 @@ export function NotificationPanel({
     >
       {body}
     </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ filtro */
+
+/** Repouso da cápsula ativa — o GSAP volta para cá depois do impacto. */
+const PILL_SHADOW = "0 1px 2px rgba(11, 26, 51, 0.10)";
+
+/**
+ * Seletor "Todas / Não lidas".
+ *
+ * Duas camadas animadas, cada uma com a ferramenta que faz melhor:
+ *
+ * - **Framer (`layoutId`)** move. A cápsula ativa e o rastro de hover são um
+ *   único nó cada, compartilhado pelos dois botões: trocar de aba desmonta o
+ *   nó de um lado e monta do outro no mesmo commit, e o Framer interpola a
+ *   distância — o que se vê é a mesma pastilha deslizando, não duas piscando.
+ *   É também por isso que o hover guarda a *última* aba apontada em vez de
+ *   voltar a `null`: com o nó sempre montado, sair do controle é uma questão
+ *   de opacidade, e nunca existem dois nós com o mesmo `layoutId` ao mesmo
+ *   tempo (o que o Framer avisaria e resolveria pulando a animação).
+ *
+ * - **GSAP** dá peso. A cápsula chega esticada no sentido do movimento e
+ *   assenta em `elastic`, com um anel dourado — `--gold-500`, o acento do
+ *   sistema — que se expande e some. A mola do Framer leva o objeto; o GSAP
+ *   faz o objeto parecer ter massa ao chegar.
+ *
+ * Os dois transforms convivem porque moram em nós diferentes: o Framer escreve
+ * no `motion.span` de fora, o GSAP no `span` de dentro. `clearProps` devolve o
+ * inline ao fim de cada tween, senão o estilo do GSAP venceria a classe do
+ * Tailwind para sempre.
+ */
+function FilterTabs({
+  filter,
+  onChange,
+  total,
+  unread,
+  reduceMotion,
+}: {
+  filter: NotificationFilter;
+  onChange: (filter: NotificationFilter) => void;
+  total: number;
+  unread: number;
+  reduceMotion: boolean;
+}) {
+  /** Última aba sob o ponteiro (ou o foco) — não volta a `null` de propósito. */
+  const [hovered, setHovered] = useState<NotificationFilter>(filter);
+  const [hovering, setHovering] = useState(false);
+
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const previous = useRef(filter);
+
+  useEffect(() => {
+    if (previous.current === filter) return;
+    const from = previous.current;
+    previous.current = filter;
+
+    const node = pillRef.current;
+    if (!node || reduceMotion) return;
+
+    // Sentido do deslize: a cápsula sai atrasada em relação ao destino, como
+    // se estivesse sendo puxada.
+    const lag = from === "all" ? -7 : 7;
+
+    gsap.fromTo(
+      node,
+      { scaleX: 1.16, scaleY: 0.9, x: lag },
+      {
+        scaleX: 1,
+        scaleY: 1,
+        x: 0,
+        duration: 0.55,
+        ease: "elastic.out(1, 0.62)",
+        clearProps: "transform",
+      },
+    );
+    gsap.fromTo(
+      node,
+      { boxShadow: "0 0 0 5px rgba(201, 162, 39, 0.30)" },
+      {
+        boxShadow: PILL_SHADOW,
+        duration: 0.6,
+        ease: "power2.out",
+        clearProps: "boxShadow",
+      },
+    );
+  }, [filter, reduceMotion]);
+
+  const slide = reduceMotion
+    ? { duration: 0 }
+    : ({ type: "spring", stiffness: 520, damping: 40, mass: 0.7 } as const);
+
+  return (
+    <div className="px-3 pb-2">
+      <div
+        className="flex gap-1 rounded-full bg-muted p-0.5"
+        onPointerLeave={() => setHovering(false)}
+      >
+        {(
+          [
+            ["all", "Todas", total],
+            ["unread", "Não lidas", unread],
+          ] as const
+        ).map(([value, label, count]) => {
+          const active = filter === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onChange(value)}
+              onPointerEnter={() => {
+                setHovered(value);
+                setHovering(true);
+              }}
+              // Teclado acende o mesmo rastro: sem isso o realce só existiria
+              // para quem usa ponteiro.
+              onFocus={() => {
+                setHovered(value);
+                setHovering(true);
+              }}
+              onBlur={() => setHovering(false)}
+              aria-pressed={active}
+              className={cn(
+                "relative flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                active ? "text-navy-900" : "text-muted-foreground hover:text-navy-800",
+              )}
+            >
+              {active && (
+                <motion.span
+                  layoutId="notif-filter-pill"
+                  aria-hidden
+                  transition={slide}
+                  className="absolute inset-0 z-0"
+                >
+                  <span
+                    ref={pillRef}
+                    style={{ boxShadow: PILL_SHADOW }}
+                    className="block h-full w-full rounded-full bg-background ring-1 ring-gold-500/40"
+                  />
+                </motion.span>
+              )}
+
+              {hovered === value && (
+                <motion.span
+                  layoutId="notif-filter-hover"
+                  aria-hidden
+                  animate={{ opacity: hovering ? 1 : 0 }}
+                  transition={{
+                    layout: slide,
+                    opacity: { duration: reduceMotion ? 0 : 0.18 },
+                  }}
+                  className="absolute inset-0 z-[1] rounded-full bg-gold-500/12"
+                />
+              )}
+
+              <span className="relative z-10">
+                {label}
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      "ml-1.5 text-[10px] tabular-nums transition-colors duration-200",
+                      active ? "text-gold-700" : "text-muted-foreground/70",
+                    )}
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 const LINKS: SlideTabItem[] = [
   { href: "#metodologia", label: "Metodologia" },
   { href: "#niveis", label: "Turmas" },
-  { href: "#professores", label: "Professores" },
   { href: "#planos", label: "Planos" },
   { href: "#faq", label: "FAQ" },
 ];

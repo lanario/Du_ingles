@@ -6,9 +6,9 @@
  * assinaturas dos alunos.
  */
 
-import { useState } from "react";
 import { CheckIcon, ShieldIcon, WalletIcon } from "@/components/ui/icons";
 import { SlideTabs } from "@/components/ui/slide-tabs";
+import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 
 type Tab = "geral" | "financeiro";
 
@@ -24,7 +24,10 @@ export function SettingsView({
   stripeConfigured: boolean;
   stripeLiveMode: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("geral");
+  const [tab, setTab] = usePersistedChoice<Tab>(
+    "du:configuracoes:tab",
+    (raw) => (raw === "financeiro" ? "financeiro" : "geral"),
+  );
 
   return (
     <div>

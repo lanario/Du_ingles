@@ -150,6 +150,37 @@ export type CreateExerciseAssignmentInput = z.infer<
 >;
 
 /**
+ * Tarefa padrão (ateliê): o mesmo conteúdo de uma tarefa — título, instruções,
+ * questões, nota máxima —, mas sem turma nenhuma ainda. Vira `assignments`
+ * (uma linha por turma) só quando alguém a atribui.
+ */
+export const assignmentTemplateSchema = z.object({
+  title: z.string().trim().min(2, "Informe o título.").max(200),
+  instructions: z
+    .string()
+    .trim()
+    .max(4000)
+    .optional()
+    .transform((v) => v || undefined),
+  questions: questionsFieldSchema,
+  maxScore: z.coerce.number().min(0).max(1000).default(10),
+});
+export type AssignmentTemplateInput = z.infer<typeof assignmentTemplateSchema>;
+
+/** Atribuir uma tarefa padrão já pronta a uma ou várias turmas. */
+export const assignTemplateSchema = z.object({
+  templateId: z.string().uuid(),
+  groupIds: z.array(z.string().uuid()).min(1, "Selecione ao menos uma turma."),
+  dueAt: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  /** Ausente = usa a nota máxima cadastrada na tarefa padrão. */
+  maxScore: z.coerce.number().min(0).max(1000).optional(),
+});
+export type AssignTemplateInput = z.infer<typeof assignTemplateSchema>;
+
+/**
  * Respostas do aluno: um mapa `questionId -> texto`. Objetivas também viajam
  * como texto (índice da alternativa, `"true"`/`"false"`) — ver `StudentAnswers`
  * em `lib/assignments/exercises`.

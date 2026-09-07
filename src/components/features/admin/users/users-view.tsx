@@ -25,6 +25,7 @@ import {
   UserIcon,
 } from "@/components/ui/icons";
 import { useStickyBar, useListProgress } from "@/components/motion/list-motion";
+import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 import { cn } from "@/lib/utils";
 import type { UserListItem, UserDetail as UserDetailData } from "@/repositories/users";
 import type { AppRole } from "@/types/domain";
@@ -48,6 +49,7 @@ const TABS: { id: RoleFilter; label: string; icon: typeof ShieldIcon }[] = [
   { id: "teacher", label: "Professores", icon: GraduationIcon },
   { id: "student", label: "Alunos", icon: UserIcon },
 ];
+const TAB_IDS: readonly RoleFilter[] = TABS.map((item) => item.id);
 
 export function UsersView({
   users,
@@ -59,7 +61,10 @@ export function UsersView({
   const reduceMotion = useReducedMotion();
 
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<RoleFilter>("all");
+  const [tab, setTab] = usePersistedChoice<RoleFilter>(
+    "du:usuarios:tab",
+    (raw) => (raw && TAB_IDS.includes(raw as RoleFilter) ? (raw as RoleFilter) : "all"),
+  );
 
   const [detail, setDetail] = useState<UserDetailData | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
