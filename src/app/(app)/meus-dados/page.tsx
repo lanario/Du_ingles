@@ -4,6 +4,7 @@ import { getMyProfile } from "@/repositories/users";
 import { AvatarUploader } from "@/components/features/account/avatar-uploader";
 import { ProfileForm } from "@/components/features/account/profile-form";
 import { LgpdPanel } from "@/components/features/lgpd/lgpd-panel";
+import { PerformancePanel } from "@/components/features/account/performance-panel";
 
 export const metadata: Metadata = { title: "Meu Perfil" };
 
@@ -27,6 +28,9 @@ export default async function MeuPerfilPage() {
           <ProfileForm profile={profile} />
         </div>
       ) : null}
+      <div className="mt-6 max-w-xl">
+        <PerformancePanel />
+      </div>
       <div className="mt-6">
         <LgpdPanel />
       </div>

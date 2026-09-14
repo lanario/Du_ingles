@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { env } from "@/lib/env";
+import { PERF_INIT_SCRIPT } from "@/lib/perf";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -51,7 +53,11 @@ export const viewport: Viewport = {
  */
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // O CSP do middleware é `strict-dynamic` com nonce por request: sem repetir
+  // o nonce aqui, o browser recusa o script inline.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="pt-BR"
@@ -59,7 +65,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // h-24 a partir dali): sem isso a âncora para com o título da seção
       // escondido atrás dele.
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth scroll-pt-20 antialiased lg:scroll-pt-28`}
+      // O script inline abaixo escreve `data-perf` no <html> antes da
+      // hidratação, então o servidor nunca manda o mesmo atributo.
+      suppressHydrationWarning
     >
+      <head>
+        {/* O browser apaga o atributo `nonce` do DOM depois de validá-lo (ele
+            só sobrevive como propriedade), então o cliente sempre vê algo
+            diferente do que o servidor mandou. É um mismatch inevitável e sem
+            consequência — `suppressHydrationWarning` precisa estar na própria
+            tag, porque a do <html> não alcança os netos. */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: PERF_INIT_SCRIPT }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

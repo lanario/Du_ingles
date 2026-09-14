@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database.types";
 import type { AttendanceStatus, CefrLevel, SessionStatus } from "@/types/domain";
@@ -103,7 +104,13 @@ export async function listPlannerPlans(organizationId: string): Promise<PlannerP
   return data.map((row) => mapPlan(row as unknown as PlanRow));
 }
 
-export async function getPlannerPlan(
+/**
+ * `cache()` do React porque esta leitura acontece DUAS vezes por request: o
+ * `generateMetadata` da rota precisa do título, e a página precisa da linha
+ * inteira — o Next roda os dois no mesmo render pass. Sem a memoização é uma
+ * ida ao banco a mais em cada abertura de plano no planejador, sem nada em troca.
+ */
+export const getPlannerPlan = cache(async function getPlannerPlan(
   id: string,
   organizationId: string,
 ): Promise<PlannerPlanDetail | null> {
@@ -118,7 +125,7 @@ export async function getPlannerPlan(
   if (error || !data) return null;
   const row = data as unknown as PlanRow & { content: Json };
   return { ...mapPlan(row), content: row.content ?? EMPTY_DOC };
-}
+});
 
 export async function createPlannerPlan(
   input: PlannerPlanInput,

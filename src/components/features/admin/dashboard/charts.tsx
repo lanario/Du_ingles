@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ChartTooltip, formatNumber, useMeasuredWidth } from "./primitives";
+import { isLiteMode } from "@/lib/perf";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -29,11 +30,13 @@ export const PALETTE = {
   muted: "#5a6b85",
 } as const;
 
+/**
+ * Vale tanto para quem pediu menos movimento quanto para quem está em modo
+ * leve: no aparelho fraco a animação não é um gosto, é o que come o quadro.
+ */
 export function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  if (typeof window === "undefined") return false;
+  return isLiteMode() || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 /** Teto "redondo" do eixo Y, para a régua não terminar em 37. */
@@ -150,8 +153,10 @@ export function AreaChart({
           { strokeDasharray: length, strokeDashoffset: length },
           {
             strokeDashoffset: 0,
-            duration: 1.6,
-            delay: index * 0.12,
+            // A linha é o dado, não o enfeite em cima dele: enquanto ela se
+            // desenha o gráfico não se lê. 0,7s ainda mostra o traço nascendo.
+            duration: 0.7,
+            delay: index * 0.06,
             ease: "power2.inOut",
             scrollTrigger: { trigger: svg, start: "top 88%", once: true },
             onComplete: () => {
@@ -164,8 +169,8 @@ export function AreaChart({
 
       gsap.from(svg.querySelectorAll("[data-chart-area]"), {
         opacity: 0,
-        duration: 1.2,
-        delay: 0.35,
+        duration: 0.5,
+        delay: 0.15,
         ease: "power1.out",
         scrollTrigger: { trigger: svg, start: "top 88%", once: true },
       });

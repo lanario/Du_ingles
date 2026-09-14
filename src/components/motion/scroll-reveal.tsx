@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import gsap from "gsap";
+import { isLiteMode } from "@/lib/perf";
 
 interface ScrollRevealProps {
   children: ReactNode;
@@ -37,7 +38,11 @@ export function ScrollReveal({
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Modo leve conta como "menos movimento": no aparelho fraco o stagger de
+    // 0,6s por bloco é justamente o que come o quadro. Sair aqui deixa o
+    // conteúdo visível de imediato, sem tween nenhum agendado.
+    if (isLiteMode() || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return;
 
     const found = container.querySelectorAll<HTMLElement>(itemSelector);
     const targets: HTMLElement[] = found.length ? Array.from(found) : [container];

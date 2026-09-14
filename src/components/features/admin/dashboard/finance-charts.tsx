@@ -183,7 +183,8 @@ export function RevenueAreaChart({
           { strokeDasharray: length, strokeDashoffset: length },
           {
             strokeDashoffset: 0,
-            duration: 1.7,
+            // Mesma regra de `charts.tsx`: o traço É a receita do mês.
+            duration: 0.7,
             ease: "power2.inOut",
             scrollTrigger: { trigger: svg, start: "top 88%", once: true },
             // Solta o dash depois, senão o crosshair "corta" a linha.
@@ -196,8 +197,8 @@ export function RevenueAreaChart({
 
       gsap.from(svg.querySelectorAll("[data-revenue-area]"), {
         opacity: 0,
-        duration: 1.1,
-        delay: 0.45,
+        duration: 0.5,
+        delay: 0.15,
         ease: "power1.out",
         scrollTrigger: { trigger: svg, start: "top 88%", once: true },
       });
@@ -205,8 +206,9 @@ export function RevenueAreaChart({
       gsap.from(svg.querySelectorAll("[data-revenue-head]"), {
         scale: 0,
         transformOrigin: "center",
-        duration: 0.5,
-        delay: 1.5,
+        duration: 0.35,
+        // Acompanha a ponta da linha, que agora chega em 0,7s.
+        delay: 0.7,
         ease: "back.out(2.2)",
         scrollTrigger: { trigger: svg, start: "top 88%", once: true },
       });
@@ -563,7 +565,7 @@ export function IncomeStatementPanel({ statement }: { statement: IncomeStatement
         initial={reduced ? false : { opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-40px" }}
-        transition={{ duration: 0.5, delay: 0.42, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.28, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Brilho que cruza a caixa uma vez, marcando o número que fecha o mês. */}
         {!reduced && (
@@ -573,7 +575,7 @@ export function IncomeStatementPanel({ statement }: { statement: IncomeStatement
             initial={{ x: 0, opacity: 0 }}
             whileInView={{ x: "420%", opacity: [0, 1, 0] }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 1.15, delay: 0.9, ease: "easeInOut" }}
+            transition={{ duration: 0.7, delay: 0.3, ease: "easeInOut" }}
           />
         )}
         <div className="relative flex min-w-0 items-baseline justify-between gap-3">

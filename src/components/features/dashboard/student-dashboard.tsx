@@ -352,8 +352,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {task.groupName}
-                          {task.dueAt &&
-                            ` · entrega ${formatDate(task.dueAt, "dd/MM 'às' HH:mm")}`}
+                          {task.dueAt && ` · entrega ${formatDate(task.dueAt, "dd/MM")}`}
                         </p>
                       </div>
                       <span

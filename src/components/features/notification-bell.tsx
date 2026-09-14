@@ -29,6 +29,7 @@ import {
   type NotificationFilter,
   type PanelAnchor,
 } from "@/components/features/notification-panel";
+import { isLiteMode } from "@/lib/perf";
 
 const PANEL_WIDTH = 368;
 const FLASH_WIDTH = 300;
@@ -202,7 +203,9 @@ export function NotificationBell({
   // virar um piscar constante na periferia da visão.
   useEffect(() => {
     const pulse = pulseRef.current;
-    if (!pulse || reduceMotion || unread === 0) return;
+    // O sino vive em todas as telas: um tween infinito aqui é o único
+    // laço que acompanha o usuário o dia inteiro, em qualquer página.
+    if (!pulse || reduceMotion || isLiteMode() || unread === 0) return;
     const tween = gsap.fromTo(
       pulse,
       { scale: 0.7, opacity: 0.35 },

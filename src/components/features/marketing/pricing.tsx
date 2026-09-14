@@ -10,10 +10,11 @@ import {
   FREQUENCY_LABEL,
   RECOMMENDED_FREQUENCY,
   TIER_ACCENT,
+  TIER_INHERITS_FROM,
   TIER_ORDER,
   TIER_TAGLINE,
   WEEKLY_FREQUENCIES,
-  tierFeatures,
+  tierOwnFeatures,
 } from "@/lib/plans/tier-catalog";
 import { ACCENT_TONE } from "@/components/features/admin/plans/plans-utils";
 import type { PlanTier, PlanWeeklyFrequency } from "@/schemas/student-plans";
@@ -51,14 +52,22 @@ export function Pricing() {
 
   const plans = useMemo(
     () =>
-      TIER_ORDER.map((tier) => ({
-        tier,
-        name: TIER_NAME[tier],
-        priceCents: BASE_MONTHLY_PRICE_CENTS[tier][frequency],
-        description: TIER_TAGLINE[tier],
-        features: tierFeatures(tier).slice(0, 4),
-        tone: ACCENT_TONE[TIER_ACCENT[tier]],
-      })),
+      TIER_ORDER.map((tier) => {
+        const inheritsFrom = TIER_INHERITS_FROM[tier] ?? null;
+        return {
+          tier,
+          name: TIER_NAME[tier],
+          priceCents: BASE_MONTHLY_PRICE_CENTS[tier][frequency],
+          description: TIER_TAGLINE[tier],
+          // Standard mostra seus próprios destaques; Premium e Elite herdam
+          // tudo do nível anterior (ver `inheritsFrom` abaixo) e só listam o
+          // que ganham a mais — assim o cartão não repete os mesmos quatro
+          // itens três vezes e cada nível mostra o que realmente o diferencia.
+          features: tierOwnFeatures(tier).slice(0, inheritsFrom ? 3 : 4),
+          inheritsFrom,
+          tone: ACCENT_TONE[TIER_ACCENT[tier]],
+        };
+      }),
     [frequency],
   );
 
@@ -326,6 +335,14 @@ export function Pricing() {
                 />
 
                 {/* Features */}
+                {plan.inheritsFrom && (
+                  <p
+                    className="mb-3 text-[11px] font-bold uppercase tracking-[0.06em]"
+                    style={{ color: highlighted ? plan.tone : "var(--navy-300)" }}
+                  >
+                    Tudo do {TIER_NAME[plan.inheritsFrom]}, e mais:
+                  </p>
+                )}
                 <ul className="flex-1 space-y-3 text-[13px]">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5">

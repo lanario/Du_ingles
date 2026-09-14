@@ -12,6 +12,7 @@ import { UserMenu } from "@/components/features/account/user-menu";
 import { NotificationBell } from "@/components/features/notification-bell";
 import { RoleSwitch } from "@/components/features/admin/role-switch";
 import type { NotificationItem } from "@/repositories/notifications";
+import type { MyProfile } from "@/repositories/users";
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
 
 const RAIL_WIDTH = 64;
@@ -24,6 +25,8 @@ export interface AdminNavItem {
   href: Route;
   label: string;
   icon: IconName;
+  /** Item exibido mas sem navegação — mostra o selo "Em breve". */
+  disabled?: boolean;
 }
 
 export interface AdminNavSection {
@@ -43,7 +46,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { href: "/admin/usuarios", label: "Usuários", icon: "users" },
       { href: "/admin/alunos", label: "Alunos", icon: "graduation" },
       { href: "/admin/turmas", label: "Turmas", icon: "board" },
-      { href: "/admin/cursos", label: "Cursos", icon: "book" },
+      { href: "/admin/cursos", label: "Cursos", icon: "book", disabled: true },
       { href: "/admin/planos-de-alunos", label: "Planos de alunos", icon: "clipboard" },
     ],
   },
@@ -60,10 +63,9 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     label: "Conta",
-    items: [
-      { href: "/admin/meus-dados", label: "Meu Perfil", icon: "user" },
-      { href: "/admin/configuracoes", label: "Configurações", icon: "gear" },
-    ],
+    // "Meu Perfil" mora só no menu da foto de perfil (`UserMenu`) — item
+    // duplicado aqui só confundia sobre qual dos dois abrir.
+    items: [{ href: "/admin/configuracoes", label: "Configurações", icon: "gear" }],
   },
 ];
 
@@ -211,8 +213,8 @@ interface AdminSidebarProps {
   rootHref?: string;
   /** Papel exibido no menu da conta. */
   role?: "admin" | "teacher";
-  /** Destino de "Meu Perfil" no menu da conta. */
-  dataHref?: Route;
+  /** Dados do formulário de "Meu Perfil", aberto em modal a partir do menu da conta. */
+  profile: MyProfile | null;
   /**
    * A chave "ver como" é da coordenação. A área do professor não alterna
    * para lado nenhum — quem dá aula tem um contexto só.
@@ -288,12 +290,12 @@ function AdminRail({
   email,
   fullName,
   avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
   sections = ADMIN_NAV_SECTIONS,
   rootHref = "/admin",
   role = "admin",
-  dataHref = "/admin/meus-dados",
   navLabel = "Navegação administrativa",
 }: AdminSidebarProps) {
   const pathname = usePathname();
@@ -324,6 +326,20 @@ function AdminRail({
   }, []);
 
   useEffect(() => clearTimer, []);
+
+  // O menu da conta abre num portal fora do DOM do rail — enquanto ele fica
+  // por cima, o ponteiro e o foco nunca "saem" do painel de verdade aos olhos
+  // do navegador, então fechar o menu clicando num item (ex.: "Meu Perfil",
+  // que navega) pode deixar `hovered`/`focused` presos no valor de antes. Ao
+  // fechar, reconsulta o estado real em vez de confiar no que os handlers de
+  // pointer/focus capturaram até aqui.
+  const handleAccountMenuOpenChange = useCallback((menuOpen: boolean) => {
+    if (menuOpen) return;
+    clearTimer();
+    const panel = panelRef.current;
+    setHovered(!!panel && panel.matches(":hover"));
+    setFocused(!!panel && panel.contains(document.activeElement));
+  }, []);
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -474,6 +490,30 @@ function AdminRail({
                 </p>
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
+                    if (item.disabled) {
+                      return (
+                        <div
+                          key={item.href}
+                          aria-disabled="true"
+                          className={cn(ROW_CLASS, "cursor-default text-admin-shell-foreground/40")}
+                        >
+                          <span className="flex-none">
+                            <NavIcon name={item.icon} />
+                          </span>
+                          <span
+                            data-nav-label
+                            style={{ opacity: 0 }}
+                            className="flex min-w-0 flex-1 items-center gap-2 truncate whitespace-nowrap"
+                          >
+                            <span className="truncate">{item.label}</span>
+                            <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
+                              Em breve
+                            </span>
+                          </span>
+                        </div>
+                      );
+                    }
+
                     const active = isActive(item.href);
                     return (
                       <NavLink
@@ -546,10 +586,11 @@ function AdminRail({
               email={email}
               role={role}
               avatarUrl={avatarUrl}
+              profile={profile}
               theme="admin"
-              dataHref={dataHref}
               compact
               className="mt-1"
+              onOpenChange={handleAccountMenuOpenChange}
             />
           </div>
         </div>
@@ -574,12 +615,12 @@ function AdminNavMobile({
   email,
   fullName,
   avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
   sections = ADMIN_NAV_SECTIONS,
   rootHref = "/admin",
   role = "admin",
-  dataHref = "/admin/meus-dados",
   showRoleSwitch = true,
   navLabel = "Navegação administrativa",
 }: AdminSidebarProps) {
@@ -696,6 +737,27 @@ function AdminNavMobile({
                     </p>
                     <div className="space-y-0.5">
                       {section.items.map((item) => {
+                        if (item.disabled) {
+                          return (
+                            <div
+                              key={item.href}
+                              aria-disabled="true"
+                              className={cn(
+                                MOBILE_ROW_CLASS,
+                                "cursor-default text-admin-shell-foreground/40",
+                              )}
+                            >
+                              <span className="flex-none text-admin-shell-foreground/40">
+                                <NavIcon name={item.icon} />
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                              <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
+                                Em breve
+                              </span>
+                            </div>
+                          );
+                        }
+
                         const active = isActivePath(pathname, item.href, rootHref);
                         return (
                           <NavLink
@@ -741,8 +803,8 @@ function AdminNavMobile({
                   email={email}
                   role={role}
                   avatarUrl={avatarUrl}
+                  profile={profile}
                   theme="admin"
-                  dataHref={dataHref}
                 />
               </div>
             </motion.nav>

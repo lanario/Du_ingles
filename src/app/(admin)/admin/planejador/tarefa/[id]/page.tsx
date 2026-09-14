@@ -9,6 +9,7 @@ import {
 import { SubmissionReview } from "@/components/features/assignments/submission-review";
 import { BackLink } from "@/components/ui/back-link";
 import { ArrowLeftIcon, CalendarIcon, TaskIcon } from "@/components/ui/icons";
+import { formatDueDate } from "@/lib/assignments/due-date";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -72,7 +73,7 @@ export default async function AdminTarefaPage({ params }: PageProps) {
           {assignment.dueAt && (
             <span className="flex items-center gap-1.5">
               <CalendarIcon className="h-4 w-4" />
-              Prazo: {new Date(assignment.dueAt).toLocaleDateString("pt-BR")}
+              Prazo: {formatDueDate(assignment.dueAt)}
             </span>
           )}
         </div>

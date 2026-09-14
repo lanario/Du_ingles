@@ -22,6 +22,7 @@ import {
   LessonTextStyle,
 } from "./extensions";
 import { insertImageFiles, isSupportedImage } from "./image-upload";
+import { toPlainDocument } from "@/lib/editor-json";
 import { Ribbon } from "./ribbon";
 import { LoadingVeil } from "@/components/ui/logo-loader";
 
@@ -129,7 +130,10 @@ export function LessonCanvas({
       },
     },
     onUpdate: ({ editor: instance }) => {
-      const json = instance.getJSON();
+      // Normalizado aqui, na saída do editor: tudo o que sai desta folha vai
+      // parar numa Server Action, e `attrs` sem protótipo não sobrevive à
+      // viagem (ver `lib/editor-json.ts`).
+      const json = toPlainDocument(instance.getJSON());
       lastSyncedRef.current = JSON.stringify(json);
       onChange?.(json);
     },

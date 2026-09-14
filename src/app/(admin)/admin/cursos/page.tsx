@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { listCourses } from "@/repositories/courses";
 import { CreateCourseForm } from "@/components/features/admin/groups/create-course-form";
 
 export const metadata: Metadata = { title: "Cursos" };
 
 export default async function CursosPage() {
+  // Em breve: item desabilitado na sidebar até a página estar pronta.
+  notFound();
+
   const courses = await listCourses();
 
   return (

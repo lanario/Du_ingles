@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
+import { usePerfMode } from "@/hooks/use-perf-mode";
 import { cn } from "@/lib/utils";
 import { GraduationIcon, type IconProps } from "@/components/ui/icons";
 
@@ -38,6 +39,8 @@ export function RadialOrbitalTimeline({ items, className }: RadialOrbitalTimelin
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [radius, setRadius] = useState(200);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [onScreen, setOnScreen] = useState(false);
+  const { lite } = usePerfMode();
   const containerRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<HTMLDivElement>(null);
   const expandedIdRef = useRef<number | null>(null);
@@ -120,11 +123,28 @@ export function RadialOrbitalTimeline({ items, className }: RadialOrbitalTimelin
     return () => query.removeEventListener("change", apply);
   }, []);
 
+  // A órbita fica no meio de uma página longa, e o giro é um loop que nunca
+  // termina sozinho. Fora da viewport ele é trabalho puro: quadro após quadro
+  // recalculando a posição de nós que ninguém está vendo.
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setOnScreen(entry?.isIntersecting ?? false),
+      { rootMargin: "120px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   // Giro em requestAnimationFrame e proporcional ao delta de tempo: segue o
   // refresh da tela e não acumula atraso quando um quadro demora.
+  //
+  // Em modo leve a órbita fica parada: os nós continuam todos legíveis e
+  // clicáveis na posição inicial, só não giram.
   useEffect(() => {
     applyPositions();
-    if (reduceMotion) return;
+    if (reduceMotion || lite || !onScreen) return;
 
     const DEGREES_PER_SECOND = 6;
     let frame = 0;
@@ -156,7 +176,7 @@ export function RadialOrbitalTimeline({ items, className }: RadialOrbitalTimelin
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [applyPositions, reduceMotion]);
+  }, [applyPositions, reduceMotion, lite, onScreen]);
 
   const centerViewOnNode = useCallback(
     (nodeId: number) => {

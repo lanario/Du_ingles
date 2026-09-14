@@ -15,6 +15,7 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { isLiteMode } from "@/lib/perf";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -23,11 +24,15 @@ if (typeof window !== "undefined") {
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+/**
+ * Vale tanto para quem pediu menos movimento quanto para quem está em modo
+ * leve — mesma regra da agenda (`features/agenda/agenda-motion.ts`). O fio de
+ * progresso é um `gsap.set` por quadro de rolagem: é exatamente o tipo de
+ * trabalho contínuo que o modo leve existe para cortar.
+ */
 function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  if (typeof window === "undefined") return false;
+  return isLiteMode() || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 /** Altura do header fixo do admin — onde a barra de ferramentas encosta. */

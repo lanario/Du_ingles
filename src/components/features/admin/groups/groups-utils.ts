@@ -8,6 +8,7 @@
  * áreas do painel, sem duplicar.
  */
 
+import type { MouseEvent } from "react";
 import type { GroupDetail } from "@/repositories/groups";
 import type { ScheduleEntry } from "@/schemas/groups";
 
@@ -48,6 +49,22 @@ export const WEEKDAY_LONG = [
   "Sexta",
   "Sábado",
 ];
+
+/**
+ * Clique no nome da turma: abre a ficha em modal, sem sair da lista.
+ *
+ * O elemento continua sendo um link para `/turmas/[id]` de propósito —
+ * ctrl/cmd, shift e o botão do meio seguem para a rota, que é o que quem quer
+ * uma aba nova espera. Só o clique simples é interceptado.
+ */
+export function openFichaOnClick(open: () => void) {
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.button !== 0) return;
+    event.preventDefault();
+    open();
+  };
+}
 
 /** Grade semanal na ordem do calendário — o banco guarda na ordem de digitação. */
 export function sortedSchedule(schedule: ScheduleEntry[]): ScheduleEntry[] {

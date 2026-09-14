@@ -1,12 +1,22 @@
 import { z } from "zod";
 
+import { dueDateToInstant } from "@/lib/assignments/due-date";
+
+/**
+ * O campo do formulário manda um dia (`yyyy-mm-dd`); o banco guarda um
+ * instante. A conversão fica AQUI, no schema, para que os três caminhos que
+ * criam tarefa (professor, planejador, tarefa padrão) ancorem o prazo no
+ * mesmo ponto — ver `dueDateToInstant`.
+ */
+const dueAtField = z
+  .string()
+  .optional()
+  .transform((v) => (v ? dueDateToInstant(v) : undefined));
+
 export const createAssignmentSchema = z.object({
   groupId: z.string().uuid("Selecione uma turma."),
   title: z.string().trim().min(2, "Informe o título.").max(200),
-  dueAt: z
-    .string()
-    .optional()
-    .transform((v) => v || undefined),
+  dueAt: dueAtField,
   maxScore: z.coerce.number().min(0).max(1000).default(10),
 });
 export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
@@ -24,10 +34,7 @@ export const createPlannerAssignmentSchema = z.object({
     .max(4000)
     .optional()
     .transform((v) => v || undefined),
-  dueAt: z
-    .string()
-    .optional()
-    .transform((v) => v || undefined),
+  dueAt: dueAtField,
   maxScore: z.coerce.number().min(0).max(1000).default(10),
 });
 export type CreatePlannerAssignmentInput = z.infer<typeof createPlannerAssignmentSchema>;
@@ -171,10 +178,7 @@ export type AssignmentTemplateInput = z.infer<typeof assignmentTemplateSchema>;
 export const assignTemplateSchema = z.object({
   templateId: z.string().uuid(),
   groupIds: z.array(z.string().uuid()).min(1, "Selecione ao menos uma turma."),
-  dueAt: z
-    .string()
-    .optional()
-    .transform((v) => v || undefined),
+  dueAt: dueAtField,
   /** Ausente = usa a nota máxima cadastrada na tarefa padrão. */
   maxScore: z.coerce.number().min(0).max(1000).optional(),
 });

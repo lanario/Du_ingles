@@ -198,7 +198,7 @@ export function RevenueExpenseChart({
       { strokeDasharray: length, strokeDashoffset: length },
       {
         strokeDashoffset: 0,
-        duration: 1.3,
+        duration: 0.6,
         ease: "power2.out",
         scrollTrigger: { trigger: path, start: "top 92%", once: true },
       },

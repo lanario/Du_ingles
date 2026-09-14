@@ -10,6 +10,8 @@
 
 import {
   autoGrade,
+  manualGrade,
+  manualGradeFieldName,
   suggestedScore,
   type AnswerKey,
   type Question,
@@ -55,7 +57,8 @@ export function SubmissionReview({
     <div className="space-y-4">
       {ordered.map((submission) => {
         const auto = autoGrade(questions, answerKey, submission.answers);
-        const suggestion = suggestedScore(auto, maxScore);
+        const manual = manualGrade(questions, answerKey, submission.manualGrades);
+        const suggestion = suggestedScore(auto, manual, maxScore);
 
         return (
           <article
@@ -99,9 +102,16 @@ export function SubmissionReview({
               <ol className="mt-4 space-y-2.5">
                 {questions.map((question, index) => {
                   const verdict = auto.verdicts[question.id];
+                  const givenPoints = submission.manualGrades[question.id];
+                  const canGrade = submission.status !== "pending";
                   return (
                     <li key={question.id} className="flex items-start gap-2.5">
-                      <VerdictBadge verdict={verdict} index={index} />
+                      <VerdictBadge
+                        verdict={verdict}
+                        index={index}
+                        givenPoints={givenPoints}
+                        maxPoints={question.points}
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="whitespace-pre-wrap text-sm text-foreground/75">
                           {question.prompt}
@@ -110,11 +120,22 @@ export function SubmissionReview({
                           question={question}
                           raw={submission.answers[question.id] ?? ""}
                         />
-                        {verdict === null && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Vale {question.points} pt · corrija você
-                          </p>
-                        )}
+                        {verdict === null &&
+                          (canGrade ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Vale {question.points} pt ·{" "}
+                              <a
+                                href={`#${manualGradeFieldName(question.id)}-${submission.studentId}`}
+                                className="font-medium text-navy-700 underline underline-offset-2 hover:text-navy-900"
+                              >
+                                {givenPoints !== undefined ? "ajustar nota" : "corrija você"}
+                              </a>
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Vale {question.points} pt · corrija você
+                            </p>
+                          ))}
                       </div>
                     </li>
                   );
@@ -138,6 +159,10 @@ export function SubmissionReview({
                   initialFeedback={submission.feedback}
                   suggestedScore={suggestion}
                   variant={variant}
+                  openQuestions={questions.filter((q) => auto.verdicts[q.id] === null)}
+                  initialManualGrades={submission.manualGrades}
+                  autoScore={auto.score}
+                  autoMax={auto.max}
                 />
               </div>
             )}
@@ -157,9 +182,14 @@ export function SubmissionReview({
 function VerdictBadge({
   verdict,
   index,
+  givenPoints,
+  maxPoints,
 }: {
   verdict: boolean | null | undefined;
   index: number;
+  /** Nota que o professor já deu, quando `verdict` é `null` (dissertativa). */
+  givenPoints?: number;
+  maxPoints?: number;
 }) {
   if (verdict === true) {
     return (
@@ -179,6 +209,26 @@ function VerdictBadge({
         title="Incorreta"
       >
         <CloseIcon className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+
+  if (givenPoints !== undefined) {
+    const full = maxPoints != null && givenPoints >= maxPoints;
+    const zero = givenPoints <= 0;
+    return (
+      <span
+        className={cn(
+          "grid h-6 w-6 flex-none place-items-center rounded-lg text-[10px] font-semibold",
+          zero
+            ? "bg-destructive/10 text-destructive"
+            : full
+              ? "bg-success/15 text-success"
+              : "bg-gold-100 text-gold-700",
+        )}
+        title={`Corrigida na mão: ${givenPoints}/${maxPoints ?? "?"} pt`}
+      >
+        {givenPoints}
       </span>
     );
   }

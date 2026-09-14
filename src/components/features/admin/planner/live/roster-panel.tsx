@@ -6,7 +6,7 @@
  * não gravar meia chamada a cada clique.
  */
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { recordPlannerAttendanceAction } from "@/actions/admin/lesson-planner";
 import { cn } from "@/lib/utils";
@@ -36,9 +36,19 @@ export function RosterPanel({
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
+  /** Rascunho de chamada em aberto ganha do servidor: a revalidação em tempo
+   * real (`LiveRefresh`) não pode apagar marcação que ninguém salvou ainda. */
+  const dirtyRef = useRef(false);
+
+  useEffect(() => {
+    if (dirtyRef.current) return;
+    setRows(initialRows);
+  }, [initialRows]);
+
   const marked = useMemo(() => rows.filter((row) => row.status !== null).length, [rows]);
 
   function setStatus(studentId: string, status: AttendanceStatus) {
+    dirtyRef.current = true;
     setRows((previous) =>
       previous.map((row) => (row.studentId === studentId ? { ...row, status } : row)),
     );
@@ -46,6 +56,7 @@ export function RosterPanel({
   }
 
   function markAllPresent() {
+    dirtyRef.current = true;
     setRows((previous) =>
       previous.map((row) => (row.status ? row : { ...row, status: "present" })),
     );
@@ -69,6 +80,7 @@ export function RosterPanel({
         setError(result.error.message);
         return;
       }
+      dirtyRef.current = false;
       setSavedAt(new Date());
     });
   }

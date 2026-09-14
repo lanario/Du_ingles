@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { LogoLoader } from "@/components/ui/logo-loader";
+import { isLiteMode } from "@/lib/perf";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -479,16 +480,17 @@ export function TrialClassForm() {
         ease: "power2.out",
         scrollTrigger: { trigger: card, start: "top 80%", once: true },
       });
-      gsap.to("[data-glow]", {
-        xPercent: "random(-12, 12)",
-        yPercent: "random(-14, 14)",
-        scale: "random(0.9, 1.15)",
-        duration: 9,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        stagger: 1.5,
-      });
+      if (!isLiteMode())
+        gsap.to("[data-glow]", {
+          xPercent: "random(-12, 12)",
+          yPercent: "random(-14, 14)",
+          scale: "random(0.9, 1.15)",
+          duration: 9,
+          ease: "sine.inOut",
+          repeat: -1,
+          yoyo: true,
+          stagger: 1.5,
+        });
     }, card);
 
     return () => ctx.revert();

@@ -1835,3 +1835,57 @@ input:autofill {
     transparent 6px 12px
   );
 }
+
+/* ===========================================================================
+ * Modo leve — `data-perf="lite"` no <html> (ver `lib/perf.ts`)
+ * ===========================================================================
+ *
+ * Em máquina de escola e celular antigo o que trava não é a quantidade de
+ * dados, é a GPU. O custo está concentrado em quatro efeitos, e os quatro são
+ * decoração:
+ *
+ *   1. `backdrop-filter` — o mais caro de todos. Cada painel com blur obriga o
+ *      navegador a reler e desfocar o que está atrás A CADA quadro: uma
+ *      sidebar ou um modal em tela cheia com blur derruba o scroll sozinho.
+ *      Aqui todo fundo que usa blur já é opaco em 80% ou mais (ou é o véu
+ *      escuro atrás de um diálogo), então tirar o desfoque não muda contraste
+ *      nem legibilidade em lugar nenhum.
+ *   2. Sombra difusa grande — repintura cara em área grande.
+ *   3. `mix-blend-mode` / `filter` — forçam uma camada de composição extra.
+ *   4. Animação e transição — o que sobra de trabalho por quadro.
+ *
+ * O que este bloco NÃO faz: esconder conteúdo, mudar layout, encolher fonte ou
+ * cortar funcionalidade. A tela é a mesma; ela só para de se enfeitar.
+ */
+
+:root[data-perf="lite"] *,
+:root[data-perf="lite"] *::before,
+:root[data-perf="lite"] *::after {
+  /* O `!important` é proposital: o alvo são utilitários do Tailwind aplicados
+     elemento a elemento, que nenhum seletor mais específico alcançaria. */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Sombra vira uma linha de contato — mantém a noção de camada (qual cartão
+   está sobre qual) sem o borrão que custa caro. */
+:root[data-perf="lite"] {
+  --shadow-card: 0 1px 2px rgba(11, 26, 51, 0.1);
+  --shadow-card-hover: 0 2px 4px rgba(11, 26, 51, 0.14);
+}
+
+:root[data-perf="lite"] *,
+:root[data-perf="lite"] *::before,
+:root[data-perf="lite"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Rolagem suave é um loop de quadros que compete com a rolagem nativa — em
+   máquina fraca ela vira arrasto em vez de suavidade. */
+:root[data-perf="lite"] {
+  scroll-behavior: auto;
+}

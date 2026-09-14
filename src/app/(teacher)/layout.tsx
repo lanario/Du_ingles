@@ -1,10 +1,14 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth/session";
 import { AdminSidebar, type AdminNavSection } from "@/components/features/admin/sidebar";
+import { LiveRefresh } from "@/components/features/live-refresh";
+import { MotionProvider } from "@/components/motion/motion-provider";
+import { LinkPrefetcher } from "@/components/features/link-prefetcher";
 import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
+import { getMyProfile } from "@/repositories/users";
 
 /**
  * Área do professor: o mesmo chrome do painel administrativo (rail navy,
@@ -31,10 +35,8 @@ const TEACHER_NAV_SECTIONS: AdminNavSection[] = [
       { href: "/professor/mensagens", label: "Mensagens", icon: "chat" },
     ],
   },
-  {
-    label: "Conta",
-    items: [{ href: "/professor/meus-dados", label: "Meu Perfil", icon: "user" }],
-  },
+  // "Meu Perfil" mora só no menu da foto de perfil (`UserMenu`) — sem seção
+  // "Conta" aqui, ela ficaria com um item só e duplicado.
 ];
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
@@ -48,40 +50,46 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   if (ctx.realRole === "admin") redirect("/admin");
   if (ctx.realRole !== "teacher") redirect("/403");
 
-  const [notifications, unreadCount] = await Promise.all([
-    listNotifications(),
-    countUnreadNotifications(),
+  const [notifications, unreadCount, profile] = await Promise.all([
+    listNotifications(ctx.userId),
+    countUnreadNotifications(ctx.userId),
+    getMyProfile(ctx.userId),
   ]);
 
   return (
-    <div
-      data-admin-theme
-      className="fixed inset-0 flex flex-col overflow-hidden bg-admin-background text-admin-foreground md:flex-row"
-    >
-      <AdminSidebar
-        organizationLabel="Área do professor"
-        userId={ctx.userId}
-        email={ctx.email}
-        fullName={ctx.fullName}
-        avatarUrl={ctx.avatarUrl}
-        initialNotifications={notifications}
-        initialUnreadCount={unreadCount}
-        sections={TEACHER_NAV_SECTIONS}
-        rootHref="/professor"
-        role="teacher"
-        dataHref="/professor/meus-dados"
-        showRoleSwitch={false}
-        navLabel="Navegação do professor"
-      />
+    <MotionProvider>
+      <div
+        data-admin-theme
+        className="fixed inset-0 flex flex-col overflow-hidden bg-admin-background text-admin-foreground md:flex-row"
+      >
+        <LiveRefresh userId={ctx.userId} />
+        <LinkPrefetcher />
 
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        <main
-          data-scroll-root
-          className="bg-admin-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-5 md:px-6 md:pb-6 md:pt-8"
-        >
-          {children}
-        </main>
+        <AdminSidebar
+          organizationLabel="Área do professor"
+          userId={ctx.userId}
+          email={ctx.email}
+          fullName={ctx.fullName}
+          avatarUrl={ctx.avatarUrl}
+          profile={profile}
+          initialNotifications={notifications}
+          initialUnreadCount={unreadCount}
+          sections={TEACHER_NAV_SECTIONS}
+          rootHref="/professor"
+          role="teacher"
+          showRoleSwitch={false}
+          navLabel="Navegação do professor"
+        />
+
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          <main
+            data-scroll-root
+            className="bg-admin-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-5 md:px-6 md:pb-6 md:pt-8"
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </MotionProvider>
   );
 }

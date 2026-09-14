@@ -8,7 +8,7 @@
  *
  * Cada turma pode aparecer em várias colunas — uma por entrada da própria
  * grade — porque é assim que o resto da área de turmas já entende horário
- * (`ScheduleChips`, `GroupDetailPanel`): uma turma, várias entradas.
+ * (`ScheduleChips`, `GroupFichaModal`): uma turma, várias entradas.
  */
 
 import { useState, useTransition } from "react";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
-import { WEEKDAY_LONG, type Group } from "./groups-utils";
+import { WEEKDAY_LONG, openFichaOnClick, type Group } from "./groups-utils";
 import type { EnrollmentListItem } from "@/repositories/enrollments";
 import type { ScheduleEntry } from "@/schemas/groups";
 import { LogoLoader } from "@/components/ui/logo-loader";
@@ -59,9 +59,16 @@ interface GroupsWeekAgendaProps {
   groups: Group[];
   rosters: Record<string, EnrollmentListItem[]>;
   onEdit: (group: Group) => void;
+  /** Ficha completa em modal — o clique no nome da turma no cartão do horário. */
+  onOpen: (group: Group) => void;
 }
 
-export function GroupsWeekAgenda({ groups, rosters, onEdit }: GroupsWeekAgendaProps) {
+export function GroupsWeekAgenda({
+  groups,
+  rosters,
+  onEdit,
+  onOpen,
+}: GroupsWeekAgendaProps) {
   const current = nowSlot();
 
   return (
@@ -97,6 +104,7 @@ export function GroupsWeekAgenda({ groups, rosters, onEdit }: GroupsWeekAgendaPr
                       slot={slot}
                       roster={rosters[slot.group.id] ?? []}
                       onEdit={() => onEdit(slot.group)}
+                      onOpen={() => onOpen(slot.group)}
                       isNow={
                         day === current.weekday &&
                         toMinutes(slot.entry.start) <= current.minutes &&
@@ -118,11 +126,13 @@ function SlotCard({
   slot,
   roster,
   onEdit,
+  onOpen,
   isNow,
 }: {
   slot: Slot;
   roster: EnrollmentListItem[];
   onEdit: () => void;
+  onOpen: () => void;
   isNow: boolean;
 }) {
   const { group, entry } = slot;
@@ -195,6 +205,7 @@ function SlotCard({
 
       <Link
         href={`${base}/turmas/${group.id}` as Route}
+        onClick={openFichaOnClick(onOpen)}
         className="mt-1 block truncate text-sm font-semibold text-admin-foreground transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
       >
         {group.name}

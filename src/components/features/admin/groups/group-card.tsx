@@ -17,7 +17,7 @@ import type { Route } from "next";
 import { motion, useReducedMotion } from "framer-motion";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { onOpenClick } from "@/components/ui/detail-panel";
-import { CalendarIcon, PencilIcon, PowerIcon, UserIcon } from "@/components/ui/icons";
+import { CalendarIcon, GroupsIcon, PencilIcon, PowerIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
 import {
@@ -29,12 +29,19 @@ import {
   ScheduleChips,
   TeacherPill,
 } from "./groups-visuals";
-import { occupancyLabel, occupancyTone, periodLabel, type Group } from "./groups-utils";
+import {
+  occupancyLabel,
+  occupancyTone,
+  openFichaOnClick,
+  periodLabel,
+  type Group,
+} from "./groups-utils";
 import { LoadingVeil } from "@/components/ui/logo-loader";
 
 interface GroupCardProps {
   group: Group;
   busy: boolean;
+  /** Abre a ficha da turma em modal — clique no cartão ou no nome. */
   onOpen: () => void;
   onEdit: () => void;
   onToggleActive: () => void;
@@ -56,7 +63,7 @@ export function GroupCard({
   // Arquivar tira a turma da operação da escola inteira — decisão de
   // coordenação. O professor edita a própria turma, mas não a arquiva.
   const actions: ActionMenuItem[] = [
-    { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
+    { label: "Abrir turma", icon: GroupsIcon, onSelect: onOpen },
     { label: "Editar turma", icon: PencilIcon, tone: "accent", onSelect: onEdit },
     ...(canManageGroups
       ? [
@@ -122,6 +129,7 @@ export function GroupCard({
           <h3 title={group.name} className="text-[15px] font-semibold leading-snug">
             <Link
               href={`${base}/turmas/${group.id}` as Route}
+              onClick={openFichaOnClick(onOpen)}
               className="block max-w-full truncate text-admin-foreground transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               {group.name}

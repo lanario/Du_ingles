@@ -102,6 +102,29 @@ export function tierFeatures(tier: PlanTier): string[] {
   }
 }
 
+/**
+ * Só os benefícios que o nível ADICIONA sobre o anterior — a contraparte
+ * não-cumulativa de [[tierFeatures]]. Usado onde o cumulativo já apareceria
+ * repetido (ex.: a vitrine pública, que resume o Premium como "tudo do
+ * Standard, e mais" em vez de listar os mesmos quatro itens de novo).
+ */
+export function tierOwnFeatures(tier: PlanTier): string[] {
+  switch (tier) {
+    case "standard":
+      return STANDARD_FEATURES;
+    case "premium":
+      return PREMIUM_EXTRA_FEATURES;
+    case "elite":
+      return ELITE_EXTRA_FEATURES;
+  }
+}
+
+/** Nível do qual cada nível herda benefícios — `null`/ausente para o Standard. */
+export const TIER_INHERITS_FROM: Partial<Record<PlanTier, PlanTier>> = {
+  premium: "standard",
+  elite: "premium",
+};
+
 export const WEEKLY_FREQUENCIES: PlanWeeklyFrequency[] = [1, 2, 3];
 
 export const FREQUENCY_LABEL: Record<PlanWeeklyFrequency, string> = {

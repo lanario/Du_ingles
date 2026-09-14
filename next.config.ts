@@ -34,11 +34,22 @@ const nextConfig: NextConfig = {
      * `0`: o payload RSC que o `prefetch` acabou de buscar é jogado fora no
      * instante do clique, e toda navegação — inclusive o "voltar" do browser
      * e o vai-e-volta entre duas telas do painel — refaz a viagem ao servidor.
-     * Com 30s, o clique reaproveita o que já está em memória e a troca de tela
-     * vira instantânea; o que o próprio usuário altera continua fresco, porque
-     * `revalidatePath` nas server actions invalida este cache junto.
+     * Com a janela aberta, o clique reaproveita o que já está em memória e a
+     * troca de tela vira instantânea.
+     *
+     * 120s, e não 30s: a janela também limita o prefetch por intenção
+     * (`components/features/link-prefetcher.tsx`), que agora aquece todo link
+     * do painel. Em 30s o payload recém-buscado expirava antes de a pessoa
+     * terminar de ler a tela em que estava, e o "voltar" para a lista — a
+     * navegação mais repetida do sistema — pagava o servidor de novo.
+     *
+     * O que impede o dado velho de aparecer não é a janela curta, são as duas
+     * invalidações que já existem: `revalidatePath` nas server actions cobre o
+     * que o próprio usuário altera, e `<LiveRefresh>` cobre o que os outros
+     * alteram, via realtime. Se algum dia esses dois deixarem de cobrir uma
+     * tela, é lá que se conserta — não encurtando isto aqui.
      */
-    staleTimes: { dynamic: 30, static: 180 },
+    staleTimes: { dynamic: 120, static: 180 },
 
     /**
      * `optimizePackageImports` foi testado aqui e não entra: com

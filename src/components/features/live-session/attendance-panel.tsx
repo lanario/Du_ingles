@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { recordAttendanceAction } from "@/actions/teacher/live-session";
 import { FormBanner } from "@/components/ui/form-message";
 import type { AttendanceRow } from "@/repositories/attendance";
@@ -28,7 +28,17 @@ export function AttendancePanel({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  /** Rascunho de chamada em aberto ganha do servidor: a revalidação em tempo
+   * real (`LiveRefresh`) não pode apagar marcação que ninguém salvou ainda. */
+  const dirtyRef = useRef(false);
+
+  useEffect(() => {
+    if (dirtyRef.current) return;
+    setRows(initialRows);
+  }, [initialRows]);
+
   function setStatus(studentId: string, status: AttendanceStatus) {
+    dirtyRef.current = true;
     setRows((prev) =>
       prev.map((r) => (r.studentId === studentId ? { ...r, status } : r)),
     );
@@ -52,6 +62,7 @@ export function AttendancePanel({
         setError(result.error.message);
         return;
       }
+      dirtyRef.current = false;
       setSaved(true);
     });
   }

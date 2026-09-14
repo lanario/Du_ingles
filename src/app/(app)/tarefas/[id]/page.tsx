@@ -7,13 +7,16 @@ import {
   getAssignmentSubmissions,
   getMySubmission,
 } from "@/repositories/assignments";
+import Link from "next/link";
 import { SubmitAssignmentForm } from "@/components/features/assignments/submit-assignment-form";
 import { ExercisePlayer } from "@/components/features/assignments/exercise-player";
 import { StudentAnswersView } from "@/components/features/assignments/student-answers-view";
 import { SubmissionReview } from "@/components/features/assignments/submission-review";
 import { StatusPill } from "@/components/features/assignments/status-pill";
 import { BackLink } from "@/components/ui/back-link";
-import { ArrowLeftIcon, CalendarIcon, TaskIcon } from "@/components/ui/icons";
+import { buttonVariants } from "@/components/ui/button";
+import { ArrowLeftIcon, CalendarIcon, HomeIcon, TaskIcon } from "@/components/ui/icons";
+import { formatDueDate } from "@/lib/assignments/due-date";
 
 export const metadata: Metadata = { title: "Tarefa" };
 
@@ -65,7 +68,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
             }
           >
             <CalendarIcon className="h-4 w-4" />
-            Prazo: {new Date(assignment.dueAt).toLocaleDateString("pt-BR")}
+            Prazo: {formatDueDate(assignment.dueAt)}
           </span>
         )}
       </div>
@@ -93,7 +96,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
     ]);
 
     return (
-      <div className="max-w-3xl space-y-8">
+      <div className="max-w-3xl space-y-8 xl:max-w-5xl">
         {header}
         <section className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -119,7 +122,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
   const sent = mine?.status === "submitted" || mine?.status === "graded";
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-8 xl:max-w-5xl">
       {header}
 
       <section className="space-y-4">
@@ -171,6 +174,13 @@ export default async function TarefaDetailPage({ params }: PageProps) {
             assignmentId={id}
             initialContent={mine?.content ?? undefined}
           />
+        )}
+
+        {sent && (
+          <Link href="/dashboard" className={buttonVariants("outline", "gap-2")}>
+            <HomeIcon className="h-4 w-4" />
+            Ir para a tela inicial
+          </Link>
         )}
       </section>
     </div>

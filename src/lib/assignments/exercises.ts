@@ -158,6 +158,22 @@ export function readAnswers(answers: Json | null): StudentAnswers {
   return parsed;
 }
 
+/** Pontos que o professor deu a cada questão dissertativa, por `question.id`. */
+export type ManualGrades = Record<string, number>;
+
+export function readManualGrades(value: Json | null): ManualGrades {
+  const obj = asObject(value);
+  if (!obj) return {};
+
+  const grades: ManualGrades = {};
+  for (const [questionId, points] of Object.entries(obj)) {
+    if (typeof points === "number" && Number.isFinite(points) && points >= 0) {
+      grades[questionId] = points;
+    }
+  }
+  return grades;
+}
+
 // ---------------------------------------------------------------------------
 // Correção automática
 // ---------------------------------------------------------------------------
@@ -234,18 +250,89 @@ export function autoGrade(
   return { verdicts, score, max, openCount };
 }
 
+export interface ManualGradeResult {
+  /** Pontos já dados pelo professor nas questões dissertativas corrigidas. */
+  score: number;
+  /** Pontos possíveis nas questões dissertativas (soma de `points` delas). */
+  max: number;
+  /** Quantas questões dissertativas ainda faltam receber uma nota. */
+  pendingCount: number;
+}
+
 /**
- * Converte a nota das objetivas para a escala da tarefa (`max_score`). Só faz
- * sentido quando não sobrou nada dissertativo — com questão aberta no meio, a
- * regra de três daria uma nota final que ignora metade da prova, então
- * devolvemos `null` e a nota fica com o professor.
+ * Soma a correção manual das questões que `autoGrade` deixou em aberto
+ * (dissertativas, ou objetivas sem gabarito). Pontos fora de `[0, points]`
+ * são recortados — o input do professor é `min`/`max` no HTML, mas isso não
+ * impede um valor fora da faixa de chegar até aqui.
+ */
+export function manualGrade(
+  questions: Question[],
+  answerKey: AnswerKey,
+  manualGrades: ManualGrades,
+): ManualGradeResult {
+  let score = 0;
+  let max = 0;
+  let pendingCount = 0;
+
+  for (const question of questions) {
+    if (isObjective(question.type) && answerKey[question.id]) continue;
+
+    max += question.points;
+    const given = manualGrades[question.id];
+    if (given === undefined) {
+      pendingCount += 1;
+      continue;
+    }
+    score += Math.min(Math.max(given, 0), question.points);
+  }
+
+  return { score, max, pendingCount };
+}
+
+/** Nome do campo do form de correção para a nota manual de uma questão. */
+export function manualGradeFieldName(questionId: string): string {
+  return `manual_${questionId}`;
+}
+
+/**
+ * Lê os pontos manuais do `FormData` do form de correção, um campo por
+ * questão dissertativa (ver `manualGradeFieldName`). Só entram questões que
+ * `autoGrade` deixaria em aberto — campo estranho no payload não vira nota de
+ * questão que nem existe nesta tarefa.
+ */
+export function parseManualGradesFromForm(
+  formData: FormData,
+  questions: Question[],
+  answerKey: AnswerKey,
+): ManualGrades {
+  const grades: ManualGrades = {};
+  for (const question of questions) {
+    if (isObjective(question.type) && answerKey[question.id]) continue;
+
+    const raw = formData.get(manualGradeFieldName(question.id));
+    if (raw === null || raw === "") continue;
+    const num = Number(raw);
+    if (!Number.isFinite(num)) continue;
+    grades[question.id] = Math.min(Math.max(num, 0), question.points);
+  }
+  return grades;
+}
+
+/**
+ * Converte a nota (objetivas + dissertativas já corrigidas na mão) para a
+ * escala da tarefa (`max_score`). Só faz sentido quando toda questão tem um
+ * veredito — com alguma dissertativa ainda sem nota, a regra de três daria um
+ * total que ignora parte da prova, então devolvemos `null` e a nota fica com
+ * o professor.
  */
 export function suggestedScore(
   auto: AutoGradeResult,
+  manual: ManualGradeResult,
   maxScore: number | null,
 ): number | null {
-  if (auto.openCount > 0 || auto.max === 0 || maxScore == null) return null;
-  return Math.round((auto.score / auto.max) * maxScore * 10) / 10;
+  const totalMax = auto.max + manual.max;
+  if (manual.pendingCount > 0 || totalMax === 0 || maxScore == null) return null;
+  return Math.round(((auto.score + manual.score) / totalMax) * maxScore * 10) / 10;
 }
 
 // ---------------------------------------------------------------------------

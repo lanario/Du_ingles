@@ -11,11 +11,22 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-export async function listNotifications(limit = 20): Promise<NotificationItem[]> {
+/**
+ * `recipient_id` é filtrado aqui, explícito, e não só via RLS: a policy
+ * `notifications_all_admin` dá `ALL` irrestrito a quem é admin (para a
+ * escrita de service-role fazer sentido em `dispatch.ts`), então sem esse
+ * filtro um admin logado recebe a caixa de todo mundo na própria — a leitura
+ * "por conta própria" só existe para os outros papéis.
+ */
+export async function listNotifications(
+  userId: string,
+  limit = 20,
+): Promise<NotificationItem[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("notifications")
     .select("id, type, title, body, link, read_at, created_at")
+    .eq("recipient_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -32,11 +43,12 @@ export async function listNotifications(limit = 20): Promise<NotificationItem[]>
   }));
 }
 
-export async function countUnreadNotifications(): Promise<number> {
+export async function countUnreadNotifications(userId: string): Promise<number> {
   const supabase = await createServerSupabaseClient();
   const { count } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
+    .eq("recipient_id", userId)
     .is("read_at", null);
   return count ?? 0;
 }

@@ -19,15 +19,15 @@ import {
   useTransition,
 } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
-import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/actions/auth/logout";
 import { AccountAvatar } from "@/components/features/account/account-avatar";
 import { SecurityModal } from "@/components/features/account/security-modal";
+import { ProfileModal } from "@/components/features/account/profile-modal";
 import { ChevronIcon, KeyIcon, LogoutIcon, UserIcon } from "@/components/ui/icons";
 import type { AppRole } from "@/types/domain";
+import type { MyProfile } from "@/repositories/users";
 
 const ROLE_LABEL: Record<AppRole, string> = {
   admin: "Administrador",
@@ -46,11 +46,19 @@ interface UserMenuProps {
   avatarUrl: string | null;
   /** `app` = rail navy; `admin` = rail dourado. Muda só o cartão-gatilho. */
   theme: "app" | "admin";
-  /** Destino de "Meu Perfil", linkado a partir do menu e do modal de Segurança. */
-  dataHref: Route;
+  /** Dados do formulário de "Meu Perfil" — `null` só se a leitura falhar. */
+  profile: MyProfile | null;
   /** Rail recolhido mostra só a foto; a gaveta do mobile é sempre larga. */
   compact?: boolean;
   className?: string;
+  /**
+   * Avisa quem chama quando o menu abre/fecha. O rail hover-expand escuta
+   * isto para reconferir seu próprio estado ao fechar — o painel deste menu
+   * vai para um portal fora do DOM do rail, então abrir um dos modais pode
+   * fechar o menu sem que o rail veja o ponteiro ou o foco saírem de
+   * verdade, e ele fica "travado" expandido.
+   */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function UserMenu({
@@ -60,12 +68,14 @@ export function UserMenu({
   role,
   avatarUrl,
   theme,
-  dataHref,
+  profile,
   compact = false,
   className,
+  onOpenChange,
 }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [coords, setCoords] = useState<{ left: number; bottom: number } | null>(null);
   const [loggingOut, startLogout] = useTransition();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -86,6 +96,10 @@ export function UserMenu({
   useLayoutEffect(() => {
     if (open) place();
   }, [open, place]);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;
@@ -157,15 +171,18 @@ export function UserMenu({
                 <div className="h-px bg-border" />
 
                 <div className="p-1.5">
-                  <Link
-                    href={dataHref}
+                  <button
+                    type="button"
                     role="menuitem"
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setOpen(false);
+                      setProfileOpen(true);
+                    }}
                     className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm font-medium text-navy-900 transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
                   >
                     <UserIcon className="h-[18px] w-[18px] text-navy-900/60" />
                     Meu Perfil
-                  </Link>
+                  </button>
                   <button
                     type="button"
                     role="menuitem"
@@ -268,12 +285,24 @@ export function UserMenu({
 
       {typeof document !== "undefined" &&
         createPortal(
-          <SecurityModal
-            open={securityOpen}
-            onClose={() => setSecurityOpen(false)}
-            theme={theme}
-            dataHref={dataHref}
-          />,
+          <>
+            <SecurityModal
+              open={securityOpen}
+              onClose={() => setSecurityOpen(false)}
+              theme={theme}
+              onOpenProfile={() => {
+                setSecurityOpen(false);
+                setProfileOpen(true);
+              }}
+            />
+            <ProfileModal
+              open={profileOpen}
+              onClose={() => setProfileOpen(false)}
+              theme={theme}
+              profile={profile}
+              avatarUrl={avatarUrl}
+            />
+          </>,
           document.body,
         )}
     </>

@@ -12,7 +12,7 @@ import type { Route } from "next";
 import { motion, useReducedMotion } from "framer-motion";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { onOpenClick } from "@/components/ui/detail-panel";
-import { PencilIcon, PowerIcon, UserIcon } from "@/components/ui/icons";
+import { GroupsIcon, PencilIcon, PowerIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useArea } from "@/components/features/admin/area-context";
 import {
@@ -21,7 +21,7 @@ import {
   OccupancyBar,
   ScheduleChips,
 } from "./groups-visuals";
-import type { Group } from "./groups-utils";
+import { openFichaOnClick, type Group } from "./groups-utils";
 import { LoadingVeil } from "@/components/ui/logo-loader";
 
 export const LIST_GRID =
@@ -30,6 +30,7 @@ export const LIST_GRID =
 interface GroupListItemProps {
   group: Group;
   busy: boolean;
+  /** Abre a ficha da turma em modal — clique na linha ou no nome. */
   onOpen: () => void;
   onEdit: () => void;
   onToggleActive: () => void;
@@ -49,7 +50,7 @@ export function GroupListItem({
   // Arquivar tira a turma da operação da escola inteira — decisão de
   // coordenação. O professor edita a própria turma, mas não a arquiva.
   const actions: ActionMenuItem[] = [
-    { label: "Ver detalhes", icon: UserIcon, onSelect: onOpen },
+    { label: "Abrir turma", icon: GroupsIcon, onSelect: onOpen },
     { label: "Editar turma", icon: PencilIcon, tone: "accent", onSelect: onEdit },
     ...(canManageGroups
       ? [
@@ -85,6 +86,7 @@ export function GroupListItem({
       <div className="min-w-0">
         <Link
           href={`${base}/turmas/${group.id}` as Route}
+          onClick={openFichaOnClick(onOpen)}
           className="block max-w-full truncate font-medium text-admin-foreground transition-colors hover:text-gold-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
         >
           {group.name}

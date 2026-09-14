@@ -289,7 +289,7 @@ function ChoiceInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
       {(question.options ?? []).map((option, index) => {
         const selected = value === String(index);
         return (

@@ -296,10 +296,7 @@ function buildPreviews(
   to: string,
 ): AgendaItem[] {
   const fromDate = new Date(from);
-  const days = Math.max(
-    Math.ceil((new Date(to).getTime() - fromDate.getTime()) / (24 * 3600_000)),
-    1,
-  );
+  const toDate = new Date(to);
 
   return groups
     .filter((group) => group.is_active)
@@ -307,15 +304,35 @@ function buildPreviews(
       const schedule = (group.schedule as SchedulePattern[] | null) ?? [];
       if (schedule.length === 0) return [];
 
-      const taken = sessions
-        .filter((session) => session.group_id === group.id)
-        .map((session) => session.scheduled_at);
+      const groupSessions = sessions.filter((session) => session.group_id === group.id);
+      const taken = groupSessions.map((session) => session.scheduled_at);
+
+      // Remarcar uma aula para fora do horário fixo da turma (uma reposição,
+      // por exemplo) não muda a grade — e sem isto a projeção, ao não achar
+      // mais sessão exata no horário de sempre, desenhava de volta a aula
+      // "de sempre" como prévia pontilhada na mesma semana da que já foi
+      // remarcada. Toda sessão viva (não cancelada) já resolveu o ciclo dela,
+      // remarcada ou não, então nenhuma prévia entra antes ou no instante da
+      // mais distante delas.
+      const latestClaimed = Math.max(
+        0,
+        ...groupSessions
+          .filter((session) => session.status !== "cancelled")
+          .map((session) => new Date(session.scheduled_at).getTime()),
+      );
+      const effectiveFrom = new Date(Math.max(fromDate.getTime(), latestClaimed + 1));
+      if (effectiveFrom.getTime() > toDate.getTime()) return [];
+
+      const days = Math.max(
+        Math.ceil((toDate.getTime() - effectiveFrom.getTime()) / (24 * 3600_000)),
+        1,
+      );
 
       return projectSessions({
         schedule,
         startDate: group.start_date,
         endDate: group.end_date,
-        from: fromDate,
+        from: effectiveFrom,
         days,
         exclude: taken,
         limit: 60,

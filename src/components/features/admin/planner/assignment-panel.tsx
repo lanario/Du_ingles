@@ -15,6 +15,7 @@ import { SidePanel } from "@/components/ui/side-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateField } from "@/components/ui/date-field";
+import { schoolDayKey } from "@/lib/schedule/session-preview";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -203,7 +204,7 @@ export function AssignmentPanel({
                 id="assignment-dueAt"
                 name="dueAt"
                 tone="admin"
-                min={new Date().toISOString().slice(0, 10)}
+                min={schoolDayKey()}
               />
               <FieldError messages={fields?.["dueAt"]} />
             </div>

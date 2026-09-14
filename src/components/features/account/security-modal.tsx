@@ -8,8 +8,6 @@
  */
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import gsap from "gsap";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { Dialog } from "@/components/ui/dialog";
@@ -25,7 +23,8 @@ interface SecurityModalProps {
   open: boolean;
   onClose: () => void;
   theme: AccountTheme;
-  dataHref: Route;
+  /** Troca de modal: fecha este e abre o de "Meu Perfil" no mesmo menu da conta. */
+  onOpenProfile: () => void;
 }
 
 const listVariants: Variants = {
@@ -38,7 +37,7 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
 };
 
-export function SecurityModal({ open, onClose, theme, dataHref }: SecurityModalProps) {
+export function SecurityModal({ open, onClose, theme, onOpenProfile }: SecurityModalProps) {
   const classes = accountClasses(theme);
   const badgeRef = useRef<HTMLSpanElement>(null);
   const haloRef = useRef<HTMLSpanElement>(null);
@@ -124,13 +123,13 @@ export function SecurityModal({ open, onClose, theme, dataHref }: SecurityModalP
 
         <motion.p variants={itemVariants} className={classes.muted}>
           Exportação e exclusão de dados pessoais ficam em{" "}
-          <Link
-            href={dataHref}
-            onClick={onClose}
+          <button
+            type="button"
+            onClick={onOpenProfile}
             className={cn("font-medium underline", theme === "app" && "text-navy-900")}
           >
             Meu Perfil
-          </Link>
+          </button>
           .
         </motion.p>
       </motion.div>

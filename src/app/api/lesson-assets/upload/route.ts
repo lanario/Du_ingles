@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth/session";
+import { requireStaff } from "@/lib/auth/staff";
 import { uploadLessonImage } from "@/lib/lesson-assets";
 
 export const runtime = "nodejs";
@@ -14,7 +14,10 @@ const MAX_BYTES = 4 * 1024 * 1024;
  * URL não. Era exatamente esse o "enviando imagem…" que não terminava.
  */
 export async function POST(request: Request) {
-  const ctx = await requireRole(["admin"]);
+  // Quem monta aula é a equipe inteira, não só a coordenação: o planejador e
+  // a sala ao vivo são telas do professor. Exigir admin aqui fazia a imagem
+  // colada por ele falhar no envio e ficar presa no `data:` URL.
+  const ctx = await requireStaff();
 
   let form: FormData;
   try {

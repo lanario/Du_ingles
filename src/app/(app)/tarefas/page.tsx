@@ -5,6 +5,7 @@ import { listMyGroups } from "@/repositories/groups";
 import { listGroupAssignments, listStudentAssignments } from "@/repositories/assignments";
 import { CreateAssignmentForm } from "@/components/features/assignments/create-assignment-form";
 import { StudentAssignments } from "@/components/features/assignments/student-assignments";
+import { formatDueDate } from "@/lib/assignments/due-date";
 
 export const metadata: Metadata = { title: "Tarefas" };
 
@@ -80,7 +81,7 @@ export default async function TarefasPage({ searchParams }: PageProps) {
                       <span className="font-medium">{a.title}</span>
                       {a.dueAt && (
                         <span className="text-muted-foreground">
-                          até {new Date(a.dueAt).toLocaleDateString("pt-BR")}
+                          até {formatDueDate(a.dueAt)}
                         </span>
                       )}
                     </Link>

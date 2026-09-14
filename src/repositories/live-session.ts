@@ -18,8 +18,6 @@ export interface LiveSessionDetail {
   content: Json;
   teacherNotes: string | null;
   homework: string | null;
-  lockedBy: string | null;
-  lockedAt: string | null;
   pdfPath: string | null;
   recordingUrl: string | null;
 }
@@ -36,7 +34,7 @@ export async function getLiveSession(
   const { data, error } = await admin
     .from("class_sessions")
     .select(
-      "id, group_id, teacher_id, title, scheduled_at, duration_minutes, started_at, ended_at, status, is_published, content, teacher_notes, homework, locked_by, locked_at, pdf_path, recording_url, group:group_id(name)",
+      "id, group_id, teacher_id, title, scheduled_at, duration_minutes, started_at, ended_at, status, is_published, content, teacher_notes, homework, pdf_path, recording_url, group:group_id(name)",
     )
     .eq("id", sessionId)
     .single();
@@ -58,8 +56,6 @@ export async function getLiveSession(
     content: data.content,
     teacherNotes: data.teacher_notes,
     homework: data.homework,
-    lockedBy: data.locked_by,
-    lockedAt: data.locked_at,
     pdfPath: data.pdf_path,
     recordingUrl: data.recording_url,
   };
@@ -103,8 +99,6 @@ export async function endSession(sessionId: string): Promise<boolean> {
       status: "completed",
       ended_at: new Date().toISOString(),
       is_published: true,
-      locked_by: null,
-      locked_at: null,
     })
     .eq("id", sessionId);
   return !error;
@@ -137,10 +131,10 @@ export async function acquireLock(
 ): Promise<{ acquired: boolean; heldBySomeoneElse: boolean }> {
   const admin = createAdminSupabaseClient();
   const { data } = await admin
-    .from("class_sessions")
+    .from("class_session_locks")
     .select("locked_by, locked_at")
-    .eq("id", sessionId)
-    .single();
+    .eq("session_id", sessionId)
+    .maybeSingle();
 
   const now = Date.now();
   const lockedAt = data?.locked_at ? new Date(data.locked_at).getTime() : 0;
@@ -152,9 +146,11 @@ export async function acquireLock(
   }
 
   await admin
-    .from("class_sessions")
-    .update({ locked_by: clientId, locked_at: new Date().toISOString() })
-    .eq("id", sessionId);
+    .from("class_session_locks")
+    .upsert(
+      { session_id: sessionId, locked_by: clientId, locked_at: new Date().toISOString() },
+      { onConflict: "session_id" },
+    );
 
   return { acquired: true, heldBySomeoneElse: false };
 }

@@ -39,14 +39,17 @@ const TZ = "America/Sao_Paulo";
 const PLANNER_SUFFIX = "/planejador";
 
 /**
- * Mexer numa aula muda três telas: a agenda do planejador, a ficha da turma
- * (onde a linha do tempo de sessões mora) e o painel de quem vai à aula.
- * Revalidar só o planejador deixava a ficha da turma servindo cache velho.
+ * Mexer numa aula muda quatro telas: a agenda do planejador, a ficha da
+ * turma (onde a linha do tempo de sessões mora), a agenda (equipe e aluno) e
+ * o painel de quem vai à aula. Revalidar só o planejador deixava a agenda do
+ * aluno — e a da própria equipe — servindo a data e hora antigas.
  */
 function revalidateSession(groupId: string): void {
   revalidateStaffPath(PLANNER_SUFFIX);
   revalidateStaffPath("/turmas");
   revalidateStaffPath(`/turmas/${groupId}`);
+  revalidateStaffPath("/agenda");
+  revalidatePath("/agenda");
   revalidatePath("/dashboard");
 }
 
@@ -455,7 +458,7 @@ export async function scheduleSessionAction(
     scheduledAt: toUtcIso(parsed.data.date, parsed.data.time),
   });
 
-  revalidateStaffPath(PLANNER_SUFFIX);
+  revalidateSession(parsed.data.groupId);
   return ok(undefined as never);
 }
 

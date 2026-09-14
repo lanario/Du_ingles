@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { CreateGroupPanel } from "./create-group-panel";
 import { EditGroupPanel } from "./edit-group-panel";
 import { GroupCard } from "./group-card";
-import { GroupDetailPanel } from "./group-detail-panel";
+import { GroupFichaModal } from "./group-ficha-modal";
 import { LIST_GRID, GroupListItem } from "./group-list-item";
 import { GroupsFilterRail } from "./groups-filter-rail";
 import { GroupsWeekAgenda } from "./groups-week-agenda";
@@ -112,8 +112,8 @@ export function TurmasView({
   const mode = narrow ? "cards" : viewMode;
 
   const [createOpen, setCreateOpen] = useState(openCreate);
-  const [detail, setDetail] = useState<Group | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  /** Turma com a ficha aberta em modal; `null` = nenhuma. */
+  const [ficha, setFicha] = useState<Group | null>(null);
   const [editing, setEditing] = useState<Group | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -148,13 +148,14 @@ export function TurmasView({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // O painel de detalhe segue a lista: depois de salvar ou arquivar, a turma
-  // aberta tem que refletir o dado novo, não o snapshot de quando abriu.
+  // A ficha aberta segue a lista: depois de matricular, salvar ou arquivar, a
+  // turma tem que refletir o dado novo, não o retrato de quando abriu — e é
+  // por esta troca de referência que o modal relê o que a lista não carrega.
   useEffect(() => {
-    setDetail((current) =>
+    setEditing((current) =>
       current ? (groups.find((g) => g.id === current.id) ?? null) : null,
     );
-    setEditing((current) =>
+    setFicha((current) =>
       current ? (groups.find((g) => g.id === current.id) ?? null) : null,
     );
   }, [groups]);
@@ -204,13 +205,17 @@ export function TurmasView({
     return sortGroups(result, sort);
   }, [inTeacher, status, levelFilter, search, sort]);
 
-  function openDetail(group: Group) {
-    setDetail(group);
-    setDetailOpen(true);
+  /**
+   * Abrir uma turma é abrir a ficha — matrículas, grade e sessões, tudo no
+   * mesmo modal. Não existe mais painel lateral de resumo nem página de
+   * turma no meio do caminho: eram três lugares contando a mesma história.
+   */
+  function openFicha(group: Group) {
+    setFicha(group);
   }
 
   function openEdit(group: Group) {
-    setDetailOpen(false);
+    setFicha(null);
     setEditing(group);
   }
 
@@ -518,7 +523,12 @@ export function TurmasView({
             }
           />
         ) : page === "agenda" ? (
-          <GroupsWeekAgenda groups={filtered} rosters={rosters} onEdit={openEdit} />
+          <GroupsWeekAgenda
+            groups={filtered}
+            rosters={rosters}
+            onEdit={openEdit}
+            onOpen={openFicha}
+          />
         ) : mode === "cards" ? (
           <motion.div
             layout
@@ -530,7 +540,7 @@ export function TurmasView({
                   key={group.id}
                   group={group}
                   busy={busy === group.id}
-                  onOpen={() => openDetail(group)}
+                  onOpen={() => openFicha(group)}
                   onEdit={() => openEdit(group)}
                   onToggleActive={() => toggleActive(group)}
                 />
@@ -560,7 +570,7 @@ export function TurmasView({
                     key={group.id}
                     group={group}
                     busy={busy === group.id}
-                    onOpen={() => openDetail(group)}
+                    onOpen={() => openFicha(group)}
                     onEdit={() => openEdit(group)}
                     onToggleActive={() => toggleActive(group)}
                   />
@@ -578,13 +588,12 @@ export function TurmasView({
         </p>
       )}
 
-      <GroupDetailPanel
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        group={detail}
-        busy={detail !== null && busy === detail.id}
-        onEdit={() => detail && openEdit(detail)}
-        onToggleActive={() => detail && toggleActive(detail)}
+      <GroupFichaModal
+        group={ficha}
+        onClose={() => setFicha(null)}
+        busy={ficha !== null && busy === ficha.id}
+        onEdit={openEdit}
+        onToggleActive={toggleActive}
       />
 
       <EditGroupPanel

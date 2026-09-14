@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { AssignmentStatus } from "@/types/domain";
@@ -9,8 +10,10 @@ import {
   readAnswerKey,
   readAnswers,
   readInstructionsText,
+  readManualGrades,
   readQuestions,
   type AnswerKey,
+  type ManualGrades,
   type Question,
   type StudentAnswers,
 } from "@/lib/assignments/exercises";
@@ -41,6 +44,8 @@ export interface SubmissionRow {
   /** Prévia da correção automática — só chega em quem corrige, nunca no aluno. */
   autoScore: number | null;
   autoMax: number | null;
+  /** Pontos dados pelo professor em cada questão dissertativa. */
+  manualGrades: ManualGrades;
 }
 
 /**
@@ -165,8 +170,15 @@ export async function getAssignmentAnswerKey(assignmentId: string): Promise<Answ
   return readAnswerKey(data?.answer_key ?? null);
 }
 
-/** Versão admin de `getAssignmentById`, para o planejador (a escola vê tudo). */
-export async function getOrgAssignmentById(
+/**
+ * Versão admin de `getAssignmentById`, para o planejador (a escola vê tudo).
+ *
+ * `cache()` do React porque esta leitura acontece DUAS vezes por request: o
+ * `generateMetadata` da rota precisa do título e a página precisa da linha
+ * inteira, e o Next roda os dois no mesmo render pass. Sem a memoização é uma
+ * ida ao banco a mais em cada abertura de tarefa, sem nada em troca.
+ */
+export const getOrgAssignmentById = cache(async function getOrgAssignmentById(
   id: string,
   organizationId: string,
 ): Promise<AssignmentDetail | null> {
@@ -189,7 +201,7 @@ export async function getOrgAssignmentById(
     dueAt: data.due_at,
     maxScore: data.max_score,
   };
-}
+});
 
 /**
  * Entregas para quem corrige. Usa service-role porque traz `auto_score` /
@@ -203,7 +215,7 @@ export async function getAssignmentSubmissions(
   const { data, error } = await admin
     .from("assignment_submissions")
     .select(
-      "student_id, content, answers, status, score, feedback, submitted_at, auto_score, auto_max, student:student_id(full_name)",
+      "student_id, content, answers, status, score, feedback, submitted_at, auto_score, auto_max, manual_grades, student:student_id(full_name)",
     )
     .eq("assignment_id", assignmentId);
 
@@ -219,6 +231,7 @@ export async function getAssignmentSubmissions(
     submittedAt: row.submitted_at,
     autoScore: row.auto_score,
     autoMax: row.auto_max,
+    manualGrades: readManualGrades(row.manual_grades),
   }));
 }
 
@@ -735,6 +748,7 @@ export async function gradeSubmission(
   gradedBy: string,
   score: number,
   feedback: string | undefined,
+  manualGrades?: ManualGrades,
 ): Promise<boolean> {
   const admin = createAdminSupabaseClient();
   const { error } = await admin
@@ -745,6 +759,14 @@ export async function gradeSubmission(
       status: "graded",
       graded_at: new Date().toISOString(),
       graded_by: gradedBy,
+      ...(manualGrades !== undefined
+        ? {
+            manual_grades:
+              Object.keys(manualGrades).length > 0
+                ? (manualGrades as unknown as Json)
+                : null,
+          }
+        : {}),
     })
     .eq("assignment_id", assignmentId)
     .eq("student_id", studentId);

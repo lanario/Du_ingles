@@ -8,6 +8,7 @@ import {
   notifyAssignmentGraded,
 } from "@/lib/notifications/events";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { parseManualGradesFromForm, readQuestions } from "@/lib/assignments/exercises";
 import * as repo from "@/repositories/assignments";
 import { createAssignmentSchema, gradeSubmissionSchema } from "@/schemas/assignments";
 import { fail, ok, type ActionResult } from "@/types/action-result";
@@ -92,10 +93,17 @@ export async function gradeSubmissionAction(
   const supabase = await createServerSupabaseClient();
   const { data: owned } = await supabase
     .from("assignments")
-    .select("id, title, max_score")
+    .select("id, title, max_score, instructions")
     .eq("id", assignmentId)
     .maybeSingle();
   if (!owned) return fail("NOT_FOUND", "Tarefa não encontrada.");
+
+  const answerKey = await repo.getAssignmentAnswerKey(assignmentId);
+  const manualGrades = parseManualGradesFromForm(
+    formData,
+    readQuestions(owned.instructions),
+    answerKey,
+  );
 
   const success = await repo.gradeSubmission(
     assignmentId,
@@ -103,6 +111,7 @@ export async function gradeSubmissionAction(
     ctx.userId,
     parsed.data.score,
     parsed.data.feedback,
+    manualGrades,
   );
   if (!success) return fail("INTERNAL_ERROR", "Falha ao salvar a nota.");
 

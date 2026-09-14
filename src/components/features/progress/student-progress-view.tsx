@@ -598,11 +598,7 @@ function PendingTaskRowView({ task, index }: { task: PendingTaskRow; index: numb
             late ? "bg-red-50 text-destructive" : "bg-gold-50 text-gold-700",
           )}
         >
-          {task.dueAt
-            ? formatDate(task.dueAt, "dd/MM 'às' HH:mm")
-            : late
-              ? "Atrasada"
-              : "Sem prazo"}
+          {task.dueAt ? formatDate(task.dueAt, "dd/MM") : late ? "Atrasada" : "Sem prazo"}
         </span>
       </Link>
     </motion.li>

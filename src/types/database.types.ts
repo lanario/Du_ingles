@@ -104,6 +104,7 @@ export type Database = {
           graded_at: string | null;
           graded_by: string | null;
           id: string;
+          manual_grades: Json | null;
           organization_id: string;
           score: number | null;
           status: Database["public"]["Enums"]["assignment_status"];
@@ -121,6 +122,7 @@ export type Database = {
           graded_at?: string | null;
           graded_by?: string | null;
           id?: string;
+          manual_grades?: Json | null;
           organization_id: string;
           score?: number | null;
           status?: Database["public"]["Enums"]["assignment_status"];
@@ -138,6 +140,7 @@ export type Database = {
           graded_at?: string | null;
           graded_by?: string | null;
           id?: string;
+          manual_grades?: Json | null;
           organization_id?: string;
           score?: number | null;
           status?: Database["public"]["Enums"]["assignment_status"];
@@ -411,6 +414,32 @@ export type Database = {
         };
         Relationships: [];
       };
+      class_session_locks: {
+        Row: {
+          locked_at: string;
+          locked_by: string;
+          session_id: string;
+        };
+        Insert: {
+          locked_at?: string;
+          locked_by: string;
+          session_id: string;
+        };
+        Update: {
+          locked_at?: string;
+          locked_by?: string;
+          session_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_session_locks_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "class_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       class_sessions: {
         Row: {
           content: Json;
@@ -422,8 +451,6 @@ export type Database = {
           id: string;
           is_published: boolean;
           lesson_plan_id: string | null;
-          locked_at: string | null;
-          locked_by: string | null;
           organization_id: string;
           pdf_generated_at: string | null;
           pdf_path: string | null;
@@ -446,8 +473,6 @@ export type Database = {
           id?: string;
           is_published?: boolean;
           lesson_plan_id?: string | null;
-          locked_at?: string | null;
-          locked_by?: string | null;
           organization_id: string;
           pdf_generated_at?: string | null;
           pdf_path?: string | null;
@@ -470,8 +495,6 @@ export type Database = {
           id?: string;
           is_published?: boolean;
           lesson_plan_id?: string | null;
-          locked_at?: string | null;
-          locked_by?: string | null;
           organization_id?: string;
           pdf_generated_at?: string | null;
           pdf_path?: string | null;
@@ -497,13 +520,6 @@ export type Database = {
             columns: ["lesson_plan_id"];
             isOneToOne: false;
             referencedRelation: "lesson_plans";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "class_sessions_locked_by_fkey";
-            columns: ["locked_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {

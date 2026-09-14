@@ -13,6 +13,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import { EditorToolbar } from "@/components/features/lesson-plans/editor-toolbar";
+import { toPlainDocument } from "@/lib/editor-json";
 import {
   LessonImage,
   LessonTextAlign,
@@ -66,7 +67,9 @@ export function TiptapEditor({ content, onChange, editable = true }: TiptapEdito
           "prose prose-sm max-w-none min-h-[400px] rounded-b-md border border-t-0 border-border bg-background px-4 py-3 focus:outline-none",
       },
     },
-    onUpdate: ({ editor }) => onChange(editor.getJSON()),
+    // `toPlainDocument` protege os `attrs` (imagem, alinhamento, cor) da
+    // serialização das Server Actions — ver `lib/editor-json.ts`.
+    onUpdate: ({ editor }) => onChange(toPlainDocument(editor.getJSON())),
   });
 
   if (!editor) return null;

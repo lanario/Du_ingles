@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MeshGradient } from "@paper-design/shaders-react";
+import dynamic from "next/dynamic";
+import { usePerfMode } from "@/hooks/use-perf-mode";
 import { cn } from "@/lib/utils";
+
+/**
+ * O shader só é BAIXADO quando vai ser usado. A biblioteca de WebGL é o maior
+ * pedaço de JavaScript da landing, e em modo leve ela nunca é montada — sem o
+ * carregamento sob demanda, o aparelho fraco pagaria o download de um efeito
+ * que não vai ver.
+ */
+const MeshGradient = dynamic(
+  () => import("@paper-design/shaders-react").then((m) => m.MeshGradient),
+  { ssr: false },
+);
 
 /**
  * Fundo animado (mesh gradient em WebGL) na paleta branco + dourado do
@@ -13,6 +25,11 @@ import { cn } from "@/lib/utils";
  * `fixed` (padrão) cobre a viewport inteira e acompanha a rolagem, servindo
  * a página toda a partir de uma única instância; `fixed={false}` limita o
  * efeito à seção que o contém (precisa de `relative` no pai).
+ *
+ * Em modo leve (`lib/perf.ts`) o canvas não é montado nem baixado: fica só o
+ * degradê estático abaixo, que é exatamente o mesmo desenho parado. Dois
+ * canvas WebGL em tela cheia, redesenhando a cada quadro, é o item mais caro
+ * do sistema inteiro para uma GPU integrada antiga.
  *
  * Sobre o canvas WebGL há um degradê CSS estático que serve de fallback:
  * ele já pinta a área no primeiro frame (e permanece se o WebGL falhar ou
@@ -55,6 +72,7 @@ export function ShaderBackground({
   fixed?: boolean;
 }) {
   const reducedMotion = usePrefersReducedMotion();
+  const { lite } = usePerfMode();
   const [mounted, setMounted] = useState(false);
 
   // Só monta o canvas depois da hidratação: o degradê estático segura a
@@ -79,7 +97,7 @@ export function ShaderBackground({
         }}
       />
 
-      {mounted ? (
+      {mounted && !lite ? (
         <>
           <MeshGradient
             className="absolute inset-0 h-full w-full"
@@ -102,8 +120,12 @@ export function ShaderBackground({
         </>
       ) : null}
 
-      {/* Véu branco: garante contraste AA do texto navy sobre o dourado. */}
-      <div className="absolute inset-0 bg-white/55" />
+      {/* Véu branco: garante contraste AA do texto navy sobre o dourado.
+          Sem os canvas o fundo já é bem mais claro — manter 55% ali apagaria
+          o dourado e deixaria o modo leve com cara de página sem estilo. O
+          ponto mais escuro do degradê estático é #e7cd8c, que contra o navy
+          do texto passa folgado em AA mesmo com o véu fraco. */}
+      <div className={cn("absolute inset-0", lite ? "bg-white/20" : "bg-white/55")} />
     </div>
   );
 }

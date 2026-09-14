@@ -13,7 +13,7 @@
  * leva alguns minutos processando o vídeo depois que a chamada acaba.
  */
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { saveSessionRecordingAction } from "@/actions/admin/lesson-planner";
 import { CheckIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
@@ -38,6 +38,17 @@ export function RecordingPanel({
   const [isPending, startTransition] = useTransition();
 
   const dirty = draft.trim() !== (saved ?? "");
+
+  // Se outra pessoa colar o link da gravação, a revalidação em tempo real traz
+  // o valor novo — mas só quando o campo aqui não tem edição por salvar.
+  useEffect(() => {
+    if (dirty) return;
+    setSaved(initialUrl);
+    setDraft(initialUrl ?? "");
+    // `dirty` é derivado do próprio estado que o efeito escreve; relê-lo aqui
+    // faria o efeito se reagendar sozinho depois de cada sincronização.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl]);
 
   function submit(value: string) {
     setError(null);

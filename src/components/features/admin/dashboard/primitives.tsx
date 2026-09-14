@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
+import { isLiteMode } from "@/lib/perf";
 import { cn } from "@/lib/utils";
 
 if (typeof window !== "undefined") {
@@ -26,13 +27,32 @@ export function formatNumber(value: number, decimals = 0): string {
   }).format(value);
 }
 
-/** Respeita `prefers-reduced-motion` fora do React (para os tweens do GSAP). */
+/**
+ * Respeita `prefers-reduced-motion` E o modo leve, fora do React (para os
+ * tweens do GSAP). O modo leve entra aqui pelo mesmo motivo de sempre: o CSS
+ * zera transição declarada em folha de estilo, mas o `CountUp` conta por
+ * `requestAnimationFrame` — passa por fora da regra e precisa ser barrado na
+ * origem, como já acontece em `charts.tsx` e `agenda-motion.ts`.
+ */
 function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  if (typeof window === "undefined") return false;
+  return isLiteMode() || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+/**
+ * Orçamento de entrada dos blocos do painel.
+ *
+ * Estes três valores governam `Reveal`, `RevealGrid` e `RevealItem` — a
+ * entrada de praticamente todo cartão, indicador e seção dos painéis. Eram
+ * 0,5s de duração com 0,07s de escalonamento: num grid de oito indicadores o
+ * último só ficava legível ~1,06s DEPOIS de o dado já ter chegado do servidor.
+ * O gesto continua o mesmo (sobe 20px e aparece), só que dentro de um terço do
+ * tempo: a tela passa a ser lida enquanto termina de se compor, em vez de
+ * depois.
+ */
+const REVEAL_DURATION = 0.28;
+const REVEAL_STAGGER = 0.035;
+const REVEAL_EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Largura real do container, para usar como largura do `viewBox`.
@@ -183,7 +203,7 @@ export function Reveal({ children, className, delay = 0, y = 24 }: RevealProps) 
       initial={reduced ? false : { opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: REVEAL_DURATION, delay, ease: REVEAL_EASE }}
     >
       {children}
     </motion.div>
@@ -194,7 +214,7 @@ export function Reveal({ children, className, delay = 0, y = 24 }: RevealProps) 
 export function RevealGrid({
   children,
   className,
-  stagger = 0.07,
+  stagger = REVEAL_STAGGER,
 }: {
   children: ReactNode;
   className?: string;
@@ -230,7 +250,7 @@ export function RevealItem({
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+          transition: { duration: REVEAL_DURATION, ease: REVEAL_EASE },
         },
       }}
     >

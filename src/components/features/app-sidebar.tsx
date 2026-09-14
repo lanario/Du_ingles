@@ -13,6 +13,7 @@ import { UserMenu } from "@/components/features/account/user-menu";
 import { RoleSwitch } from "@/components/features/admin/role-switch";
 import { NotificationBell } from "@/components/features/notification-bell";
 import type { NotificationItem } from "@/repositories/notifications";
+import type { MyProfile } from "@/repositories/users";
 import {
   CalendarIcon,
   CloseIcon,
@@ -25,7 +26,6 @@ import {
   PlanIcon,
   ProgressIcon,
   TaskIcon,
-  UserIcon,
 } from "@/components/ui/icons";
 
 const RAIL_WIDTH = 64;
@@ -111,18 +111,14 @@ const NAV_SECTIONS: readonly NavSection[] = [
   {
     id: "conta",
     label: "Conta",
+    // "Meu Perfil" mora só no menu da foto de perfil (`UserMenu`) — item
+    // duplicado aqui só confundia sobre qual dos dois abrir.
     items: [
       {
         href: "/planos",
         label: "Meu plano",
         icon: PlanIcon,
         roles: ["student"],
-      },
-      {
-        href: "/meus-dados",
-        label: "Meu Perfil",
-        icon: UserIcon,
-        roles: ["teacher", "student"],
       },
     ],
   },
@@ -188,6 +184,8 @@ interface SidebarProps {
   fullName: string;
   /** Foto de perfil já pronta para o `src` (`/api/avatars/...`) ou `null`. */
   avatarUrl: string | null;
+  /** Dados do formulário de "Meu Perfil", aberto em modal a partir do menu da conta. */
+  profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
   /** Admin navegando dentro da área de professor/aluno: mostra o botão de
@@ -228,6 +226,7 @@ function Sidebar({
   email,
   fullName,
   avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
 }: SidebarProps) {
@@ -259,6 +258,20 @@ function Sidebar({
   }, []);
 
   useEffect(() => clearTimer, []);
+
+  // O menu da conta abre num portal fora do DOM do rail — enquanto ele fica
+  // por cima, o ponteiro e o foco nunca "saem" do painel de verdade aos olhos
+  // do navegador, então fechar o menu clicando num item (ex.: "Meu Perfil",
+  // que navega) pode deixar `hovered`/`focused` presos no valor de antes. Ao
+  // fechar, reconsulta o estado real em vez de confiar no que os handlers de
+  // pointer/focus capturaram até aqui.
+  const handleAccountMenuOpenChange = useCallback((menuOpen: boolean) => {
+    if (menuOpen) return;
+    clearTimer();
+    const panel = panelRef.current;
+    setHovered(!!panel && panel.matches(":hover"));
+    setFocused(!!panel && panel.contains(document.activeElement));
+  }, []);
 
   // Revelação em cascata dos rótulos (itens + títulos de seção) quando o
   // painel abre — mesmo comportamento em qualquer elemento marcado
@@ -468,10 +481,11 @@ function Sidebar({
               email={email}
               role={role}
               avatarUrl={avatarUrl}
+              profile={profile}
               theme="app"
-              dataHref="/meus-dados"
               compact
               className="mt-1"
+              onOpenChange={handleAccountMenuOpenChange}
             />
           </div>
         </div>
@@ -494,6 +508,7 @@ function NavMobile({
   email,
   fullName,
   avatarUrl,
+  profile,
   initialNotifications,
   initialUnreadCount,
   showAdminSwitch,
@@ -655,8 +670,8 @@ function NavMobile({
                   email={email}
                   role={role}
                   avatarUrl={avatarUrl}
+                  profile={profile}
                   theme="app"
-                  dataHref="/meus-dados"
                 />
               </div>
             </motion.nav>
