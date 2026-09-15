@@ -79,8 +79,11 @@ export function LessonCanvas({
 
   // Último documento que esta instância viu — escrito por ela (onUpdate) ou
   // recebido de fora (efeito de sincronia). É o que evita o vaivém entre duas
-  // folhas montadas ao mesmo tempo.
-  const lastSyncedRef = useRef<string | null>(null);
+  // folhas montadas ao mesmo tempo. Guardar a referência do objeto (e não uma
+  // string) evita serializar o documento inteiro a cada tecla só para
+  // comparar — o `onChange` devolve exatamente este mesmo objeto de volta via
+  // props, então a comparação de referência já resolve o caso comum.
+  const lastSyncedRef = useRef<JSONContent | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -134,7 +137,7 @@ export function LessonCanvas({
       // parar numa Server Action, e `attrs` sem protótipo não sobrevive à
       // viagem (ver `lib/editor-json.ts`).
       const json = toPlainDocument(instance.getJSON());
-      lastSyncedRef.current = JSON.stringify(json);
+      lastSyncedRef.current = json;
       onChange?.(json);
     },
   });
@@ -175,13 +178,19 @@ export function LessonCanvas({
    * `setContent` só roda quando o documento que vem de fora é realmente
    * diferente do que esta instância tem, e sem emitir update, para as duas não
    * ficarem se escrevendo em laço.
+   *
+   * A comparação por referência (`content === lastSyncedRef.current`) resolve
+   * sozinha o caso comum de digitar numa folha só: o `onChange` desta mesma
+   * instância devolve exatamente o mesmo objeto por props, então nenhuma
+   * serialização roda a cada tecla. Só quando o documento realmente vem de
+   * fora (a outra folha, ou o carregamento inicial) é que caímos no
+   * `JSON.stringify` para decidir se vale a pena um `setContent`.
    */
   useEffect(() => {
     if (!editor) return;
-    const incoming = JSON.stringify(content);
-    if (incoming === lastSyncedRef.current) return;
-    lastSyncedRef.current = incoming;
-    if (incoming === JSON.stringify(editor.getJSON())) return;
+    if (content === lastSyncedRef.current) return;
+    lastSyncedRef.current = content;
+    if (JSON.stringify(content) === JSON.stringify(editor.getJSON())) return;
     editor.commands.setContent(content, { emitUpdate: false });
   }, [editor, content]);
 

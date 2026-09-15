@@ -16,12 +16,6 @@ const HANDLES = [
   { corner: "se", className: "-bottom-1.5 -right-1.5 cursor-nwse-resize" },
 ] as const;
 
-const ALIGN_OPTIONS: { value: LessonAlign; label: string; glyph: string }[] = [
-  { value: "left", label: "Alinhar à esquerda", glyph: "⬒" },
-  { value: "center", label: "Centralizar", glyph: "⬓" },
-  { value: "right", label: "Alinhar à direita", glyph: "⬔" },
-];
-
 /**
  * Imagem do canvas. Redimensionar e mover acontecem no DOM durante o arrasto
  * (uma transação do ProseMirror por pixel derrubaria o histórico de desfazer)
@@ -77,7 +71,6 @@ export function LessonImageView(props: ReactNodeViewProps) {
   const {
     moving,
     offset: liveOffset,
-    setOffset,
     startMove,
   } = useFreeMove({
     targetRef: figureRef,
@@ -187,7 +180,6 @@ export function LessonImageView(props: ReactNodeViewProps) {
   }
 
   const active = selected && editable;
-  const displaced = liveOffset.x !== 0 || liveOffset.y !== 0;
 
   return (
     <NodeViewWrapper
@@ -234,6 +226,8 @@ export function LessonImageView(props: ReactNodeViewProps) {
           src={attrs.src}
           alt={attrs.alt ?? ""}
           title={attrs.title ?? undefined}
+          loading="lazy"
+          decoding="async"
           draggable={false}
           style={liveWidth ? { width: liveWidth } : undefined}
           className={cn(
@@ -277,73 +271,6 @@ export function LessonImageView(props: ReactNodeViewProps) {
               </button>
 
               <span className="mx-1 h-4 w-px bg-admin-border" aria-hidden />
-
-              {ALIGN_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-label={option.label}
-                  aria-pressed={attrs.align === option.value}
-                  onClick={() => updateAttributes({ align: option.value })}
-                  className={cn(
-                    "grid h-7 w-7 place-items-center rounded-full text-sm transition-colors",
-                    attrs.align === option.value
-                      ? "bg-navy-900 text-white"
-                      : "text-admin-foreground/60 hover:bg-admin-muted",
-                  )}
-                >
-                  <span aria-hidden>{option.glyph}</span>
-                </button>
-              ))}
-
-              <span className="mx-1 h-4 w-px bg-admin-border" aria-hidden />
-
-              {/* Solta x no texto: é a diferença entre a figura flutuar sobre
-                  o papel e ela reservar a própria linha no parágrafo. */}
-              <button
-                type="button"
-                aria-pressed={free}
-                title={
-                  free
-                    ? "A imagem flutua sobre o texto — clique para devolvê-la ao parágrafo"
-                    : "A imagem ocupa uma linha do texto — clique para soltá-la na folha"
-                }
-                onClick={() =>
-                  updateAttributes(
-                    free ? { free: false, offsetX: 0, offsetY: 0 } : { free: true },
-                  )
-                }
-                className={cn(
-                  "rounded-full px-2 py-1 text-[11px] font-medium transition-colors",
-                  free
-                    ? "bg-navy-900 text-white"
-                    : "text-admin-foreground/70 hover:bg-admin-muted",
-                )}
-              >
-                {free ? "Solta" : "No texto"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updateAttributes({ width: null })}
-                className="rounded-full px-2 py-1 text-[11px] font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted"
-              >
-                Tamanho original
-              </button>
-
-              {displaced && (
-                <button
-                  type="button"
-                  title="Devolver a imagem ao lugar de origem"
-                  onClick={() => {
-                    setOffset({ x: 0, y: 0 });
-                    updateAttributes({ offsetX: 0, offsetY: 0 });
-                  }}
-                  className="rounded-full px-2 py-1 text-[11px] font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted"
-                >
-                  Voltar ao lugar
-                </button>
-              )}
 
               <button
                 type="button"

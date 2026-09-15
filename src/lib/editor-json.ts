@@ -15,14 +15,15 @@ import type { JSONContent } from "@tiptap/core";
  * cor, corpo da fonte, largura de tabela e a posição das caixas de texto
  * viajam todos em `attrs`, e todos se perdiam do mesmo jeito.
  *
- * `JSON.parse(JSON.stringify(...))` reconstrói a árvore inteira com objetos
- * literais comuns, que é exatamente o que a serialização aceita. É a mesma
- * viagem que o documento já faz para virar `jsonb` no banco — só que agora
- * acontece antes de sair do navegador, e não depois de o dado ter sumido.
+ * `structuredClone` reconstrói a árvore inteira com objetos literais comuns,
+ * que é exatamente o que a serialização aceita — mesmo efeito de um
+ * `JSON.parse(JSON.stringify(...))`, mas clonando na memória em vez de
+ * passar por uma string gigante no meio do caminho (o que pesa a cada tecla
+ * digitada, quanto mais imagens em `data:` URL o documento carrega).
  *
  * Quem grava o documento por FormData (`JSON.stringify` no campo) nunca teve
  * esse problema: aquele caminho já normalizava sem querer.
  */
 export function toPlainDocument(document: JSONContent): JSONContent {
-  return JSON.parse(JSON.stringify(document)) as JSONContent;
+  return structuredClone(document);
 }
