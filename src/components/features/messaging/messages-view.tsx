@@ -54,7 +54,11 @@ export function MessagesView({
   const router = useRouter();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  // Sem isso a lista fica "surda" ao clique: o RSC leva sua fração de
+  // segundo pra voltar e, até lá, nada na tela reagiu — parece travado.
+  // Isto guarda a escolha na hora, antes do servidor confirmar.
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   // A trava tem duas fontes: a ação de moderação nesta aba e o realtime de
   // `conversations` (o professor trancou de outro dispositivo). As duas
@@ -93,6 +97,7 @@ export function MessagesView({
 
   const select = useCallback(
     (id: string) => {
+      setPendingId(id);
       startTransition(() => {
         router.push(`${pathname}?c=${id}` as Route, { scroll: false });
       });
@@ -101,10 +106,17 @@ export function MessagesView({
   );
 
   const clearSelection = useCallback(() => {
+    setPendingId(null);
     startTransition(() => {
       router.push(pathname as Route, { scroll: false });
     });
   }, [pathname, router]);
+
+  // A transição termina quando o RSC responde; a partir daí o `conversationId`
+  // já reflete a escolha, então soltar o "pending" nesse momento não pisca.
+  useEffect(() => {
+    if (!isPending) setPendingId(null);
+  }, [isPending]);
 
   const studentsCanPost = postingOverride ?? selected?.chat.studentsCanPost ?? true;
   const isStudent = currentUserRole === "student" && !selected?.canModerate;
@@ -122,7 +134,7 @@ export function MessagesView({
     <div className="chat-theme flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--chat-border)] bg-[var(--chat-surface)] shadow-[var(--shadow-card)]">
       <ChatList
         chats={chats}
-        selectedId={conversationId}
+        selectedId={pendingId ?? conversationId}
         onSelect={select}
         className={cn(
           "w-full shrink-0 md:w-[21rem] md:border-r",
@@ -133,6 +145,14 @@ export function MessagesView({
       />
 
       <div className="relative min-w-0 flex-1">
+        {isPending && (
+          <div
+            aria-hidden
+            className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--chat-surface)]/50 backdrop-blur-[1px]"
+          >
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--chat-accent)] border-t-transparent" />
+          </div>
+        )}
         <AnimatePresence mode="wait" initial={false}>
           {selected ? (
             <motion.section

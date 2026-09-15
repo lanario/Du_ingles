@@ -6,7 +6,6 @@ import {
   reactivateUserAction,
   softDeleteUserAction,
 } from "@/actions/admin/users";
-import { enterViewAsModeAction } from "@/actions/admin/view-as";
 import { FormBanner } from "@/components/ui/form-message";
 import type { UserDetail } from "@/repositories/users";
 
@@ -46,21 +45,6 @@ export function UserLifecycleActions({ user }: { user: UserDetail }) {
           >
             Reativar
           </button>
-        )}
-
-        {(user.role === "teacher" || user.role === "student") && (
-          <form action={enterViewAsModeAction}>
-            <input type="hidden" name="role" value={user.role} />
-            <input type="hidden" name="targetUserId" value={user.id} />
-            <button
-              type="submit"
-              className="rounded-md border border-admin-border px-3 py-1.5 text-sm hover:bg-admin-muted"
-            >
-              {user.role === "teacher"
-                ? "Ver como este professor"
-                : "Ver como este aluno"}
-            </button>
-          </form>
         )}
 
         {!confirmingDelete ? (

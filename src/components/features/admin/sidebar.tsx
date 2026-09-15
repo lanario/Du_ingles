@@ -10,7 +10,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/features/account/user-menu";
 import { NotificationBell } from "@/components/features/notification-bell";
-import { RoleSwitch } from "@/components/features/admin/role-switch";
 import type { NotificationItem } from "@/repositories/notifications";
 import type { MyProfile } from "@/repositories/users";
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
@@ -215,11 +214,6 @@ interface AdminSidebarProps {
   role?: "admin" | "teacher";
   /** Dados do formulário de "Meu Perfil", aberto em modal a partir do menu da conta. */
   profile: MyProfile | null;
-  /**
-   * A chave "ver como" é da coordenação. A área do professor não alterna
-   * para lado nenhum — quem dá aula tem um contexto só.
-   */
-  showRoleSwitch?: boolean;
   navLabel?: string;
 }
 
@@ -621,7 +615,6 @@ function AdminNavMobile({
   sections = ADMIN_NAV_SECTIONS,
   rootHref = "/admin",
   role = "admin",
-  showRoleSwitch = true,
   navLabel = "Navegação administrativa",
 }: AdminSidebarProps) {
   const pathname = usePathname();
@@ -673,9 +666,6 @@ function AdminNavMobile({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {showRoleSwitch && (
-            <RoleSwitch active="admin" awayLabel="Aluno" awayRole="student" collapsed />
-          )}
           <NotificationBell
             userId={userId}
             initialNotifications={initialNotifications}

@@ -176,7 +176,7 @@ export function ScrollProgressBar() {
   return (
     /* As margens negativas sangram a barra até a borda do <main>, então
        precisam espelhar o padding dele — que é menor no mobile. */
-    <div className="pointer-events-none sticky top-0 z-20 -mx-4 -mt-5 mb-6 h-0.5 bg-admin-border/60 md:-mx-6 md:-mt-6">
+    <div className="pointer-events-none sticky top-0 z-20 -mx-4 -mt-5 mb-6 h-0.5 md:-mx-6 md:-mt-6">
       <div
         ref={ref}
         className="h-full origin-left scale-x-0 bg-gradient-to-r from-navy-800 via-navy-600 to-gold-500"

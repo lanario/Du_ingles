@@ -1,21 +1,19 @@
 import "server-only";
 import { cache } from "react";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { verifyViewAsToken } from "@/lib/auth/view-as-token";
 import type { AppRole } from "@/types/domain";
-
-export const VIEW_AS_COOKIE = "du_view_as";
 
 export interface SessionContext {
   userId: string;
   email: string;
   /** Papel verdadeiro, lido do JWT (claim `app_role`). */
   realRole: AppRole;
-  /** Papel efetivo exibido — vira `teacher` durante o modo "ver como". */
+  /** Papel efetivo exibido. O modo "ver como" foi descontinuado — hoje é
+   * sempre igual a `realRole`, mantido só para não reescrever cada tela que
+   * já lê `effectiveRole`. */
   effectiveRole: AppRole;
-  /** Sessão em modo "ver como": somente leitura. */
+  /** Sempre `false` — o modo "ver como" foi descontinuado. */
   isViewAs: boolean;
   organizationId: string;
   mustChangePassword: boolean;
@@ -66,27 +64,12 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   const realRole = (profile?.role ?? claimRole ?? "student") as AppRole;
   const organizationId = profile?.organization_id ?? claimOrg ?? "";
 
-  let effectiveRole = realRole;
-  let isViewAs = false;
-
-  if (realRole === "admin") {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(VIEW_AS_COOKIE)?.value;
-    if (token) {
-      const payload = await verifyViewAsToken(token);
-      if (payload) {
-        effectiveRole = payload.role;
-        isViewAs = true;
-      }
-    }
-  }
-
   return {
     userId,
     email: userEmail,
     realRole,
-    effectiveRole,
-    isViewAs,
+    effectiveRole: realRole,
+    isViewAs: false,
     organizationId,
     mustChangePassword: profile?.must_change_password ?? false,
     fullName: profile?.full_name || userEmail.split("@")[0] || "Minha conta",
@@ -100,11 +83,10 @@ export function isAdmin(ctx: SessionContext): boolean {
 }
 
 /**
- * Autentica e autoriza no servidor. Aceita o papel efetivo (para que o admin
- * navegando como professor/aluno veja as mesmas telas deles) e o papel real.
- *
- * Admin passa sempre — trocar de contexto é uma lente sobre a interface, não
- * um rebaixamento de privilégio.
+ * Autentica e autoriza no servidor. Admin passa sempre — é o papel de maior
+ * privilégio —, mas cada área logada (`(app)`, `(teacher)`) barra o admin na
+ * própria entrada do layout, então essa checagem só importa para as telas
+ * explicitamente compartilhadas (ex.: `requireRole(["admin", "teacher", ...])`).
  *
  * A senha provisória também é barrada aqui. Antes quem barrava era o
  * middleware, com uma consulta a `profiles` por request só para ler
@@ -116,11 +98,7 @@ export async function requireRole(allowed: AppRole[]): Promise<SessionContext> {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
   if (ctx.mustChangePassword) redirect("/definir-senha");
-  if (
-    !isAdmin(ctx) &&
-    !allowed.includes(ctx.effectiveRole) &&
-    !allowed.includes(ctx.realRole)
-  ) {
+  if (!isAdmin(ctx) && !allowed.includes(ctx.realRole)) {
     redirect("/403");
   }
   return ctx;

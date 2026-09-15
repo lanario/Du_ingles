@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
 import { getStudentProgress } from "@/repositories/progress";
 import { listStudentAssignments } from "@/repositories/assignments";
+import { listMyObjectives } from "@/repositories/objectives";
 import { getActiveSubscriptionFor } from "@/repositories/student-subscriptions";
 import { StudentProgressView } from "@/components/features/progress/student-progress-view";
 
@@ -18,9 +19,10 @@ function firstNameOf(fullName: string, email: string): string {
 export default async function ProgressoPage() {
   const ctx = await requireRole(["student"]);
 
-  const [progress, assignments, subscription] = await Promise.all([
+  const [progress, assignments, objectives, subscription] = await Promise.all([
     getStudentProgress(ctx.userId),
     listStudentAssignments(ctx.userId),
+    listMyObjectives(),
     getActiveSubscriptionFor(ctx.userId),
   ]);
 
@@ -46,7 +48,7 @@ export default async function ProgressoPage() {
       avatarUrl={ctx.avatarUrl}
       currentLevel={progress.currentLevel}
       enrollmentDate={progress.enrollmentDate}
-      goals={progress.goals}
+      objectives={objectives}
       completedSessions={progress.completedSessions}
       overallAttendanceRate={progress.overallAttendanceRate}
       streak={progress.streak}

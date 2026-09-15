@@ -36,6 +36,7 @@ import type {
   GroupProgress,
   NextSessionInfo,
 } from "@/repositories/progress";
+import type { ObjectiveItem } from "@/repositories/objectives";
 import type { CefrLevel } from "@/types/domain";
 
 if (typeof window !== "undefined") {
@@ -81,7 +82,7 @@ export interface StudentProgressViewProps {
   avatarUrl: string | null;
   currentLevel: CefrLevel | null;
   enrollmentDate: string | null;
-  goals: string | null;
+  objectives: ObjectiveItem[];
   completedSessions: number;
   overallAttendanceRate: number | null;
   streak: number;
@@ -695,22 +696,67 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionInfo | n
 // Objetivos
 // ---------------------------------------------------------------------------
 
-function GoalsCard({ goals }: { goals: string | null }) {
+function GoalsCard({ objectives }: { objectives: ObjectiveItem[] }) {
+  const pending = objectives.filter((item) => !item.isCompleted);
+  const completed = objectives.filter((item) => item.isCompleted);
+
   return (
     <section className="rounded-2xl border border-border bg-gradient-to-br from-navy-50 to-white p-5 shadow-[var(--shadow-card)]">
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         <GraduationIcon className="h-4 w-4" />
         Meus objetivos
       </h2>
-      {goals ? (
-        <p className="text-sm leading-relaxed text-navy-800">{goals}</p>
-      ) : (
+      {objectives.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Nenhum objetivo registrado ainda. Converse com seu professor sobre suas metas de
           aprendizado.
         </p>
+      ) : (
+        <ul className="space-y-3">
+          {[...pending, ...completed].map((objective) => (
+            <GoalRow key={objective.id} objective={objective} />
+          ))}
+        </ul>
       )}
     </section>
+  );
+}
+
+function GoalRow({ objective }: { objective: ObjectiveItem }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span
+        aria-hidden
+        className={cn(
+          "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border",
+          objective.isCompleted
+            ? "border-success bg-success/15 text-success"
+            : "border-navy-200 text-transparent",
+        )}
+      >
+        <CheckIcon className="h-3 w-3" strokeWidth={2.5} />
+      </span>
+      <div className="min-w-0">
+        <p
+          className={cn(
+            "text-sm leading-relaxed",
+            objective.isCompleted
+              ? "text-muted-foreground line-through"
+              : "font-medium text-navy-800",
+          )}
+        >
+          {objective.title}
+        </p>
+        {objective.description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{objective.description}</p>
+        )}
+        {objective.groupName && (
+          <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground/70">
+            {objective.groupName}
+          </p>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -745,7 +791,7 @@ export function StudentProgressView({
   avatarUrl,
   currentLevel,
   enrollmentDate,
-  goals,
+  objectives,
   completedSessions,
   overallAttendanceRate,
   streak,
@@ -905,7 +951,7 @@ export function StudentProgressView({
           <SubscriptionCard subscription={subscription} />
         </Reveal>
         <Reveal delay={0.06}>
-          <GoalsCard goals={goals} />
+          <GoalsCard objectives={objectives} />
         </Reveal>
       </div>
     </div>

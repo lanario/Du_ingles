@@ -14,10 +14,6 @@ import { getMyProfile } from "@/repositories/users";
  * Área do professor: o mesmo chrome do painel administrativo (rail navy,
  * canvas claro) com um mapa de navegação recortado — turmas, alunos,
  * planejador e mensagens, que é o que quem dá aula opera.
- *
- * Não existe chave "ver como" aqui. Alternar de contexto é ferramenta de
- * coordenação (§3.3): o professor tem um papel só, e a área do aluno não é
- * uma lente que ele possa vestir.
  */
 const TEACHER_NAV_SECTIONS: AdminNavSection[] = [
   {
@@ -77,7 +73,6 @@ export default async function TeacherLayout({ children }: { children: React.Reac
           sections={TEACHER_NAV_SECTIONS}
           rootHref="/professor"
           role="teacher"
-          showRoleSwitch={false}
           navLabel="Navegação do professor"
         />
 

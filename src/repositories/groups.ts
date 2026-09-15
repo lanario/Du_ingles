@@ -3,6 +3,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { CefrLevel } from "@/types/domain";
 import type { CreateGroupInput, UpdateGroupInput } from "@/schemas/groups";
+import {
+  projectSessions,
+  type SchedulePattern,
+} from "@/lib/schedule/session-preview";
 
 export interface GroupListItem {
   id: string;
@@ -281,6 +285,57 @@ async function handOverFutureSessions(
   return data?.length ?? 0;
 }
 
+/**
+ * Tira da agenda as aulas que a grade ANTIGA desenhou e a nova não desenha
+ * mais.
+ *
+ * Agora que `generate_recurring_sessions` materializa 28 dias (0046), mudar o
+ * horário da turma sem limpar deixaria até quatro semanas de aulas fantasma no
+ * horário velho — a turma apareceria em dois dias da semana ao mesmo tempo.
+ *
+ * O recorte é estreito de propósito: só sai o que casa com um horário da grade
+ * antiga E não casa com nenhum da nova. Aula avulsa que o professor marcou fora
+ * da grade não bate com o desenho antigo e por isso fica de pé. Também fica
+ * tudo que já tem trabalho em cima — plano, registro, lição, PDF ou aula
+ * iniciada —, porque apagar isso seria perder histórico, não limpar agenda.
+ */
+async function dropStaleScheduleSessions(
+  groupId: string,
+  previous: SchedulePattern[],
+  next: SchedulePattern[],
+  startDate: string | null,
+  endDate: string | null,
+): Promise<void> {
+  const window = { startDate, endDate, days: 28, limit: 200 };
+  const before = projectSessions({ ...window, schedule: previous });
+  const after = new Set(
+    projectSessions({ ...window, schedule: next }).map((slot) => slot.scheduledAt),
+  );
+
+  const stale = before
+    .map((slot) => slot.scheduledAt)
+    .filter((iso) => !after.has(iso));
+  if (stale.length === 0) return;
+
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("class_sessions")
+    .delete()
+    .eq("group_id", groupId)
+    .eq("status", "scheduled")
+    .eq("is_published", false)
+    .in("scheduled_at", stale)
+    .is("started_at", null)
+    .is("lesson_plan_id", null)
+    .is("pdf_path", null)
+    .is("teacher_notes", null)
+    .is("homework", null);
+
+  if (error) {
+    console.error("[groups] falha ao limpar a grade antiga:", error.message);
+  }
+}
+
 /** Turma que nunca gerou sessão nenhuma — nem futura, nem histórico. */
 async function hasNoSessions(groupId: string): Promise<boolean> {
   const admin = createAdminSupabaseClient();
@@ -312,7 +367,7 @@ export async function updateGroup(input: UpdateGroupInput): Promise<{
   // que diz se as aulas já geradas precisam trocar de dono.
   const { data: before } = await admin
     .from("groups")
-    .select("teacher_id")
+    .select("teacher_id, schedule")
     .eq("id", input.id)
     .maybeSingle();
 
@@ -334,6 +389,13 @@ export async function updateGroup(input: UpdateGroupInput): Promise<{
   if (error) return { success: false, message: "Falha ao salvar a turma." };
 
   if (input.schedule) {
+    await dropStaleScheduleSessions(
+      input.id,
+      (before?.schedule as SchedulePattern[] | null) ?? [],
+      input.schedule,
+      input.startDate ?? null,
+      input.endDate ?? null,
+    );
     await admin.rpc("generate_recurring_sessions", { p_group_id: input.id });
   }
 

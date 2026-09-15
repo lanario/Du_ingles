@@ -10,10 +10,12 @@ import {
 import { listGroupSessions } from "@/repositories/class-sessions";
 import { projectSessions } from "@/lib/schedule/session-preview";
 import { listUsers } from "@/repositories/users";
+import { listGroupObjectives } from "@/repositories/objectives";
 import { AreaProvider, TEACHER_AREA } from "@/components/features/admin/area-context";
 import { GroupHeader } from "@/components/features/admin/groups/group-header";
 import { EnrollStudentForm } from "@/components/features/admin/groups/enroll-student-form";
 import { GroupSessions } from "@/components/features/admin/groups/group-sessions";
+import { GroupObjectives } from "@/components/features/admin/groups/group-objectives";
 import { SectionTitle } from "@/components/features/admin/dashboard/primitives";
 
 export const metadata: Metadata = { title: "Turma" };
@@ -34,13 +36,15 @@ export default async function ProfessorTurmaDetailPage({ params }: PageProps) {
   const group = await getGroupById(id);
   if (!group || group.teacherId !== ctx.userId) notFound();
 
-  const [enrollments, sessions, students, courses, activeByStudent] = await Promise.all([
-    listGroupEnrollments(id),
-    listGroupSessions(id),
-    listUsers(ctx.organizationId, { role: "student" }),
-    listCourses(),
-    listActiveEnrollmentRefs(ctx.organizationId),
-  ]);
+  const [enrollments, sessions, students, courses, activeByStudent, objectives] =
+    await Promise.all([
+      listGroupEnrollments(id),
+      listGroupSessions(id),
+      listUsers(ctx.organizationId, { role: "student" }),
+      listCourses(),
+      listActiveEnrollmentRefs(ctx.organizationId),
+      listGroupObjectives(id),
+    ]);
 
   const activeCount = enrollments.filter((item) => item.status === "active").length;
 
@@ -92,6 +96,11 @@ export default async function ProfessorTurmaDetailPage({ params }: PageProps) {
             />
           </section>
         </div>
+
+        <section>
+          <SectionTitle>Objetivos</SectionTitle>
+          <GroupObjectives groupId={group.id} objectives={objectives} />
+        </section>
       </div>
     </AreaProvider>
   );

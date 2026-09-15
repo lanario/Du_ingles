@@ -4,7 +4,6 @@ import { AppSidebar } from "@/components/features/app-sidebar";
 import { LiveRefresh } from "@/components/features/live-refresh";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { LinkPrefetcher } from "@/components/features/link-prefetcher";
-import { cn } from "@/lib/utils";
 import {
   listNotifications,
   countUnreadNotifications,
@@ -19,6 +18,9 @@ import { getMyProfile } from "@/repositories/users";
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireRole(["teacher", "student"]);
+  // O admin coordena pelo próprio painel — mandá-lo de volta evita duas
+  // portas para a mesma tela (mesmo corte do layout do professor).
+  if (ctx.realRole === "admin") redirect("/admin");
   // Esta área é do aluno. O professor tem a própria (`/professor`), com as
   // telas do painel recortadas para ele — e não transita entre as duas.
   if (ctx.effectiveRole === "teacher") redirect("/professor");
@@ -28,8 +30,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     countUnreadNotifications(ctx.userId),
     getMyProfile(ctx.userId),
   ]);
-
-  const showAdminSwitch = ctx.realRole === "admin";
 
   return (
     <MotionProvider>
@@ -50,19 +50,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             profile={profile}
             initialNotifications={notifications}
             initialUnreadCount={unreadCount}
-            showAdminSwitch={showAdminSwitch}
           />
           {/* `min-w-0` impede que tabela/código largo estoure a coluna e
-            empurre a sidebar para fora da viewport. A chave "ver como" do
-            admin fica fixa no canto superior direito (fora do fluxo da
-            página) — sem essa reserva de espaço, botões de ação como "Nova
-            turma"/"Nova tarefa" nascem embaixo dela. */}
+            empurre a sidebar para fora da viewport. */}
           <main
             data-scroll-root
-            className={cn(
-              "bg-app-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6",
-              showAdminSwitch ? "md:pl-8 md:pr-56" : "md:px-8",
-            )}
+            className="bg-app-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8"
           >
             {children}
           </main>

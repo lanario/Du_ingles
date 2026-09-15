@@ -10,7 +10,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/domain";
 import { UserMenu } from "@/components/features/account/user-menu";
-import { RoleSwitch } from "@/components/features/admin/role-switch";
 import { NotificationBell } from "@/components/features/notification-bell";
 import type { NotificationItem } from "@/repositories/notifications";
 import type { MyProfile } from "@/repositories/users";
@@ -136,9 +135,8 @@ function itemAtivo(pathname: string) {
 }
 
 function sectionsFor(role: AppRole) {
-  // Admin sem papel escolhido (bypass de `requireRole` sem cookie de "ver
-  // como") não tem itens próprios — cai no mapa do aluno até escolher um
-  // papel no switch acima.
+  // O admin nunca chega aqui (o layout redireciona para `/admin` antes) —
+  // este fallback só evita uma lista vazia caso isso mude.
   const effective = role === "admin" ? "student" : role;
   return NAV_SECTIONS.map((section) => ({
     ...section,
@@ -188,9 +186,6 @@ interface SidebarProps {
   profile: MyProfile | null;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
-  /** Admin navegando dentro da área de professor/aluno: mostra o botão de
-   * volta para o painel admin. */
-  showAdminSwitch?: boolean;
 }
 
 /**
@@ -205,15 +200,6 @@ interface SidebarProps {
 export function AppSidebar(props: SidebarProps) {
   return (
     <>
-      {props.showAdminSwitch && (
-        <div className="fixed right-4 top-4 z-50 hidden md:block">
-          <RoleSwitch
-            active="away"
-            awayLabel={props.role === "teacher" ? "Professor" : "Aluno"}
-            tone="light"
-          />
-        </div>
-      )}
       <NavMobile {...props} />
       <Sidebar {...props} />
     </>
@@ -511,7 +497,6 @@ function NavMobile({
   profile,
   initialNotifications,
   initialUnreadCount,
-  showAdminSwitch,
 }: SidebarProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -563,14 +548,6 @@ function NavMobile({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {showAdminSwitch && (
-            <RoleSwitch
-              active="away"
-              awayLabel={role === "teacher" ? "Professor" : "Aluno"}
-              collapsed
-              tone="dark"
-            />
-          )}
           <NotificationBell
             userId={userId}
             initialNotifications={initialNotifications}

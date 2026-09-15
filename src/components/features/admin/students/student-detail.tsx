@@ -24,6 +24,7 @@ import {
 import { EditUserForm } from "@/components/features/admin/users/edit-user-form";
 import { UserLifecycleActions } from "@/components/features/admin/users/user-lifecycle-actions";
 import { SetPasswordForm } from "@/components/features/admin/users/set-password-form";
+import { StudentObjectives } from "./student-objectives";
 import {
   CopyButton,
   GroupPill,
@@ -73,6 +74,7 @@ export function StudentDetail({
           key={session}
           user={user}
           student={student}
+          session={session}
           onMove={onMove}
           canManage={canManage}
         />
@@ -84,11 +86,13 @@ export function StudentDetail({
 function StudentDetailContent({
   user,
   student,
+  session,
   onMove,
   canManage,
 }: {
   user: UserDetailData;
   student: Student;
+  session: number;
   onMove: () => void;
   canManage: boolean;
 }) {
@@ -135,6 +139,14 @@ function StudentDetailContent({
               />
             )}
           </div>
+        </DetailSection>
+
+        <DetailSection title="Objetivos">
+          {/* Sem gestão aqui é só o ciclo de vida da conta e o cadastro — atribuir
+              objetivo é tarefa de professor tanto quanto de coordenação, e a tela
+              de alunos do professor já mostra só quem é dele (ver
+              `professor/alunos/page.tsx`), então a Server Action autoriza sozinha. */}
+          <StudentObjectives studentId={user.id} session={session} canManage />
         </DetailSection>
 
         {hasGuardian && (

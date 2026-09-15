@@ -10,9 +10,11 @@ import {
 import { listGroupSessions } from "@/repositories/class-sessions";
 import { projectSessions } from "@/lib/schedule/session-preview";
 import { listUsers } from "@/repositories/users";
+import { listGroupObjectives } from "@/repositories/objectives";
 import { GroupHeader } from "@/components/features/admin/groups/group-header";
 import { EnrollStudentForm } from "@/components/features/admin/groups/enroll-student-form";
 import { GroupSessions } from "@/components/features/admin/groups/group-sessions";
+import { GroupObjectives } from "@/components/features/admin/groups/group-objectives";
 import { SectionTitle } from "@/components/features/admin/dashboard/primitives";
 
 export const metadata: Metadata = { title: "Turma" };
@@ -28,15 +30,23 @@ export default async function TurmaDetailPage({ params }: PageProps) {
   const group = await getGroupById(id);
   if (!group) notFound();
 
-  const [enrollments, sessions, students, courses, teachers, activeByStudent] =
-    await Promise.all([
-      listGroupEnrollments(id),
-      listGroupSessions(id),
-      listUsers(ctx.organizationId, { role: "student" }),
-      listCourses(),
-      listUsers(ctx.organizationId, { role: "teacher" }),
-      listActiveEnrollmentRefs(ctx.organizationId),
-    ]);
+  const [
+    enrollments,
+    sessions,
+    students,
+    courses,
+    teachers,
+    activeByStudent,
+    objectives,
+  ] = await Promise.all([
+    listGroupEnrollments(id),
+    listGroupSessions(id),
+    listUsers(ctx.organizationId, { role: "student" }),
+    listCourses(),
+    listUsers(ctx.organizationId, { role: "teacher" }),
+    listActiveEnrollmentRefs(ctx.organizationId),
+    listGroupObjectives(id),
+  ]);
 
   const activeCount = enrollments.filter((item) => item.status === "active").length;
 
@@ -87,6 +97,11 @@ export default async function TurmaDetailPage({ params }: PageProps) {
           />
         </section>
       </div>
+
+      <section>
+        <SectionTitle>Objetivos</SectionTitle>
+        <GroupObjectives groupId={group.id} objectives={objectives} />
+      </section>
     </div>
   );
 }

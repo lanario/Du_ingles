@@ -16,7 +16,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { deactivateUserAction, reactivateUserAction } from "@/actions/admin/users";
-import { getUserByIdAction } from "@/actions/admin/users-detail";
 import { moveStudentToGroupAction } from "@/actions/admin/students";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useArea } from "@/components/features/admin/area-context";
@@ -36,11 +35,10 @@ import { useListProgress, useStickyBar } from "@/components/motion/list-motion";
 import { useNarrowScreen, useViewMode } from "@/components/motion/use-view-mode";
 import { cn } from "@/lib/utils";
 import type { GroupListItem } from "@/repositories/groups";
-import type { UserDetail as UserDetailData } from "@/repositories/users";
 import { GroupsRail } from "./groups-rail";
 import { MoveToGroup } from "./move-to-group";
 import { StudentCard } from "./student-card";
-import { StudentDetail } from "./student-detail";
+import { StudentFichaModal } from "./student-ficha-modal";
 import { LIST_GRID, StudentListItem } from "./student-list-item";
 import {
   studentMatches,
@@ -84,11 +82,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
   const narrow = useNarrowScreen();
   const mode = narrow ? "cards" : viewMode;
 
-  const [detailUser, setDetailUser] = useState<UserDetailData | null>(null);
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detailSession, setDetailSession] = useState(0);
-  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
 
   const [moveTarget, setMoveTarget] = useState<Student | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
@@ -163,22 +157,28 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         ? "Sem turma"
         : null;
 
+  /**
+   * Sincroniza o snapshot do aluno aberto com a lista fresca que chega do
+   * servidor quando o `router.refresh()` roda (via LiveRefresh).
+   *
+   * Quando o aluno edita seus próprios dados em /meus-dados:
+   *   1. `profiles` é escrito → Realtime dispara
+   *   2. LiveRefresh chama `router.refresh()`
+   *   3. Next.js rebusca a página → `students` prop chega atualizado
+   *   4. Este effect atualiza `detailStudent` com os novos dados
+   *   5. O modal detecta a mudança em `revisao` e relê a ficha em silêncio
+   */
+  useEffect(() => {
+    if (!detailStudent) return;
+    const fresh = students.find((s) => s.id === detailStudent.id);
+    if (fresh) setDetailStudent(fresh);
+    // Não incluir `detailStudent` nas deps: o efeito deve rodar só quando a
+    // lista muda, não quando o próprio detailStudent muda (evitar loop).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [students]);
+
   async function openDetail(student: Student) {
-    setError(null);
-    setLoadingDetailId(student.id);
-    try {
-      const full = await getUserByIdAction(student.id);
-      if (!full) {
-        setError("Não foi possível carregar este aluno.");
-        return;
-      }
-      setDetailUser(full);
-      setDetailStudent(student);
-      setDetailSession((n) => n + 1);
-      setDetailOpen(true);
-    } finally {
-      setLoadingDetailId(null);
-    }
+    setDetailStudent(student);
   }
 
   async function deactivate(student: Student) {
@@ -490,7 +490,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                 <StudentCard
                   key={student.id}
                   student={student}
-                  busy={busy === student.id || loadingDetailId === student.id}
+                  busy={busy === student.id}
                   onOpen={() => openDetail(student)}
                   onDeactivate={() => deactivate(student)}
                   onReactivate={() => reactivate(student)}
@@ -523,7 +523,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                   <StudentListItem
                     key={student.id}
                     student={student}
-                    busy={busy === student.id || loadingDetailId === student.id}
+                    busy={busy === student.id}
                     onOpen={() => openDetail(student)}
                     onDeactivate={() => deactivate(student)}
                     onReactivate={() => reactivate(student)}
@@ -546,12 +546,9 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         </p>
       )}
 
-      <StudentDetail
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        user={detailUser}
+      <StudentFichaModal
         student={detailStudent}
-        session={detailSession}
+        onClose={() => setDetailStudent(null)}
         onMove={() => detailStudent && setMoveTarget(detailStudent)}
         canManage={canManage}
       />

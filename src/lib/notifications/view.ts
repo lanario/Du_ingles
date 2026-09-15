@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import {
   BellIcon,
   CalendarIcon,
+  CheckIcon,
   CoinIcon,
   GraduationIcon,
   GroupsIcon,
@@ -112,6 +113,8 @@ const EXACT: Record<string, NotificationVisual> = {
   payment: PAYMENT,
   payment_succeeded: PAYMENT,
   payment_failed: { icon: CoinIcon, tone: "danger", label: "Financeiro" },
+  objective_assigned: { icon: GraduationIcon, tone: "gold", label: "Objetivo" },
+  objective_completed: { icon: CheckIcon, tone: "success", label: "Objetivo" },
 };
 
 const KEYWORDS: ReadonlyArray<[readonly string[], NotificationVisual]> = [

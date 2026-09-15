@@ -832,6 +832,50 @@ export function notifyAnnouncement(input: {
   });
 }
 
+/** Objetivo atribuído — turma inteira ou um aluno específico. */
+export function notifyObjectiveAssigned(input: {
+  organizationId: string;
+  actorId: string;
+  title: string;
+  recipients: readonly Recipient[];
+}): void {
+  schedule(async () => {
+    await dispatchNotifications({
+      organizationId: input.organizationId,
+      recipients: input.recipients,
+      exclude: [input.actorId],
+      build: () => ({
+        type: "objective_assigned",
+        title: "Novo objetivo de aprendizado",
+        body: input.title,
+        link: "/progresso",
+      }),
+    });
+  });
+}
+
+/** Objetivo marcado como concluído pelo professor ou pela coordenação. */
+export function notifyObjectiveCompleted(input: {
+  organizationId: string;
+  actorId: string;
+  title: string;
+  recipients: readonly Recipient[];
+}): void {
+  schedule(async () => {
+    await dispatchNotifications({
+      organizationId: input.organizationId,
+      recipients: input.recipients,
+      exclude: [input.actorId],
+      build: () => ({
+        type: "objective_completed",
+        title: "Objetivo concluído",
+        body: input.title,
+        link: "/progresso",
+      }),
+    });
+  });
+}
+
 /** Pedido de exclusão de dados (LGPD) → coordenação. */
 export function notifyLgpdRequest(input: {
   organizationId: string;

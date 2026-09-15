@@ -30,7 +30,6 @@ export interface NextSessionInfo {
 export interface StudentProgress {
   currentLevel: CefrLevel | null;
   enrollmentDate: string | null;
-  goals: string | null;
   completedSessions: number;
   overallAttendanceRate: number | null;
   /** Aulas presentes consecutivas mais recentes, contando de trás pra frente. */
@@ -47,7 +46,7 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
     await Promise.all([
       supabase
         .from("student_profiles")
-        .select("current_level, enrollment_date, goals")
+        .select("current_level, enrollment_date")
         .eq("profile_id", studentId)
         .maybeSingle(),
       supabase
@@ -161,7 +160,6 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
   return {
     currentLevel: profileResult.data?.current_level ?? null,
     enrollmentDate: profileResult.data?.enrollment_date ?? null,
-    goals: profileResult.data?.goals ?? null,
     completedSessions,
     overallAttendanceRate,
     streak,

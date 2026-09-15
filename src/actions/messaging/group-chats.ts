@@ -48,12 +48,17 @@ export async function sendChatMessageAction(
     );
   }
 
-  const participant = await isChatParticipant(conversationId, ctx.userId);
+  // As duas checagens são independentes entre si — paralelizar poupa um
+  // round-trip inteiro ao banco a cada mensagem enviada.
+  const [participant, state] = await Promise.all([
+    isChatParticipant(conversationId, ctx.userId),
+    getChatPostingState(conversationId),
+  ]);
+
   if (!participant && ctx.realRole !== "admin") {
     return fail("FORBIDDEN", "Você não participa desta turma.");
   }
 
-  const state = await getChatPostingState(conversationId);
   if (!state) return fail("NOT_FOUND", "Conversa não encontrada.");
 
   if (!state.studentsCanPost && ctx.realRole === "student") {

@@ -64,8 +64,6 @@ A base é melhor que a média. Reconhecendo o que existe para não reimplementar
 - **Trilha de auditoria** (`audit_logs`) com 50+ ações mapeadas e escrita
   exclusiva por service-role ([src/lib/audit.ts](../src/lib/audit.ts)) — um cliente
   comprometido não forja nem apaga o próprio rastro.
-- **Impersonação rastreada**: `VIEW_AS_ENTER` / `VIEW_AS_EXIT` e modo somente
-  leitura ([src/lib/auth/view-as-token.ts](../src/lib/auth/view-as-token.ts)).
 - **Exportação de dados** já existe: [`/api/lgpd/export`](../src/app/api/lgpd/export/route.ts)
   + [`exportOwnData`](../src/repositories/lgpd.ts) — com o cuidado correto de não
   vazar dados de terceiros.

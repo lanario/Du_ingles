@@ -18,6 +18,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AgendaItem } from "@/repositories/agenda";
+import { useAgendaPeek } from "./agenda-peek";
 import {
   EVENT_TONES,
   GROUP_TONES,
@@ -26,6 +27,7 @@ import {
   SESSION_STATUS_TONE,
   filterKindOf,
   tint,
+  type PlacedItem,
   type PositionedItem,
 } from "./agenda-utils";
 
@@ -86,6 +88,7 @@ export function AgendaCard({ positioned, tone, compact, onSelect, index }: CardP
   const reduceMotion = useReducedMotion();
   const { placed, top, height, leftPercent, widthPercent } = positioned;
   const { item } = placed;
+  const peek = useAgendaPeek(placed, tone);
 
   const preview = item.kind === "preview";
   const cancelled = item.status === "cancelled";
@@ -94,7 +97,11 @@ export function AgendaCard({ positioned, tone, compact, onSelect, index }: CardP
   return (
     <motion.button
       type="button"
-      onClick={() => onSelect(item)}
+      onClick={() => {
+        peek.closePeek();
+        onSelect(item);
+      }}
+      {...peek.hoverProps}
       initial={reduceMotion ? false : { opacity: 0, scale: 0.97 }}
       animate={{ opacity: cancelled ? 0.55 : 1, scale: 1 }}
       transition={{
@@ -147,6 +154,8 @@ export function AgendaCard({ positioned, tone, compact, onSelect, index }: CardP
           {item.teacherName}
         </span>
       )}
+
+      {peek.node}
     </motion.button>
   );
 }
@@ -158,20 +167,23 @@ export function AgendaChip({
   tone,
   onSelect,
 }: {
-  placed: { item: AgendaItem; startLabel: string };
+  placed: PlacedItem;
   tone: string;
   onSelect: (item: AgendaItem) => void;
 }) {
   const { item } = placed;
   const preview = item.kind === "preview";
+  const peek = useAgendaPeek(placed, tone);
 
   return (
     <button
       type="button"
       onClick={(event) => {
         event.stopPropagation();
+        peek.closePeek();
         onSelect(item);
       }}
+      {...peek.hoverProps}
       className={cn(
         "flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] font-medium",
         "text-[var(--agenda-fg)] transition-colors hover:brightness-95",
@@ -194,6 +206,7 @@ export function AgendaChip({
         {!item.allDay && <span className="tabular-nums">{placed.startLabel} </span>}
         {item.title}
       </span>
+      {peek.node}
     </button>
   );
 }
@@ -206,7 +219,7 @@ export function AgendaRow({
   onSelect,
   index,
 }: {
-  placed: { item: AgendaItem; startLabel: string; endLabel: string };
+  placed: PlacedItem;
   tone: string;
   onSelect: (item: AgendaItem) => void;
   index: number;
@@ -214,11 +227,16 @@ export function AgendaRow({
   const reduceMotion = useReducedMotion();
   const { item } = placed;
   const preview = item.kind === "preview";
+  const peek = useAgendaPeek(placed, tone);
 
   return (
     <motion.button
       type="button"
-      onClick={() => onSelect(item)}
+      onClick={() => {
+        peek.closePeek();
+        onSelect(item);
+      }}
+      {...peek.hoverProps}
       initial={reduceMotion ? false : { opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{
@@ -255,6 +273,7 @@ export function AgendaRow({
         </span>
       </span>
       {statusDot(item)}
+      {peek.node}
     </motion.button>
   );
 }

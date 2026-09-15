@@ -716,7 +716,18 @@ export function DateField({
           value={text}
           placeholder={placeholder}
           onChange={onInputChange}
-          onFocus={() => !disabled && openPicker()}
+          onFocus={(event) => {
+            if (disabled) return;
+            // Seleciona tudo ao focar: sem isto, digitar sobre uma data já
+            // preenchida insere no meio do texto em vez de substituí-la, e a
+            // máscara embaralha os dígitos existentes com os novos. O
+            // `select()` precisa esperar o próximo tick porque, num foco por
+            // clique, o `mouseup` que ainda vai rodar reposicionaria o
+            // cursor e desfaria a seleção feita aqui.
+            const target = event.target;
+            setTimeout(() => target.select(), 0);
+            openPicker();
+          }}
           onBlur={onInputBlur}
           onKeyDown={onInputKeyDown}
           className={cn(
