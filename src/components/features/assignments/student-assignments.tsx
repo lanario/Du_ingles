@@ -9,11 +9,11 @@
  */
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { formatInTimeZone } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, CheckIcon, TaskIcon } from "@/components/ui/icons";
+import { CalendarIcon, CheckIcon, ChevronIcon, TaskIcon } from "@/components/ui/icons";
 import { StatusPill } from "@/components/features/assignments/status-pill";
 import { cn } from "@/lib/utils";
 import type { AssignmentListItem } from "@/repositories/assignments";
@@ -51,6 +51,7 @@ export function StudentAssignments({
   assignments: AssignmentListItem[];
 }) {
   const reduceMotion = useReducedMotion();
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ todo: true });
 
   const { sections, todo, overdue, graded } = useMemo(() => {
     const isTodo = (a: AssignmentListItem) =>
@@ -124,33 +125,65 @@ export function StudentAssignments({
         />
       </div>
 
-      {sections.map((section) => (
-        <section key={section.key}>
-          <div className="mb-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-navy-900">
-              {section.title}
-            </h2>
-            <p className="text-xs text-muted-foreground">{section.hint}</p>
-          </div>
+      {sections.map((section) => {
+        const isOpen = openSections[section.key] ?? false;
 
-          <ul className="space-y-2.5">
-            {section.items.map((assignment, index) => (
-              <motion.li
-                key={assignment.id}
-                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: Math.min(index * 0.04, 0.24),
-                  ease: "easeOut",
-                }}
-              >
-                <AssignmentCard assignment={assignment} />
-              </motion.li>
-            ))}
-          </ul>
-        </section>
-      ))}
+        return (
+          <section key={section.key}>
+            <button
+              type="button"
+              onClick={() =>
+                setOpenSections((prev) => ({ ...prev, [section.key]: !isOpen }))
+              }
+              className="mb-3 flex w-full flex-wrap items-baseline gap-x-2.5 gap-y-0.5 text-left"
+              aria-expanded={isOpen}
+            >
+              <ChevronIcon
+                className={cn(
+                  "h-4 w-4 flex-none self-center text-muted-foreground transition-transform",
+                  isOpen && "rotate-90",
+                )}
+              />
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-navy-900">
+                {section.title}
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                ({section.items.length})
+              </span>
+              <p className="text-xs text-muted-foreground">{section.hint}</p>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <ul className="space-y-2.5">
+                    {section.items.map((assignment, index) => (
+                      <motion.li
+                        key={assignment.id}
+                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: Math.min(index * 0.04, 0.24),
+                          ease: "easeOut",
+                        }}
+                      >
+                        <AssignmentCard assignment={assignment} />
+                      </motion.li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        );
+      })}
     </div>
   );
 }
