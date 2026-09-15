@@ -29,7 +29,9 @@ import {
 } from "@/actions/admin/lesson-planner";
 import {
   deleteAssignmentTemplateAction,
+  deleteAssignmentTemplateFolderAction,
   deletePlannerAssignmentAction,
+  moveAssignmentTemplateAction,
 } from "@/actions/admin/assignments";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useListProgress } from "@/components/motion/list-motion";
@@ -60,6 +62,12 @@ import { PlanFormPanel } from "./plan-form-panel";
 import { SchedulePanel } from "./schedule-panel";
 import { EditSessionDialog } from "./session-edit-dialog";
 import {
+  MoveTaskTemplateDialog,
+  TaskFolderFormDialog,
+  TaskFolderRail,
+  type TaskAtelieCounts,
+} from "./task-folders";
+import {
   AssignTemplatePanel,
   NewTemplateButton,
   TaskTemplateCard,
@@ -73,8 +81,10 @@ import {
   formatTime,
   formatWeekday,
   relativeFrom,
+  taskFolderKeyFromParam,
   todayKey,
   type AtelieKey,
+  type TaskAtelieKey,
 } from "./planner-utils";
 import type {
   PlannerFolder,
@@ -83,6 +93,7 @@ import type {
   PlannerSession,
 } from "@/repositories/lesson-planner";
 import type {
+  AssignmentTemplateFolder,
   AssignmentTemplateListItem,
   PlannerAssignmentListItem,
 } from "@/repositories/assignments";
@@ -93,6 +104,12 @@ import { usePersistedChoice } from "@/hooks/use-persisted-choice";
 type Tab = "atelie" | "agenda" | "tarefas";
 const TAB_VALUES: readonly Tab[] = ["atelie", "agenda", "tarefas"];
 type AgendaFilter = "proximas" | "hoje" | "aovivo" | "concluidas";
+const AGENDA_FILTER_VALUES: readonly AgendaFilter[] = [
+  "proximas",
+  "hoje",
+  "aovivo",
+  "concluidas",
+];
 
 const AGENDA_FILTERS: { value: AgendaFilter; label: string }[] = [
   { value: "proximas", label: "Próximas" },
@@ -116,6 +133,11 @@ export interface PlannerViewProps {
   /** Ateliê de tarefas — exercícios prontos, ainda sem turma. */
   templates: AssignmentTemplateListItem[];
   /**
+   * Pastas de tarefa padrão de quem está olhando — mesma regra de `folders`,
+   * mas para o ateliê de tarefas.
+   */
+  templateFolders: AssignmentTemplateFolder[];
+  /**
    * Quando presente, só os planos deste autor mostram editar/excluir — é
    * assim que o professor usa um plano compartilhado sem poder reescrevê-lo
    * (a action confere a autoria de novo; isto é só a interface honesta).
@@ -127,6 +149,10 @@ export interface PlannerViewProps {
   initialTab?: Tab;
   /** `?pasta=` na URL — qual recorte do ateliê já vem aberto. */
   initialFolderKey?: AtelieKey;
+  /** `?tpasta=` na URL — qual recorte do ateliê de tarefas já vem aberto. */
+  initialTaskFolderKey?: TaskAtelieKey;
+  /** `?filtro=` na URL — qual recorte da agenda já vem aberto. */
+  initialAgendaFilter?: AgendaFilter;
 }
 
 export function PlannerView({
@@ -137,10 +163,13 @@ export function PlannerView({
   teachers,
   assignments,
   templates,
+  templateFolders,
   editableAuthorId,
   openCreate = false,
   initialTab,
   initialFolderKey,
+  initialTaskFolderKey,
+  initialAgendaFilter,
 }: PlannerViewProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -176,7 +205,27 @@ export function PlannerView({
   }
 
   const [search, setSearch] = useState("");
-  const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>("proximas");
+
+  /** Mesmo par storage+URL de `tab`, para o recorte da agenda. */
+  const [agendaFilter, setStoredAgendaFilter] = usePersistedChoice<AgendaFilter>(
+    `du:planejador:${role}:agenda-filtro`,
+    (raw) =>
+      raw && AGENDA_FILTER_VALUES.includes(raw as AgendaFilter)
+        ? (raw as AgendaFilter)
+        : "proximas",
+    initialAgendaFilter,
+  );
+
+  function setAgendaFilter(next: AgendaFilter) {
+    setStoredAgendaFilter(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next === "proximas") params.delete("filtro");
+    else params.set("filtro", next);
+    const query = params.toString();
+    router.replace(`${base}/planejador${query ? `?${query}` : ""}` as Route, {
+      scroll: false,
+    });
+  }
 
   const [folderKey, setStoredFolderKey] = usePersistedChoice<AtelieKey>(
     `du:planejador:${role}:pasta`,
@@ -210,6 +259,37 @@ export function PlannerView({
    * comum e não vale uma ida ao servidor.
    */
   const [draggingPlan, setDraggingPlan] = useState<PlannerPlan | null>(null);
+
+  /** Mesmo par pasta+URL de cima, para o ateliê de tarefas. */
+  const [taskFolderKey, setStoredTaskFolderKey] = usePersistedChoice<TaskAtelieKey>(
+    `du:planejador:${role}:tarefa-pasta`,
+    (raw) => taskFolderKeyFromParam(raw ?? undefined, templateFolders),
+    initialTaskFolderKey && initialTaskFolderKey !== "todas"
+      ? initialTaskFolderKey
+      : undefined,
+  );
+
+  function setTaskFolderKey(next: TaskAtelieKey) {
+    setStoredTaskFolderKey(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next === "todas") params.delete("tpasta");
+    else params.set("tpasta", next);
+    const query = params.toString();
+    router.replace(`${base}/planejador${query ? `?${query}` : ""}` as Route, {
+      scroll: false,
+    });
+  }
+
+  const [taskFolderFormOpen, setTaskFolderFormOpen] = useState(false);
+  const [editingTaskFolder, setEditingTaskFolder] = useState<
+    AssignmentTemplateFolder | undefined
+  >(undefined);
+  const [movingTemplate, setMovingTemplate] = useState<AssignmentTemplateListItem | null>(
+    null,
+  );
+  /** Tarefa padrão no ar — mesma ideia de `draggingPlan`. */
+  const [draggingTemplate, setDraggingTemplate] =
+    useState<AssignmentTemplateListItem | null>(null);
 
   const [formOpen, setFormOpen] = useState(openCreate);
   const [editing, setEditing] = useState<PlannerPlan | undefined>(undefined);
@@ -390,11 +470,83 @@ export function PlannerView({
     });
   }, [assignments, search, taskGroupFilter]);
 
+  /** Mesma ressalva de `ownFolderIds`: pasta de outra pessoa conta como solta. */
+  const ownTemplateFolderIds = useMemo(
+    () => new Set(templateFolders.map((folder) => folder.id)),
+    [templateFolders],
+  );
+
+  const taskCounts = useMemo<TaskAtelieCounts>(() => {
+    const byFolder: Record<string, number> = {};
+    let compartilhadas = 0;
+    let semPasta = 0;
+
+    for (const template of templates) {
+      if (template.isShared) compartilhadas += 1;
+      if (template.folderId && ownTemplateFolderIds.has(template.folderId)) {
+        byFolder[template.folderId] = (byFolder[template.folderId] ?? 0) + 1;
+      } else {
+        semPasta += 1;
+      }
+    }
+
+    return {
+      todas: templates.length,
+      compartilhadas,
+      privadas: templates.length - compartilhadas,
+      semPasta,
+      byFolder,
+    };
+  }, [templates, ownTemplateFolderIds]);
+
   const visibleTemplates = useMemo(() => {
+    const inFolder = templates.filter((template) => {
+      const filed = template.folderId && ownTemplateFolderIds.has(template.folderId);
+      if (taskFolderKey === "todas") return true;
+      if (taskFolderKey === "compartilhadas") return template.isShared;
+      if (taskFolderKey === "privadas") return !template.isShared;
+      if (taskFolderKey === "sem-pasta") return !filed;
+      return template.folderId === taskFolderKey;
+    });
+
     const term = search.trim().toLowerCase();
-    if (!term) return templates;
-    return templates.filter((item) => item.title.toLowerCase().includes(term));
-  }, [templates, search]);
+    if (!term) return inFolder;
+    return inFolder.filter((item) => item.title.toLowerCase().includes(term));
+  }, [templates, ownTemplateFolderIds, taskFolderKey, search]);
+
+  const openTemplateFolder = templateFolders.find(
+    (folder) => folder.id === taskFolderKey,
+  );
+
+  const templateAtelieEmpty = search
+    ? {
+        title: "Nenhuma tarefa padrão encontrada",
+        body: "Tente outro termo — busca por título.",
+      }
+    : openTemplateFolder
+      ? {
+          title: `A pasta “${openTemplateFolder.name}” está vazia`,
+          body: "Use “Mover para pasta”, no cartão de uma tarefa padrão, para guardá-la aqui.",
+        }
+      : taskFolderKey === "compartilhadas"
+        ? {
+            title: "Nenhuma tarefa padrão compartilhada",
+            body: "Marque “compartilhar com os professores” ao criar uma tarefa padrão e ela aparece aqui.",
+          }
+        : taskFolderKey === "privadas"
+          ? {
+              title: "Nenhuma tarefa padrão privada",
+              body: "Toda tarefa padrão do ateliê já está compartilhada com a escola.",
+            }
+          : taskFolderKey === "sem-pasta"
+            ? {
+                title: "Nenhuma tarefa padrão solta",
+                body: "Todas as suas tarefas padrão já estão guardadas em alguma pasta.",
+              }
+            : {
+                title: "Nenhuma tarefa padrão ainda",
+                body: "Monte um exercício aqui e atribua a quantas turmas quiser, quando quiser.",
+              };
 
   const groupedSessions = useMemo(() => {
     const map = new Map<string, PlannerSession[]>();
@@ -822,47 +974,89 @@ export function PlannerView({
               className={taskView === "atelie" ? "" : "space-y-2.5"}
             >
               {taskView === "atelie" ? (
-                visibleTemplates.length === 0 ? (
-                  <EmptyBoard
-                    title={
-                      search
-                        ? "Nenhuma tarefa padrão encontrada"
-                        : "Nenhuma tarefa padrão ainda"
-                    }
-                    body={
-                      search
-                        ? "Tente outro termo — busca por título."
-                        : "Monte um exercício aqui e atribua a quantas turmas quiser, quando quiser."
-                    }
-                    action={
-                      search ? undefined : (
-                        <NewTemplateButton onClick={() => setTemplateFormOpen(true)} />
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,248px)_minmax(0,1fr)]">
+                  <TaskFolderRail
+                    folders={templateFolders}
+                    counts={taskCounts}
+                    value={taskFolderKey}
+                    onChange={setTaskFolderKey}
+                    onCreate={() => {
+                      setEditingTaskFolder(undefined);
+                      setTaskFolderFormOpen(true);
+                    }}
+                    onEdit={(folder) => {
+                      setEditingTaskFolder(folder);
+                      setTaskFolderFormOpen(true);
+                    }}
+                    onDelete={(folder) => {
+                      if (
+                        !window.confirm(
+                          `Excluir a pasta "${folder.name}"? As tarefas padrão de dentro voltam para o ateliê — nenhuma é apagada.`,
+                        )
                       )
-                    }
+                        return;
+                      if (taskFolderKey === folder.id) setTaskFolderKey("todas");
+                      runPlanAction(folder.id, () =>
+                        deleteAssignmentTemplateFolderAction(folder.id),
+                      );
+                    }}
+                    dragging={draggingTemplate !== null}
+                    onDropTemplate={(folderId) => {
+                      const template = draggingTemplate;
+                      setDraggingTemplate(null);
+                      if (!template || template.folderId === folderId) return;
+                      runPlanAction(template.id, () =>
+                        moveAssignmentTemplateAction(template.id, folderId),
+                      );
+                    }}
                   />
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {visibleTemplates.map((template) => (
-                      <TaskTemplateCard
-                        key={template.id}
-                        template={template}
-                        busy={busyId === template.id}
-                        onAssign={() => setAssigningTemplate(template)}
-                        onDelete={() => {
-                          if (
-                            !window.confirm(
-                              `Excluir a tarefa padrão "${template.title}"? As turmas que já a receberam não são afetadas.`,
-                            )
+
+                  <div className="min-w-0">
+                    {visibleTemplates.length === 0 ? (
+                      <EmptyBoard
+                        title={templateAtelieEmpty.title}
+                        body={templateAtelieEmpty.body}
+                        action={
+                          search || taskFolderKey !== "todas" ? undefined : (
+                            <NewTemplateButton
+                              onClick={() => setTemplateFormOpen(true)}
+                            />
                           )
-                            return;
-                          runPlanAction(template.id, () =>
-                            deleteAssignmentTemplateAction(template.id),
-                          );
-                        }}
+                        }
                       />
-                    ))}
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {visibleTemplates.map((template) => (
+                          <TaskTemplateCard
+                            key={template.id}
+                            template={template}
+                            busy={busyId === template.id}
+                            canEdit={
+                              editableAuthorId === undefined ||
+                              template.ownerId === editableAuthorId
+                            }
+                            onAssign={() => setAssigningTemplate(template)}
+                            onMove={() => setMovingTemplate(template)}
+                            onDelete={() => {
+                              if (
+                                !window.confirm(
+                                  `Excluir a tarefa padrão "${template.title}"? As turmas que já a receberam não são afetadas.`,
+                                )
+                              )
+                                return;
+                              runPlanAction(template.id, () =>
+                                deleteAssignmentTemplateAction(template.id),
+                              );
+                            }}
+                            dragging={draggingTemplate?.id === template.id}
+                            onDragStart={() => setDraggingTemplate(template)}
+                            onDragEnd={() => setDraggingTemplate(null)}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )
+                </div>
               ) : visibleAssignments.length === 0 ? (
                 <EmptyBoard
                   title={
@@ -946,6 +1140,9 @@ export function PlannerView({
       <TaskTemplateFormPanel
         open={templateFormOpen}
         onClose={() => setTemplateFormOpen(false)}
+        folders={templateFolders}
+        /* Criar de dentro de uma pasta já nasce guardada nela. */
+        defaultFolderId={openTemplateFolder?.id ?? null}
       />
 
       <AssignTemplatePanel
@@ -981,6 +1178,32 @@ export function PlannerView({
           if (!plan) return;
           setMovingPlan(null);
           runPlanAction(plan.id, () => movePlannerPlanAction(plan.id, folderId));
+        }}
+      />
+
+      <TaskFolderFormDialog
+        open={taskFolderFormOpen}
+        onClose={() => {
+          setTaskFolderFormOpen(false);
+          setEditingTaskFolder(undefined);
+        }}
+        folder={editingTaskFolder}
+      />
+
+      <MoveTaskTemplateDialog
+        open={movingTemplate !== null}
+        onClose={() => setMovingTemplate(null)}
+        folders={templateFolders}
+        templateTitle={movingTemplate?.title ?? ""}
+        currentFolderId={movingTemplate?.folderId ?? null}
+        busy={busyId !== null && busyId === movingTemplate?.id}
+        onConfirm={(folderId) => {
+          const template = movingTemplate;
+          if (!template) return;
+          setMovingTemplate(null);
+          runPlanAction(template.id, () =>
+            moveAssignmentTemplateAction(template.id, folderId),
+          );
         }}
       />
     </div>
@@ -1059,9 +1282,40 @@ function PlanCard({
 }) {
   const reduceMotion = useReducedMotion();
   const { base } = useArea();
+  const articleRef = useRef<HTMLElement>(null);
+
+  /**
+   * Arrasto nativo (HTML5 DnD, `dataTransfer`) via `ref` em vez de
+   * `onDragStart`/`onDragEnd` nas props: o `motion.article` intercepta esses
+   * dois nomes para o próprio sistema de gestos (tipos de `PanInfo`, não de
+   * `DragEvent`), então passá-los direto quebra o TypeScript — e mesmo sem o
+   * erro de tipo, seria o gesto errado.
+   */
+  useEffect(() => {
+    const node = articleRef.current;
+    if (!node || !canEdit) return;
+
+    function handleDragStart(event: DragEvent) {
+      // O Firefox só começa o arrasto se algo for escrito aqui.
+      event.dataTransfer?.setData("text/plain", plan.id);
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+      onDragStart();
+    }
+    function handleDragEnd() {
+      onDragEnd();
+    }
+
+    node.addEventListener("dragstart", handleDragStart);
+    node.addEventListener("dragend", handleDragEnd);
+    return () => {
+      node.removeEventListener("dragstart", handleDragStart);
+      node.removeEventListener("dragend", handleDragEnd);
+    };
+  }, [canEdit, plan.id, onDragStart, onDragEnd]);
 
   return (
     <motion.article
+      ref={articleRef}
       layout={!reduceMotion}
       initial={reduceMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1073,8 +1327,17 @@ function PlanCard({
         delay: reduceMotion ? 0 : Math.min(index * 0.035, 0.25),
       }}
       whileHover={reduceMotion ? undefined : { y: -4 }}
+      /**
+       * O cartão inteiro é a alça — não só o ícone. O título por cima cobre o
+       * cartão com um link em `absolute inset-0`, e arrastar um link no
+       * navegador arrastaria a URL, não a aula; por isso os dois `<Link>`
+       * abaixo ganham `draggable={false}`, o que devolve o gesto para o
+       * ancestral arrastável mais próximo (este artigo).
+       */
+      draggable={canEdit}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-2xl border border-admin-border bg-admin-surface p-5 shadow-[0_1px_2px_rgba(11,26,51,0.04),0_10px_30px_-22px_rgba(11,26,51,0.4)] transition-[box-shadow,border-color,opacity] hover:border-gold-300 hover:shadow-[0_2px_6px_rgba(11,26,51,0.06),0_26px_50px_-30px_rgba(11,26,51,0.5)]",
+        canEdit && "cursor-grab active:cursor-grabbing",
         // Quem está no ar fica claro: o cartão que saiu da grade se apaga.
         dragging && "border-gold-400 opacity-50",
       )}
@@ -1093,29 +1356,12 @@ function PlanCard({
             {relativeFrom(plan.updatedAt)}
           </span>
           {canEdit && (
-            /**
-             * A alça, e não o cartão inteiro: o título cobre o cartão com um
-             * link em `absolute inset-0`, e arrastar um link no navegador
-             * arrasta a URL, não a aula.
-             *
-             * `z-10` pelo mesmo motivo — sem ele a alça fica embaixo dessa
-             * camada. `aria-hidden` porque arrastar não é caminho de teclado:
-             * quem navega assim usa "Mover para pasta", que faz o mesmo.
-             */
+            /** Só o ícone — o arrasto de verdade já é do cartão inteiro. */
             <span
               aria-hidden
-              draggable
               title="Arrastar para uma pasta"
-              onDragStart={(event) => {
-                // O Firefox só começa o arrasto se algo for escrito aqui.
-                event.dataTransfer.setData("text/plain", plan.id);
-                event.dataTransfer.effectAllowed = "move";
-                onDragStart();
-              }}
-              onDragEnd={onDragEnd}
               className={cn(
-                "relative z-10 -mr-1 cursor-grab rounded-md p-1 text-admin-foreground/30 opacity-0 transition-opacity",
-                "hover:bg-admin-muted hover:text-admin-foreground/60 active:cursor-grabbing",
+                "-mr-1 rounded-md p-1 text-admin-foreground/30 opacity-0 transition-opacity",
                 "group-hover:opacity-100",
                 dragging && "opacity-100",
               )}
@@ -1128,6 +1374,7 @@ function PlanCard({
 
       <Link
         href={`${base}/planejador/${plan.id}` as Route}
+        draggable={false}
         className="relative mt-3 line-clamp-2 text-lg font-semibold leading-snug text-admin-foreground transition-colors hover:text-navy-700 focus:outline-none focus-visible:underline"
       >
         {plan.title}
@@ -1160,6 +1407,7 @@ function PlanCard({
       <div className="relative z-10 mt-4 flex items-center gap-1.5 border-t border-admin-border/70 pt-3">
         <Link
           href={`${base}/planejador/${plan.id}` as Route}
+          draggable={false}
           className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-navy-900 px-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           Abrir canvas

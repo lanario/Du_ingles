@@ -20,25 +20,58 @@ import { Label } from "@/components/ui/label";
 import { DateField } from "@/components/ui/date-field";
 import { schoolDayKey } from "@/lib/schedule/session-preview";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
-import { CheckIcon, PlusIcon, TaskIcon, TrashIcon } from "@/components/ui/icons";
+import {
+  CheckIcon,
+  FolderMoveIcon,
+  GripIcon,
+  PlusIcon,
+  TaskIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import { cn } from "@/lib/utils";
-import type { AssignmentTemplateListItem } from "@/repositories/assignments";
+import type { AssignmentTemplateFolder, AssignmentTemplateListItem } from "@/repositories/assignments";
 import type { PlannerGroupOption } from "@/repositories/lesson-planner";
 
 export function TaskTemplateCard({
   template,
   busy,
+  canEdit,
   onAssign,
+  onMove,
   onDelete,
+  dragging,
+  onDragStart,
+  onDragEnd,
 }: {
   template: AssignmentTemplateListItem;
   busy: boolean;
+  /** Mover ou excluir esta tarefa padrão é permitido — falso em compartilhada alheia. */
+  canEdit: boolean;
   onAssign: () => void;
+  onMove: () => void;
   onDelete: () => void;
+  dragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-admin-border bg-admin-surface p-4 transition-[border-color,box-shadow] hover:border-navy-100 hover:shadow-[0_18px_40px_-32px_rgba(11,26,51,0.6)]">
+    <div
+      /** O cartão inteiro é a alça — mesma ideia de `PlanCard` (`planner-view.tsx`),
+       * mas sem o problema do link cobrindo tudo: aqui não há `<Link>` nenhum. */
+      draggable={canEdit}
+      onDragStart={(event) => {
+        event.dataTransfer.setData("text/plain", template.id);
+        event.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "flex flex-col gap-3 rounded-2xl border border-admin-border bg-admin-surface p-4 transition-[border-color,box-shadow,opacity] hover:border-navy-100 hover:shadow-[0_18px_40px_-32px_rgba(11,26,51,0.6)]",
+        canEdit && "cursor-grab active:cursor-grabbing",
+        dragging && "border-gold-400 opacity-50",
+      )}
+    >
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-50 text-navy-700">
           <TaskIcon className="h-5 w-5" />
@@ -52,6 +85,16 @@ export function TaskTemplateCard({
             {template.maxScore != null ? ` · nota máxima ${template.maxScore}` : ""}
           </p>
         </div>
+        {canEdit && (
+          /** Só o ícone — o arrasto de verdade já é do cartão inteiro. */
+          <span
+            aria-hidden
+            title="Arrastar para uma pasta"
+            className="-mr-1 mt-1 shrink-0 rounded-md p-1 text-admin-foreground/30"
+          >
+            <GripIcon className="h-4 w-4" />
+          </span>
+        )}
         <button
           type="button"
           title="Excluir tarefa padrão"
@@ -78,7 +121,7 @@ export function TaskTemplateCard({
         </p>
       )}
 
-      <div className="mt-1 flex items-center justify-between gap-3">
+      <div className="mt-1 flex flex-wrap items-center gap-2">
         {template.assignedGroupCount > 0 ? (
           <span className="inline-flex h-6 items-center rounded-full border border-navy-100 bg-navy-50 px-2.5 text-[11px] font-semibold text-navy-800">
             atribuída a {template.assignedGroupCount} turma(s)
@@ -88,13 +131,37 @@ export function TaskTemplateCard({
             ainda não atribuída
           </span>
         )}
+        {template.isShared && (
+          <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-medium text-navy-700">
+            compartilhada
+          </span>
+        )}
+      </div>
+
+      <div className="mt-1 flex items-center gap-1.5">
         <button
           type="button"
           onClick={onAssign}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-gold-600 to-gold-400 px-3.5 text-xs font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-gold-600 to-gold-400 px-3.5 text-xs font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
         >
           Atribuir a turmas
         </button>
+        {canEdit && (
+          <button
+            type="button"
+            title="Mover para pasta"
+            aria-label="Mover para pasta"
+            disabled={busy}
+            onClick={onMove}
+            className={cn(
+              "grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-admin-border bg-admin-surface text-admin-foreground/60 transition-colors",
+              "hover:bg-admin-muted hover:text-admin-foreground",
+              busy && "pointer-events-none opacity-50",
+            )}
+          >
+            <FolderMoveIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -104,9 +171,15 @@ export function TaskTemplateCard({
 export function TaskTemplateFormPanel({
   open,
   onClose,
+  folders,
+  defaultFolderId = null,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Estante de quem está criando — vazia enquanto ninguém criou pasta. */
+  folders: AssignmentTemplateFolder[];
+  /** Pasta aberta no ateliê: é onde a tarefa padrão nova nasce. */
+  defaultFolderId?: string | null;
 }) {
   const [state, formAction, isPending] = useActionState(
     createAssignmentTemplateAction,
@@ -115,12 +188,16 @@ export function TaskTemplateFormPanel({
   // O construtor de questões guarda o rascunho em estado próprio; trocar a
   // chave a cada abertura é o que garante painel novo = tarefa em branco.
   const [builderKey, setBuilderKey] = useState(0);
+  const [folderId, setFolderId] = useState<string | null>(defaultFolderId);
 
   const fields = state && !state.success ? state.error.fields : undefined;
 
   useEffect(() => {
-    if (open) setBuilderKey((k) => k + 1);
-  }, [open]);
+    if (open) {
+      setBuilderKey((k) => k + 1);
+      setFolderId(defaultFolderId);
+    }
+  }, [open, defaultFolderId]);
 
   useEffect(() => {
     if (state?.success) onClose();
@@ -191,6 +268,43 @@ export function TaskTemplateFormPanel({
             />
             <FieldError messages={fields?.["maxScore"]} />
           </div>
+
+          {folders.length > 0 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium text-admin-foreground">Pasta</legend>
+              <input type="hidden" name="folderId" value={folderId ?? ""} />
+              <div className="flex flex-wrap gap-2">
+                <TemplateFolderChip
+                  label="Sem pasta"
+                  active={folderId === null}
+                  onSelect={() => setFolderId(null)}
+                />
+                {folders.map((folder) => (
+                  <TemplateFolderChip
+                    key={folder.id}
+                    label={folder.name}
+                    active={folderId === folder.id}
+                    onSelect={() => setFolderId(folder.id)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-admin-border bg-admin-background p-3.5">
+            <input
+              type="checkbox"
+              name="isShared"
+              className="mt-0.5 h-4 w-4 accent-[var(--gold-500)]"
+            />
+            <span className="text-xs leading-relaxed text-admin-foreground/70">
+              <strong className="block text-sm font-medium text-admin-foreground">
+                Compartilhar com os professores
+              </strong>
+              Tarefas padrão compartilhadas aparecem no ateliê de quem dá aula, prontas
+              para atribuir.
+            </span>
+          </label>
         </div>
 
         <div className="sticky bottom-0 flex shrink-0 items-center justify-end gap-3 border-t border-admin-border bg-admin-surface px-4 py-4 sm:px-6">
@@ -428,6 +542,33 @@ export function NewTemplateButton({ onClick }: { onClick: () => void }) {
     >
       <PlusIcon className="h-4 w-4" />
       Nova tarefa padrão
+    </button>
+  );
+}
+
+function TemplateFolderChip({
+  label,
+  active,
+  onSelect,
+}: {
+  label: string;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      className={cn(
+        "h-9 max-w-[14rem] truncate rounded-full border px-3.5 text-sm font-medium transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
+        active
+          ? "border-gold-400 bg-gold-50 text-admin-foreground"
+          : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted",
+      )}
+    >
+      {label}
     </button>
   );
 }

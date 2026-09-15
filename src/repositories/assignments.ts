@@ -17,7 +17,11 @@ import {
   type Question,
   type StudentAnswers,
 } from "@/lib/assignments/exercises";
-import type { QuestionDraft } from "@/schemas/assignments";
+import type {
+  AssignmentTemplateFolderColor,
+  AssignmentTemplateFolderInput,
+  QuestionDraft,
+} from "@/schemas/assignments";
 
 export interface AssignmentListItem {
   id: string;
@@ -457,6 +461,9 @@ export interface AssignmentTemplateListItem {
   questionCount: number;
   maxScore: number | null;
   createdAt: string;
+  isShared: boolean;
+  /** Pasta pessoal em que a tarefa padrão está arquivada — `null` = solta. */
+  folderId: string | null;
   /** Quantas turmas já receberam esta tarefa padrão. */
   assignedGroupCount: number;
 }
@@ -468,7 +475,7 @@ export async function listAssignmentTemplates(
   const { data, error } = await admin
     .from("assignment_templates")
     .select(
-      "id, owner_id, title, instructions, max_score, created_at, assignments:assignments(count)",
+      "id, owner_id, title, instructions, max_score, created_at, is_shared, folder_id, assignments:assignments(count)",
     )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
@@ -482,6 +489,8 @@ export async function listAssignmentTemplates(
     questionCount: readQuestions(row.instructions).length,
     maxScore: row.max_score,
     createdAt: row.created_at,
+    isShared: row.is_shared,
+    folderId: row.folder_id,
     assignedGroupCount: row.assignments?.[0]?.count ?? 0,
   }));
 }
@@ -521,6 +530,8 @@ export async function createAssignmentTemplate(input: {
   instructions?: string;
   questions?: QuestionDraft[];
   maxScore: number;
+  isShared: boolean;
+  folderId?: string;
   organizationId: string;
   ownerId: string;
 }): Promise<string | null> {
@@ -538,6 +549,8 @@ export async function createAssignmentTemplate(input: {
       answer_key:
         Object.keys(answerKey).length > 0 ? (answerKey as unknown as Json) : null,
       max_score: input.maxScore,
+      is_shared: input.isShared,
+      folder_id: input.folderId ?? null,
     })
     .select("id")
     .single();
@@ -555,6 +568,136 @@ export async function deleteAssignmentTemplate(
     .from("assignment_templates")
     .delete()
     .eq("id", id)
+    .eq("organization_id", organizationId);
+  return !error;
+}
+
+// ------------------------------------------------ pastas do ateliê ----
+
+/**
+ * Pastas do ateliê de tarefas: a estante pessoal de cada um, mesmo desenho de
+ * `PlannerFolder` (`repositories/lesson-planner.ts`). `isShared` da tarefa
+ * padrão NÃO passa por aqui — é filtro de biblioteca, calculado na tela.
+ */
+export interface AssignmentTemplateFolder {
+  id: string;
+  name: string;
+  color: AssignmentTemplateFolderColor;
+  ownerId: string;
+  createdAt: string;
+}
+
+interface TemplateFolderRow {
+  id: string;
+  name: string;
+  color: string;
+  owner_id: string;
+  created_at: string;
+}
+
+function mapTemplateFolder(row: TemplateFolderRow): AssignmentTemplateFolder {
+  return {
+    id: row.id,
+    name: row.name,
+    color: row.color as AssignmentTemplateFolderColor,
+    ownerId: row.owner_id,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listAssignmentTemplateFolders(
+  organizationId: string,
+  ownerId: string,
+): Promise<AssignmentTemplateFolder[]> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("assignment_template_folders")
+    .select("id, name, color, owner_id, created_at")
+    .eq("organization_id", organizationId)
+    .eq("owner_id", ownerId)
+    .order("name", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map((row) => mapTemplateFolder(row as TemplateFolderRow));
+}
+
+/** Posse da pasta — o que autoriza renomear, excluir e arquivar dentro. */
+export async function isTemplateFolderOwnedBy(
+  folderId: string,
+  ownerId: string,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("assignment_template_folders")
+    .select("id")
+    .eq("id", folderId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+export async function createAssignmentTemplateFolder(
+  input: AssignmentTemplateFolderInput,
+  organizationId: string,
+  ownerId: string,
+): Promise<{ id: string | null; duplicate: boolean }> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("assignment_template_folders")
+    .insert({
+      organization_id: organizationId,
+      owner_id: ownerId,
+      name: input.name,
+      color: input.color,
+    })
+    .select("id")
+    .single();
+
+  // 23505: o índice único (dono + nome) — vale uma mensagem própria na tela.
+  if (error) return { id: null, duplicate: error.code === "23505" };
+  return { id: data?.id ?? null, duplicate: false };
+}
+
+export async function updateAssignmentTemplateFolder(
+  id: string,
+  ownerId: string,
+  input: AssignmentTemplateFolderInput,
+): Promise<{ success: boolean; duplicate: boolean }> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("assignment_template_folders")
+    .update({ name: input.name, color: input.color })
+    .eq("id", id)
+    .eq("owner_id", ownerId);
+
+  if (error) return { success: false, duplicate: error.code === "23505" };
+  return { success: true, duplicate: false };
+}
+
+/** As tarefas padrão de dentro sobrevivem: `on delete set null` as devolve ao ateliê. */
+export async function deleteAssignmentTemplateFolder(
+  id: string,
+  ownerId: string,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("assignment_template_folders")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", ownerId);
+  return !error;
+}
+
+export async function moveAssignmentTemplateToFolder(
+  templateId: string,
+  organizationId: string,
+  folderId: string | null,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("assignment_templates")
+    .update({ folder_id: folderId })
+    .eq("id", templateId)
     .eq("organization_id", organizationId);
   return !error;
 }

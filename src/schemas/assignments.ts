@@ -3,6 +3,18 @@ import { z } from "zod";
 import { dueDateToInstant } from "@/lib/assignments/due-date";
 
 /**
+ * Campo opcional vindo de formulário — mesma nota de `schemas/lesson-planner.ts`:
+ * `formData.get(nome)` devolve `null` (não `undefined`) quando o input não
+ * está montado na tela, e `.optional()` sozinho reprova esse `null`.
+ */
+const optionalUuid = z
+  .string()
+  .trim()
+  .nullish()
+  .transform((value) => value || undefined)
+  .pipe(z.string().uuid().optional());
+
+/**
  * O campo do formulário manda um dia (`yyyy-mm-dd`); o banco guarda um
  * instante. A conversão fica AQUI, no schema, para que os três caminhos que
  * criam tarefa (professor, planejador, tarefa padrão) ancorem o prazo no
@@ -171,6 +183,9 @@ export const assignmentTemplateSchema = z.object({
     .transform((v) => v || undefined),
   questions: questionsFieldSchema,
   maxScore: z.coerce.number().min(0).max(1000).default(10),
+  isShared: z.coerce.boolean().default(false),
+  /** Pasta do ateliê de tarefas. Ausente = a tarefa padrão fica solta. */
+  folderId: optionalUuid,
 });
 export type AssignmentTemplateInput = z.infer<typeof assignmentTemplateSchema>;
 
@@ -183,6 +198,35 @@ export const assignTemplateSchema = z.object({
   maxScore: z.coerce.number().min(0).max(1000).optional(),
 });
 export type AssignTemplateInput = z.infer<typeof assignTemplateSchema>;
+
+/**
+ * Pastas do ateliê de tarefas. Mesma ideia de `plannerFolderSchema`
+ * (`schemas/lesson-planner.ts`): a estante pessoal de quem cria — não tem
+ * relação com `isShared`, que continua sendo filtro de biblioteca.
+ */
+export const ASSIGNMENT_TEMPLATE_FOLDER_COLORS = [
+  "gold",
+  "navy",
+  "emerald",
+  "violet",
+  "rose",
+  "slate",
+] as const;
+export type AssignmentTemplateFolderColor =
+  (typeof ASSIGNMENT_TEMPLATE_FOLDER_COLORS)[number];
+
+export const assignmentTemplateFolderSchema = z.object({
+  name: z.string().trim().min(1, "Dê um nome à pasta.").max(60),
+  color: z.enum(ASSIGNMENT_TEMPLATE_FOLDER_COLORS).default("gold"),
+});
+export type AssignmentTemplateFolderInput = z.infer<
+  typeof assignmentTemplateFolderSchema
+>;
+
+/** Mover tarefa padrão: `null` tira da pasta, sem apagar nada. */
+export const moveAssignmentTemplateSchema = z.object({
+  folderId: z.string().uuid().nullable(),
+});
 
 /**
  * Respostas do aluno: um mapa `questionId -> texto`. Objetivas também viajam

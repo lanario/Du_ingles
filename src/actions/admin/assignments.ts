@@ -14,9 +14,11 @@ import { parseManualGradesFromForm } from "@/lib/assignments/exercises";
 import * as repo from "@/repositories/assignments";
 import {
   assignTemplateSchema,
+  assignmentTemplateFolderSchema,
   assignmentTemplateSchema,
   createExerciseAssignmentSchema,
   gradeSubmissionSchema,
+  moveAssignmentTemplateSchema,
 } from "@/schemas/assignments";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
@@ -27,6 +29,18 @@ import { fail, ok, type ActionResult } from "@/types/action-result";
  */
 
 const PLANNER_SUFFIX = "/planejador";
+
+/**
+ * Pasta do ateliê de tarefas de quem chama. Estante é pessoal — nem o admin
+ * arquiva na pasta dos outros —, então "existe" aqui significa "existe e é
+ * sua". Mesmo desenho de `ownsFolder` em `actions/admin/lesson-planner.ts`.
+ */
+async function ownsTemplateFolder(
+  ctx: Awaited<ReturnType<typeof requireStaff>>,
+  folderId: string,
+): Promise<boolean> {
+  return repo.isTemplateFolderOwnedBy(folderId, ctx.userId);
+}
 
 export async function createPlannerAssignmentAction(
   _prev: ActionResult<never> | null,
@@ -220,6 +234,8 @@ export async function createAssignmentTemplateAction(
     instructions: formData.get("instructions") || undefined,
     questions: formData.get("questions") || undefined,
     maxScore: formData.get("maxScore") || undefined,
+    isShared: formData.get("isShared") === "on",
+    folderId: formData.get("folderId"),
   });
   if (!parsed.success) {
     return fail(
@@ -228,12 +244,16 @@ export async function createAssignmentTemplateAction(
       parsed.error.flatten().fieldErrors,
     );
   }
+  if (parsed.data.folderId && !(await ownsTemplateFolder(ctx, parsed.data.folderId)))
+    return fail("NOT_FOUND", "Pasta não encontrada.");
 
   const id = await repo.createAssignmentTemplate({
     title: parsed.data.title,
     instructions: parsed.data.instructions,
     questions: parsed.data.questions,
     maxScore: parsed.data.maxScore,
+    isShared: parsed.data.isShared,
+    folderId: parsed.data.folderId,
     organizationId: ctx.organizationId,
     ownerId: ctx.userId,
   });
@@ -258,6 +278,133 @@ export async function deleteAssignmentTemplateAction(
 
   const success = await repo.deleteAssignmentTemplate(templateId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir a tarefa padrão.");
+
+  revalidateStaffPath(PLANNER_SUFFIX);
+  return ok(undefined as never);
+}
+
+// ------------------------------------------------ pastas do ateliê ----
+
+/**
+ * A estante é de quem a criou: todas as actions abaixo confirmam `owner_id`,
+ * inclusive para o admin. Mesmo desenho das pastas de aula
+ * (`actions/admin/lesson-planner.ts`).
+ */
+
+export async function createAssignmentTemplateFolderAction(
+  _prev: ActionResult<never> | null,
+  formData: FormData,
+): Promise<ActionResult<never>> {
+  const ctx = await requireStaff();
+
+  const parsed = assignmentTemplateFolderSchema.safeParse({
+    name: formData.get("name"),
+    color: formData.get("color") || undefined,
+  });
+  if (!parsed.success) {
+    return fail(
+      "VALIDATION_ERROR",
+      "Verifique os campos.",
+      parsed.error.flatten().fieldErrors,
+    );
+  }
+
+  const { id, duplicate } = await repo.createAssignmentTemplateFolder(
+    parsed.data,
+    ctx.organizationId,
+    ctx.userId,
+  );
+  if (duplicate)
+    return fail("CONFLICT", "Você já tem uma pasta com esse nome.", {
+      name: ["Você já tem uma pasta com esse nome."],
+    });
+  if (!id) return fail("INTERNAL_ERROR", "Falha ao criar a pasta.");
+
+  revalidateStaffPath(PLANNER_SUFFIX);
+  return ok(undefined as never);
+}
+
+export async function updateAssignmentTemplateFolderAction(
+  folderId: string,
+  _prev: ActionResult<never> | null,
+  formData: FormData,
+): Promise<ActionResult<never>> {
+  const ctx = await requireStaff();
+  if (!(await ownsTemplateFolder(ctx, folderId)))
+    return fail("NOT_FOUND", "Pasta não encontrada.");
+
+  const parsed = assignmentTemplateFolderSchema.safeParse({
+    name: formData.get("name"),
+    color: formData.get("color") || undefined,
+  });
+  if (!parsed.success) {
+    return fail(
+      "VALIDATION_ERROR",
+      "Verifique os campos.",
+      parsed.error.flatten().fieldErrors,
+    );
+  }
+
+  const { success, duplicate } = await repo.updateAssignmentTemplateFolder(
+    folderId,
+    ctx.userId,
+    parsed.data,
+  );
+  if (duplicate)
+    return fail("CONFLICT", "Você já tem uma pasta com esse nome.", {
+      name: ["Você já tem uma pasta com esse nome."],
+    });
+  if (!success) return fail("INTERNAL_ERROR", "Falha ao salvar a pasta.");
+
+  revalidateStaffPath(PLANNER_SUFFIX);
+  return ok(undefined as never);
+}
+
+/** Excluir a pasta desarquiva as tarefas padrão — nenhuma é apagada junto. */
+export async function deleteAssignmentTemplateFolderAction(
+  folderId: string,
+): Promise<ActionResult<never>> {
+  const ctx = await requireStaff();
+  if (!(await ownsTemplateFolder(ctx, folderId)))
+    return fail("NOT_FOUND", "Pasta não encontrada.");
+
+  const success = await repo.deleteAssignmentTemplateFolder(folderId, ctx.userId);
+  if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir a pasta.");
+
+  revalidateStaffPath(PLANNER_SUFFIX);
+  return ok(undefined as never);
+}
+
+/**
+ * Arquivar a tarefa padrão numa pasta. Exige as duas posses: a tarefa tem
+ * que ser reescrevível por quem chama (dono, ou admin) e a pasta tem que ser
+ * da estante dele.
+ */
+export async function moveAssignmentTemplateAction(
+  templateId: string,
+  folderId: string | null,
+): Promise<ActionResult<never>> {
+  const ctx = await requireStaff();
+
+  const template = await repo.getAssignmentTemplateForAssign(
+    templateId,
+    ctx.organizationId,
+  );
+  if (!template) return fail("NOT_FOUND", "Tarefa padrão não encontrada.");
+  if (!isAdmin(ctx) && template.ownerId !== ctx.userId)
+    return fail("FORBIDDEN", "Esta tarefa padrão não é sua.");
+
+  const parsed = moveAssignmentTemplateSchema.safeParse({ folderId });
+  if (!parsed.success) return fail("VALIDATION_ERROR", "Pasta inválida.");
+  if (parsed.data.folderId && !(await ownsTemplateFolder(ctx, parsed.data.folderId)))
+    return fail("NOT_FOUND", "Pasta não encontrada.");
+
+  const success = await repo.moveAssignmentTemplateToFolder(
+    templateId,
+    ctx.organizationId,
+    parsed.data.folderId,
+  );
+  if (!success) return fail("INTERNAL_ERROR", "Falha ao mover a tarefa padrão.");
 
   revalidateStaffPath(PLANNER_SUFFIX);
   return ok(undefined as never);

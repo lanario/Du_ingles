@@ -183,12 +183,59 @@ export type Database = {
           },
         ]
       }
+      assignment_template_folders: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_template_folders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_template_folders_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_templates: {
         Row: {
           answer_key: Json | null
           created_at: string
+          folder_id: string | null
           id: string
           instructions: Json | null
+          is_shared: boolean
           max_score: number | null
           organization_id: string
           owner_id: string
@@ -198,8 +245,10 @@ export type Database = {
         Insert: {
           answer_key?: Json | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           instructions?: Json | null
+          is_shared?: boolean
           max_score?: number | null
           organization_id: string
           owner_id: string
@@ -209,8 +258,10 @@ export type Database = {
         Update: {
           answer_key?: Json | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           instructions?: Json | null
+          is_shared?: boolean
           max_score?: number | null
           organization_id?: string
           owner_id?: string
@@ -218,6 +269,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "assignment_templates_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_template_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "assignment_templates_organization_id_fkey"
             columns: ["organization_id"]

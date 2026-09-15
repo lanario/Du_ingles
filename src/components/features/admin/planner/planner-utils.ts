@@ -148,3 +148,18 @@ export function folderKeyFromParam(
   if ((ATELIE_LIBRARY_KEYS as readonly string[]).includes(value)) return value;
   return folders.some((folder) => folder.id === value) ? value : "todas";
 }
+
+/** Mesmo recorte de `AtelieKey`, para o ateliê de tarefas. */
+export type TaskAtelieKey = "todas" | "compartilhadas" | "privadas" | "sem-pasta" | string;
+
+export const TASK_ATELIE_LIBRARY_KEYS = ATELIE_LIBRARY_KEYS;
+
+/** `?tpasta=` da URL — mesma regra de `folderKeyFromParam`, para tarefas. */
+export function taskFolderKeyFromParam(
+  value: string | undefined,
+  folders: { id: string }[],
+): TaskAtelieKey {
+  if (!value) return "todas";
+  if ((TASK_ATELIE_LIBRARY_KEYS as readonly string[]).includes(value)) return value;
+  return folders.some((folder) => folder.id === value) ? value : "todas";
+}

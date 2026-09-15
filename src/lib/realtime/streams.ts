@@ -32,8 +32,13 @@ export const LIVE_TABLES = {
   tarefas: ["assignments", "assignment_submissions"],
   /** Turma criada/editada e matrícula entrando ou saindo. */
   turmas: ["groups", "enrollments"],
-  /** Planejador: planos, pastas e modelos de tarefa. */
-  planejador: ["lesson_plans", "lesson_plan_folders", "assignment_templates"],
+  /** Planejador: planos, pastas e modelos de tarefa (com as pastas deles). */
+  planejador: [
+    "lesson_plans",
+    "lesson_plan_folders",
+    "assignment_templates",
+    "assignment_template_folders",
+  ],
   /** Cadastro de gente: perfil, matrícula e convite pendente. */
   pessoas: ["profiles", "enrollments", "user_invites"],
   /** Catálogo de planos e a assinatura de cada aluno. */
