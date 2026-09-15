@@ -52,11 +52,11 @@ interface UserMenuProps {
   compact?: boolean;
   className?: string;
   /**
-   * Avisa quem chama quando o menu abre/fecha. O rail hover-expand escuta
-   * isto para reconferir seu próprio estado ao fechar — o painel deste menu
-   * vai para um portal fora do DOM do rail, então abrir um dos modais pode
-   * fechar o menu sem que o rail veja o ponteiro ou o foco saírem de
-   * verdade, e ele fica "travado" expandido.
+   * Avisa quem chama quando o menu OU um dos modais (Meu Perfil, Segurança)
+   * abre/fecha. O rail hover-expand escuta isto para reconferir seu próprio
+   * estado ao fechar — tudo isto vai para um portal fora do DOM do rail,
+   * então abrir/fechar um deles pode acontecer sem que o rail veja o
+   * ponteiro ou o foco saírem de verdade, e ele fica "travado" expandido.
    */
   onOpenChange?: (open: boolean) => void;
 }
@@ -97,9 +97,14 @@ export function UserMenu({
     if (open) place();
   }, [open, place]);
 
+  // O rail hover-expand reconfere seu próprio hover/foco sempre que este menu
+  // ou um dos modais que ele abre (Meu Perfil, Segurança) fecha — não só o
+  // dropdown em si, senão fechar um modal (ex.: clicando fora dele) deixava o
+  // rail travado expandido, já que nada mais avisava essa transição.
+  const anyOpen = open || securityOpen || profileOpen;
   useEffect(() => {
-    onOpenChange?.(open);
-  }, [open, onOpenChange]);
+    onOpenChange?.(anyOpen);
+  }, [anyOpen, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;
