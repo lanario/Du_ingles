@@ -16,8 +16,13 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 
 /** Abaixo disto o gesto ainda é um clique — arrastar só começa depois. */
 export const MOVE_THRESHOLD = 4;
-/** Folga que o objeto pode sair da coluna de texto, para cada lado. */
-export const FREE_PLAY_X = 200;
+/**
+ * Folga além do papel, para cada lado. Zero de propósito: o papel é uma caixa
+ * de rolagem com o cartão cortando o que passa dele — qualquer folga aqui
+ * vira barra de rolagem horizontal na folha e sumiço do objeto atrás da borda.
+ */
+export const FREE_PLAY = 0;
+/** Teto do arrasto quando não dá para medir o papel. */
 export const LIMIT_Y = 1400;
 
 export function clamp(value: number, min: number, max: number) {
@@ -105,12 +110,48 @@ export function useFreeMove({
 
       const baseX = offsetX;
       const baseY = offsetY;
-      const columnWidth = target.parentElement?.getBoundingClientRect().width ?? 900;
-      const ownWidth = target.getBoundingClientRect().width;
-      // O objeto passeia pelo espaço que sobra da coluna, mais uma folga para
-      // cada lado — o bastante para escapar do texto sem sumir atrás da borda
-      // da folha, que corta o que passa dela.
-      const limitX = Math.max((columnWidth - ownWidth) / 2, 0) + FREE_PLAY_X;
+
+      // De onde o objeto sai, em coordenadas de tela: o retângulo de agora
+      // menos o deslocamento que já está aplicado nele.
+      const rect = target.getBoundingClientRect();
+      const restLeft = rect.left - baseX;
+      const restTop = rect.top - baseY;
+
+      /*
+       * O passeio é pelo papel inteiro — a folha branca —, e não pelo espaço
+       * que sobra da coluna de texto em torno da âncora. Medido pela coluna, o
+       * limite era simétrico em volta do ponto onde o objeto nasceu: ancorado à
+       * esquerda, ele nunca alcançava a metade direita da página, e era isso o
+       * que fazia a caixa de texto parecer presa a certas regiões do branco.
+       * O papel rola, então os limites saem do conteúdo rolável dele, e não só
+       * do pedaço à vista.
+       */
+      const paper = target.closest(".lesson-paper") as HTMLElement | null;
+      const bounds = paper ?? target.parentElement;
+      let minX = -LIMIT_Y;
+      let maxX = LIMIT_Y;
+      let minY = -LIMIT_Y;
+      let maxY = LIMIT_Y;
+
+      if (bounds) {
+        const box = bounds.getBoundingClientRect();
+        const contentLeft = box.left - bounds.scrollLeft;
+        const contentTop = box.top - bounds.scrollTop;
+        const contentRight = contentLeft + Math.max(bounds.scrollWidth, box.width);
+        const contentBottom = contentTop + Math.max(bounds.scrollHeight, box.height);
+
+        minX = contentLeft - FREE_PLAY - restLeft;
+        maxX = contentRight + FREE_PLAY - rect.width - restLeft;
+        minY = contentTop - FREE_PLAY - restTop;
+        maxY = contentBottom + FREE_PLAY - rect.height - restTop;
+
+        // O lugar de origem sempre cabe: num papel mais estreito que o objeto
+        // os limites se cruzariam e o arrasto travaria fora do lugar.
+        minX = Math.min(minX, baseX, 0);
+        maxX = Math.max(maxX, baseX, 0);
+        minY = Math.min(minY, baseY, 0);
+        maxY = Math.max(maxY, baseY, 0);
+      }
 
       let next = { x: baseX, y: baseY };
       let started = false;
@@ -136,8 +177,8 @@ export function useFreeMove({
 
         moveEvent.preventDefault();
         next = {
-          x: Math.round(clamp(baseX + dx, -limitX, limitX)),
-          y: Math.round(clamp(baseY + dy, -LIMIT_Y, LIMIT_Y)),
+          x: Math.round(clamp(baseX + dx, minX, maxX)),
+          y: Math.round(clamp(baseY + dy, minY, maxY)),
         };
         if (frame) return;
         frame = window.requestAnimationFrame(() => {
