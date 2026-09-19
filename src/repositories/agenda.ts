@@ -63,6 +63,9 @@ export interface AgendaItem {
   description: string | null;
   canEdit: boolean;
   canDelete: boolean;
+  /** Só em aula: alternar pendente ↔ concluída. Vale em qualquer status
+   * (menos cancelada), ao contrário de `canEdit`, que exige aula agendada. */
+  canChangeStatus: boolean;
 }
 
 export interface AgendaData {
@@ -268,17 +271,23 @@ async function listEvents(
   // quem dá aula.
   const forbidden: AgendaAudience = role === "student" ? "staff" : "students";
 
-  const [schoolWide, mine] = await Promise.all([
+  // O professor também enxerga o que ele mesmo criou (`owner_id`), mesmo que
+  // a turma já não seja mais dele — a RLS (`agenda_events_select_teacher`)
+  // já permite essa leitura; sem este terceiro braço, o compromisso some da
+  // agenda de quem criou assim que a turma muda de responsável.
+  const [schoolWide, mine, owned] = await Promise.all([
     base().is("group_id", null).neq("audience", forbidden),
     groupIds.length > 0
       ? base().in("group_id", groupIds).neq("audience", forbidden)
       : Promise.resolve({ data: [] }),
+    role === "teacher" ? base().eq("owner_id", ctx.userId) : Promise.resolve({ data: [] }),
   ]);
 
   const merged = new Map<string, EventRow>();
   for (const row of [
     ...((schoolWide.data ?? []) as unknown as EventRow[]),
     ...((mine.data ?? []) as unknown as EventRow[]),
+    ...((owned.data ?? []) as unknown as EventRow[]),
   ]) {
     merged.set(row.id, row);
   }
@@ -356,6 +365,7 @@ function buildPreviews(
         description: null,
         canEdit: false,
         canDelete: false,
+        canChangeStatus: false,
       }));
     });
 }
@@ -370,14 +380,20 @@ function sessionRights(
   ctx: SessionContext,
   row: SessionRow,
   groupIds: Set<string>,
-): { canEdit: boolean; canDelete: boolean } {
+): { canEdit: boolean; canDelete: boolean; canChangeStatus: boolean } {
   const role = ctx.effectiveRole;
-  if (role === "student") return { canEdit: false, canDelete: false };
+  if (role === "student") {
+    return { canEdit: false, canDelete: false, canChangeStatus: false };
+  }
 
   const owns =
     role === "admin" || row.teacher_id === ctx.userId || groupIds.has(row.group_id);
   const open = row.status === "scheduled";
-  return { canEdit: owns && open, canDelete: owns && open };
+  return {
+    canEdit: owns && open,
+    canDelete: owns && open,
+    canChangeStatus: owns && row.status !== "cancelled",
+  };
 }
 
 /** Compromisso: admin em tudo; professor só no que é da própria turma. */
@@ -385,13 +401,13 @@ function eventRights(
   ctx: SessionContext,
   row: EventRow,
   groupIds: Set<string>,
-): { canEdit: boolean; canDelete: boolean } {
+): { canEdit: boolean; canDelete: boolean; canChangeStatus: boolean } {
   const role = ctx.effectiveRole;
-  if (role === "admin") return { canEdit: true, canDelete: true };
-  if (role !== "teacher") return { canEdit: false, canDelete: false };
+  if (role === "admin") return { canEdit: true, canDelete: true, canChangeStatus: false };
+  if (role !== "teacher") return { canEdit: false, canDelete: false, canChangeStatus: false };
 
   const mine = row.group_id !== null && groupIds.has(row.group_id);
-  return { canEdit: mine, canDelete: mine };
+  return { canEdit: mine, canDelete: mine, canChangeStatus: false };
 }
 
 export async function getAgenda(
@@ -493,6 +509,97 @@ export async function getAgendaEventOwner(id: string): Promise<AgendaEventOwner 
     groupId: data.group_id,
     organizationId: data.organization_id,
   };
+}
+
+/**
+ * Alterna a aula entre pendente (`scheduled`) e concluída (`completed`) pela
+ * agenda. Voltar a pendente zera início/fim e despublica o registro, para a
+ * sala tratar a aula como nova; o conteúdo já escrito é preservado. Aula
+ * cancelada fica de fora — não há o que concluir nem reabrir.
+ */
+export async function setSessionDone(
+  id: string,
+  organizationId: string,
+  done: boolean,
+): Promise<boolean> {
+  const admin = createAdminSupabaseClient();
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("class_sessions")
+    .update(
+      done
+        ? { status: "completed" as const, ended_at: now, is_published: true, updated_at: now }
+        : {
+            status: "scheduled" as const,
+            started_at: null,
+            ended_at: null,
+            is_published: false,
+            updated_at: now,
+          },
+    )
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .neq("status", "cancelled")
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
+}
+
+export interface SessionHistoryEntry {
+  id: number;
+  /** Código gravado na auditoria (`SESSION_START`, `SESSION_STATUS_SET`…). */
+  action: string;
+  at: string;
+  actorName: string | null;
+  actorRole: AppRole | null;
+  metadata: Record<string, unknown>;
+}
+
+const SESSION_HISTORY_ACTIONS = [
+  "SESSION_START",
+  "SESSION_END",
+  "SESSION_STATUS_SET",
+  "SESSION_RESCHEDULE",
+  "SESSION_CANCEL",
+];
+
+/** Histórico da aula, do mais recente ao mais antigo, lido da auditoria. */
+export async function listSessionHistory(
+  sessionId: string,
+  organizationId: string,
+): Promise<SessionHistoryEntry[]> {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin
+    .from("audit_logs")
+    .select("id, action, created_at, actor_id, actor_role, metadata")
+    .eq("organization_id", organizationId)
+    .eq("entity_type", "class_session")
+    .eq("entity_id", sessionId)
+    .in("action", SESSION_HISTORY_ACTIONS)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error || !data) return [];
+
+  const actorIds = [...new Set(data.map((row) => row.actor_id).filter(Boolean))] as string[];
+  const names = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: profiles } = await admin
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", actorIds);
+    for (const profile of profiles ?? []) names.set(profile.id, profile.full_name);
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    action: row.action,
+    at: row.created_at,
+    actorName: row.actor_id ? (names.get(row.actor_id) ?? null) : null,
+    actorRole: row.actor_role,
+    metadata:
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : {},
+  }));
 }
 
 export async function createAgendaEvent(input: {

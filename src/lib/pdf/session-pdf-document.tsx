@@ -1,25 +1,27 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { JSONContent } from "@tiptap/react";
-import { renderNode, collectVocabulary } from "@/lib/pdf/tiptap-nodes";
+import { renderNode } from "@/lib/pdf/tiptap-nodes";
+import { PDF_FONT } from "@/lib/pdf/fonts";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: "Helvetica" },
+  page: { padding: 40, paddingBottom: 56, fontFamily: PDF_FONT, color: "#0b1a33" },
   header: {
     marginBottom: 20,
     paddingBottom: 12,
-    borderBottom: "1pt solid #e2e8f0",
+    borderBottom: "1pt solid #e3e9f3",
   },
-  schoolName: { fontSize: 10, color: "#64748b", marginBottom: 4 },
-  title: { fontSize: 18, fontWeight: 700, marginBottom: 4 },
+  schoolName: { fontSize: 9, color: "#a8842a", marginBottom: 4, fontWeight: 700 },
+  title: { fontSize: 20, fontWeight: 700, marginBottom: 4, color: "#0a1f44" },
   meta: { fontSize: 10, color: "#64748b" },
-  section: { marginTop: 16 },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    marginBottom: 6,
-    color: "#334155",
+  section: {
+    marginTop: 20,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#fdf8ec",
+    border: "0.75pt solid #e7cd8c",
   },
-  vocabItem: { fontSize: 10, marginBottom: 2 },
+  sectionTitle: { fontSize: 11, fontWeight: 700, marginBottom: 6, color: "#0f2c5c" },
+  body: { fontSize: 10.5, lineHeight: 1.5 },
   footer: {
     position: "absolute",
     bottom: 20,
@@ -41,8 +43,12 @@ interface SessionPdfDocumentProps {
 }
 
 /**
- * NUNCA recebe teacher_notes — o Route Handler que monta isto já busca a
- * sessão sem essa coluna (RLS/coluna revogada, §5.3, §8.4).
+ * NUNCA recebe teacher_notes — quem monta isto já busca a sessão sem essa
+ * coluna (RLS/coluna revogada, §5.3, §8.4).
+ *
+ * O corpo é a folha da aula desenhada como na tela (`renderNode`). O antigo
+ * bloco "Vocabulário" saiu: ele repetia como lista as palavras realçadas, que
+ * já aparecem realçadas no texto — coisa que a folha do planejador não tem.
  */
 export function SessionPdfDocument({
   schoolName,
@@ -52,41 +58,31 @@ export function SessionPdfDocument({
   content,
   homework,
 }: SessionPdfDocumentProps) {
-  const vocabulary = collectVocabulary(content);
   const dateLabel = new Date(scheduledAt).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
+    timeZone: "America/Sao_Paulo",
   });
 
   return (
-    <Document>
+    <Document title={sessionTitle} author={schoolName}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.schoolName}>{schoolName}</Text>
           <Text style={styles.title}>{sessionTitle}</Text>
           <Text style={styles.meta}>
-            {groupName} · {dateLabel}
+            {groupName ? `${groupName} · ` : ""}
+            {dateLabel}
           </Text>
         </View>
 
-        <View>{renderNode(content, "root")}</View>
-
-        {vocabulary.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vocabulário</Text>
-            {vocabulary.map((word, i) => (
-              <Text key={i} style={styles.vocabItem}>
-                • {word}
-              </Text>
-            ))}
-          </View>
-        )}
+        {renderNode(content, "root")}
 
         {homework && (
-          <View style={styles.section}>
+          <View style={styles.section} wrap={false}>
             <Text style={styles.sectionTitle}>Tarefa de casa</Text>
-            <Text style={styles.vocabItem}>{homework}</Text>
+            <Text style={styles.body}>{homework}</Text>
           </View>
         )}
 

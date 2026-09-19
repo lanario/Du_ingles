@@ -30,8 +30,15 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
   }
 
+  /**
+   * 240s: o mesmo teto que `getAvatarSignedUrl` usa para reaproveitar a URL
+   * assinada em memória (300s de validade no Storage, menos 30s de margem —
+   * ver `avatars.ts`). O path é próprio de cada foto enviada (UUID novo a
+   * cada troca), então cachear por mais tempo no navegador não arrisca
+   * mostrar uma foto desatualizada depois que a pessoa troca de retrato.
+   */
   return NextResponse.redirect(signedUrl, {
     status: 307,
-    headers: { "Cache-Control": "private, max-age=60" },
+    headers: { "Cache-Control": "private, max-age=240" },
   });
 }

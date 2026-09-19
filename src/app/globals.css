@@ -599,6 +599,173 @@ input:autofill {
   }
 }
 
+/* Sino de notificações (`notification-bell.tsx`). Três efeitos puramente
+   decorativos que antes eram GSAP: o sino mora em todo layout autenticado, e
+   uma lib de animação inteira não deveria entrar no bundle de toda página só
+   por causa de um balanço de ícone. */
+
+/* Respiração contínua do halo enquanto houver não lidas. Ciclo de 6.6s com
+   1.6s de animação e o resto em repouso (opacidade 0) — replica o
+   `repeat: -1, repeatDelay: 5` do tween original sem precisar de JS rodando
+   o dia inteiro. */
+@keyframes bell-breathe {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.35;
+  }
+  24% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.animate-bell-breathe {
+  animation: bell-breathe 6.6s ease-out infinite;
+}
+
+/* Eco de chegada — um só ciclo, disparado por `ring()` ao chegar algo novo. */
+@keyframes bell-flash {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.animate-bell-flash {
+  animation: bell-flash 0.85s ease-out forwards;
+}
+
+/* Balanço do ícone do sino — mesma sequência de rotação do timeline GSAP
+   original, com os tempos de cada etapa convertidos em percentuais dos
+   0.51s totais. */
+@keyframes bell-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  17% {
+    transform: rotate(-16deg);
+  }
+  39% {
+    transform: rotate(12deg);
+  }
+  59% {
+    transform: rotate(-8deg);
+  }
+  76% {
+    transform: rotate(5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-bell-ring {
+  transform-origin: 50% 15%;
+  animation: bell-ring 0.51s ease-out forwards;
+}
+
+/* Revelação em cascata dos rótulos do rail hover-expand
+   (`app-sidebar.tsx`, `admin/sidebar.tsx`) — antes GSAP com `stagger`, hoje
+   uma transição por elemento com atraso lido de `--nav-i` (ver `navStyle`
+   nesses componentes). Fechar é mais rápido que abrir e sem escalonamento —
+   mesma assimetria do tween original: quando o rail encolhe, o texto já
+   truncado não pode esperar a fileira inteira sumir em cascata. */
+[data-sidebar-panel] [data-nav-label] {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 120ms ease-in,
+    transform 120ms ease-in;
+}
+
+[data-sidebar-panel][data-expanded="true"] [data-nav-label] {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--nav-i, 0) * 18ms);
+}
+
+/* Chat (`messaging/*`) — três efeitos que eram GSAP ao lado de Framer Motion
+   na mesma tela; duas libs de animação fazendo o mesmo tipo de trabalho é
+   peso duplicado, e nenhum dos três precisa de mais que CSS. */
+
+/* Revelação em cascata das linhas da lista de conversas — toca sozinha
+   quando a linha entra no DOM (mount ou volta a aparecer depois de um
+   filtro), nunca em uma linha só reordenada ou atualizada. `--i` (index da
+   linha) vem de `chat-list.tsx`. */
+@keyframes chat-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-chat-row] {
+  animation: chat-row-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+/* Botão "ir para o fim" da conversa — sempre montado (`chat-thread.tsx`),
+   só troca de `data-visible` para não pagar layout a cada rolagem. A
+   `visibility` atrasada mantém o botão fora do foco/clique enquanto
+   invisível, sem impedir a transição de opacidade. */
+[data-chat-jump] {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out,
+    visibility 0s linear 240ms;
+}
+
+[data-chat-jump][data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out,
+    visibility 0s linear 0s;
+}
+
+/* Bounce do botão de enviar (`chat-composer.tsx`) ao confirmar o envio. */
+@keyframes chat-send-bounce {
+  0% {
+    transform: scale(0.86);
+  }
+  55% {
+    transform: scale(1.08);
+  }
+  75% {
+    transform: scale(0.97);
+  }
+  90% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-chat-send-bounce {
+  animation: chat-send-bounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

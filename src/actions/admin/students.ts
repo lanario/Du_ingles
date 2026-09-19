@@ -113,6 +113,7 @@ export async function moveStudentToGroupAction(
     kind: "transferred",
     toGroupId,
     fromGroupId: current?.groupId ?? null,
+    strandedAssignments: result.strandedAssignments,
   });
 
   revalidatePath("/admin/alunos");

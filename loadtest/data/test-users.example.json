@@ -1,0 +1,9 @@
+{
+  "_comment": "Copie este arquivo para test-users.json e preencha com contas de teste REAIS já cadastradas no Supabase de produção (nunca contas de alunos/professores/admins de verdade). Esse arquivo entra no .gitignore de propósito — nunca commite credenciais reais.",
+  "students": [
+    { "email": "aluno.teste1@duingles.test", "password": "SUBSTITUA" },
+    { "email": "aluno.teste2@duingles.test", "password": "SUBSTITUA" }
+  ],
+  "teachers": [{ "email": "professor.teste1@duingles.test", "password": "SUBSTITUA" }],
+  "admins": [{ "email": "admin.teste1@duingles.test", "password": "SUBSTITUA" }]
+}

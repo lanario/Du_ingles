@@ -40,7 +40,6 @@ export function Hero() {
               a maquete, e respondem as três objeções imediatas. */}
           <ul className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground sm:mt-6 sm:text-[13px]">
             {[
-              "Sem cartão de crédito",
               "Aula ao vivo de verdade",
               "Professor certificado",
             ].map((item) => (

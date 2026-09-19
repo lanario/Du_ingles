@@ -1,9 +1,30 @@
 import * as usersRepo from "@/repositories/users";
+import { listGroupsByTeacher } from "@/repositories/groups";
 import type { AppRole } from "@/types/domain";
 import type { UpdateUserInput } from "@/schemas/users";
 
 export type ServiceResult<T> =
   { success: true; data: T } | { success: false; message: string };
+
+/**
+ * Turmas ativas que ficariam órfãs se este professor saísse agora — a
+ * desativação segue em frente sem checar nada, `groups.teacher_id` continua
+ * apontando pra uma conta inativa e ninguém é avisado. Reatribuir antes é o
+ * que fecha essa porta.
+ */
+async function blockedByActiveGroups(id: string): Promise<ServiceResult<void> | null> {
+  const target = await usersRepo.getUserRoleAndOrg(id);
+  if (!target || target.role !== "teacher") return null;
+
+  const activeGroups = (await listGroupsByTeacher(id)).filter((g) => g.isActive);
+  if (activeGroups.length === 0) return null;
+
+  const names = activeGroups.map((g) => g.name).join(", ");
+  return {
+    success: false,
+    message: `Reatribua a turma antes: este professor ainda responde por ${activeGroups.length === 1 ? "a turma" : "as turmas"} ${names}.`,
+  };
+}
 
 export async function updateUser(
   id: string,
@@ -22,6 +43,9 @@ export function assertNotSelf(actorId: string, targetId: string): void {
 }
 
 export async function deactivateUser(id: string): Promise<ServiceResult<void>> {
+  const blocked = await blockedByActiveGroups(id);
+  if (blocked) return blocked;
+
   const ok = await usersRepo.setUserActive(id, false);
   if (!ok) return { success: false, message: "Falha ao desativar o usuário." };
   await usersRepo.revokeUserSessions(id);
@@ -35,6 +59,9 @@ export async function reactivateUser(id: string): Promise<ServiceResult<void>> {
 }
 
 export async function softDeleteUser(id: string): Promise<ServiceResult<void>> {
+  const blocked = await blockedByActiveGroups(id);
+  if (blocked) return blocked;
+
   const ok = await usersRepo.softDeleteUser(id);
   if (!ok) return { success: false, message: "Falha ao excluir o usuário." };
   await usersRepo.revokeUserSessions(id);

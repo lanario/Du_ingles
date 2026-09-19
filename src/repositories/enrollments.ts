@@ -110,6 +110,36 @@ export interface EnrollResult {
   transferred?: boolean;
   /** Turma de origem numa transferência — o aviso ao professor cita as duas. */
   fromGroupId?: string;
+  /**
+   * Quantas tarefas da turma de origem ficam com entrega pendente/enviada e
+   * sem nota depois da transferência. `assignments_select_student` só alcança
+   * a turma da matrícula ativa, então esse trabalho vira inacessível pro
+   * aluno — quem chama usa a contagem pra avisar em vez de deixar sumir em
+   * silêncio.
+   */
+  strandedAssignments?: number;
+}
+
+/**
+ * Entregas não corrigidas de tarefas da turma `groupId` que o aluno perderia
+ * de vista ao sair dela — é o que `transferStudent` conta antes de mover a
+ * matrícula, pra quem chama poder avisar em vez de deixar sumir sem aviso.
+ */
+async function countStrandedAssignments(
+  groupId: string,
+  studentId: string,
+): Promise<number> {
+  const admin = createAdminSupabaseClient();
+  const { count } = await admin
+    .from("assignment_submissions")
+    .select("assignment_id, assignment:assignment_id!inner(group_id)", {
+      count: "exact",
+      head: true,
+    })
+    .eq("student_id", studentId)
+    .eq("assignment.group_id", groupId)
+    .is("score", null);
+  return count ?? 0;
 }
 
 /**
@@ -139,7 +169,12 @@ export async function enrollStudent(
 
     const moved = await transferStudent(current.enrollmentId, groupId);
     return moved.success
-      ? { success: true, transferred: true, fromGroupId: current.groupId }
+      ? {
+          success: true,
+          transferred: true,
+          fromGroupId: current.groupId,
+          strandedAssignments: moved.strandedAssignments,
+        }
       : { success: false, message: moved.message };
   }
 
@@ -306,7 +341,12 @@ export async function listGroupClassmates(
 export async function transferStudent(
   enrollmentId: string,
   toGroupId: string,
-): Promise<{ success: boolean; message?: string; studentId?: string }> {
+): Promise<{
+  success: boolean;
+  message?: string;
+  studentId?: string;
+  strandedAssignments?: number;
+}> {
   const admin = createAdminSupabaseClient();
 
   const { data: enrollment } = await admin
@@ -361,9 +401,33 @@ export async function transferStudent(
       .from("enrollments")
       .update({ status: "active", enrolled_at: new Date().toISOString() })
       .eq("id", previous[0].id);
-    if (activateError) return { success: false, message: "Falha ao transferir." };
+    if (activateError) {
+      // O índice único (uma matrícula ativa por aluno) obriga a cancelar antes
+      // de reativar, então as duas escritas não cabem numa só. Sem devolver a
+      // original, o aluno ficaria sem turma nenhuma (e sem chat, tarefas e
+      // agenda) por causa de um erro que o admin só vê como "falha".
+      const { error: restoreError } = await admin
+        .from("enrollments")
+        .update({ status: "active" })
+        .eq("id", enrollmentId);
+      if (restoreError) {
+        console.error(
+          "[enrollments] transferência falhou e a matrícula original não voltou:",
+          enrollmentId,
+          restoreError.message,
+        );
+      }
+      return { success: false, message: "Falha ao transferir." };
+    }
 
-    return { success: true, studentId: enrollment.student_id };
+    return {
+      success: true,
+      studentId: enrollment.student_id,
+      strandedAssignments: await countStrandedAssignments(
+        enrollment.group_id,
+        enrollment.student_id,
+      ),
+    };
   }
 
   const { error } = await admin
@@ -381,7 +445,14 @@ export async function transferStudent(
     };
   }
 
-  return { success: true, studentId: enrollment.student_id };
+  return {
+    success: true,
+    studentId: enrollment.student_id,
+    strandedAssignments: await countStrandedAssignments(
+      enrollment.group_id,
+      enrollment.student_id,
+    ),
+  };
 }
 
 /**

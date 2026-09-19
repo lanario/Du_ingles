@@ -58,7 +58,7 @@ export async function deactivateUserAction(userId: string): Promise<ActionResult
   }
 
   const result = await usersService.deactivateUser(userId);
-  if (!result.success) return fail("INTERNAL_ERROR", result.message);
+  if (!result.success) return fail("CONFLICT", result.message);
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -103,7 +103,7 @@ export async function softDeleteUserAction(userId: string): Promise<ActionResult
   }
 
   const result = await usersService.softDeleteUser(userId);
-  if (!result.success) return fail("INTERNAL_ERROR", result.message);
+  if (!result.success) return fail("CONFLICT", result.message);
 
   await auditLog({
     organizationId: ctx.organizationId,

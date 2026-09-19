@@ -17,7 +17,6 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import gsap from "gsap";
 import { AnimatePresence, motion } from "framer-motion";
 import { LockIcon, SendIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -68,12 +67,13 @@ export function ChatComposer({
     // manter o texto no campo faria parecer que o envio falhou.
     setValue("");
 
-    if (buttonRef.current) {
-      gsap.fromTo(
-        buttonRef.current,
-        { scale: 0.86 },
-        { scale: 1, duration: 0.45, ease: "elastic.out(1, 0.5)" },
-      );
+    // `@keyframes chat-send-bounce` em `globals.css` — remover e recolocar a
+    // classe força um reflow, o que reinicia a animação em envios seguidos.
+    const button = buttonRef.current;
+    if (button) {
+      button.classList.remove("animate-chat-send-bounce");
+      void button.getBoundingClientRect();
+      button.classList.add("animate-chat-send-bounce");
     }
 
     const result = await onSend(body);

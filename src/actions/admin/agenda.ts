@@ -323,6 +323,51 @@ export async function moveSessionAction(
   return ok(undefined as never);
 }
 
+/** Histórico de ações da aula (quem iniciou, concluiu, reabriu, remarcou). */
+export async function getSessionHistoryAction(
+  sessionId: string,
+): Promise<agenda.SessionHistoryEntry[]> {
+  const ctx = await requireStaff();
+  const session = await loadWritableSession(ctx, sessionId);
+  if (!session) return [];
+  return agenda.listSessionHistory(sessionId, ctx.organizationId);
+}
+
+/**
+ * Marca a aula como concluída ou volta para pendente. Vale para a aula em
+ * qualquer estado (menos cancelada) — é o ajuste manual de quem esqueceu de
+ * encerrar a sala, ou encerrou sem querer.
+ */
+export async function setSessionStatusAction(
+  sessionId: string,
+  done: boolean,
+): Promise<ActionResult<never>> {
+  const ctx = await requireStaff();
+
+  const session = await loadWritableSession(ctx, sessionId);
+  if (!session) return fail("NOT_FOUND", "Aula não encontrada.");
+  if (session.status === "cancelled")
+    return fail("CONFLICT", "Aula cancelada não muda de status.");
+
+  const success = await agenda.setSessionDone(sessionId, ctx.organizationId, done);
+  if (!success) return fail("INTERNAL_ERROR", "Falha ao atualizar o status da aula.");
+
+  await auditLog({
+    organizationId: ctx.organizationId,
+    actorId: ctx.userId,
+    actorRole: ctx.realRole,
+    action: "SESSION_STATUS_SET",
+    entityType: "class_session",
+    entityId: sessionId,
+    metadata: { from: session.status, to: done ? "completed" : "scheduled", source: "agenda" },
+  });
+
+  revalidateAgenda();
+  revalidateStaffPath("/planejador");
+  revalidateStaffPath(`/turmas/${session.groupId}`);
+  return ok(undefined as never);
+}
+
 /**
  * Cancelar pela agenda apaga a linha (é o que `cancelPlannerSession` faz) —
  * o horário some do calendário de todo mundo e a grade pode reagendá-lo.

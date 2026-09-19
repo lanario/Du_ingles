@@ -17,7 +17,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   deleteChatMessageAction,
@@ -71,7 +70,6 @@ export function ChatThread({
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const jumpRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
 
   // Nomes já conhecidos: participantes + o próprio usuário. O realtime só
@@ -245,21 +243,12 @@ export function ChatThread({
     if (nowAtBottom && missed > 0) setMissed(0);
   }
 
-  // O botão "ir para o fim" é escondido/mostrado pelo GSAP, não por
-  // montar/desmontar: remontá-lo a cada mudança seria trabalho de layout à
-  // toa, e ele precisa poder aparecer no meio de uma rolagem.
-  useEffect(() => {
-    const jump = jumpRef.current;
-    if (!jump) return;
-    const visible = missed > 0 || !atBottom;
-    gsap.to(jump, {
-      autoAlpha: visible ? 1 : 0,
-      y: visible ? 0 : 8,
-      duration: reduceMotion ? 0 : 0.24,
-      ease: "power2.out",
-      overwrite: true,
-    });
-  }, [missed, atBottom, reduceMotion]);
+  // O botão "ir para o fim" é escondido/mostrado por CSS (`data-visible` +
+  // transição em `globals.css`), não por montar/desmontar: remontá-lo a cada
+  // mudança seria trabalho de layout à toa, e ele precisa poder aparecer no
+  // meio de uma rolagem. `jumpVisible` é derivado direto do render — não
+  // precisa de efeito nem de ref imperativa para isto.
+  const jumpVisible = missed > 0 || !atBottom;
 
   /* ---------------------------------------------------------------- envio */
 
@@ -341,8 +330,8 @@ export function ChatThread({
         </div>
 
         <div
-          ref={jumpRef}
-          style={{ opacity: 0, visibility: "hidden" }}
+          data-chat-jump
+          data-visible={jumpVisible}
           className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center"
         >
           <button

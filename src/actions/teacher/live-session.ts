@@ -145,6 +145,11 @@ export async function recordAttendanceAction(
 
   const session = await loadOwnSession(sessionId, ctx.userId);
   if (!session) return fail("NOT_FOUND", "Sessão não encontrada.");
+  // Presença em aula ainda `scheduled` deixaria a sessão elegível à limpeza
+  // de grade (`dropStaleScheduleSessions`), que não olha `attendance`. A tela
+  // já esconde o painel nesse estado; aqui a Server Action fecha a porta.
+  if (session.status !== "in_progress" && session.status !== "completed")
+    return fail("CONFLICT", "A chamada só pode ser lançada com a aula iniciada.");
 
   let entries: unknown;
   try {

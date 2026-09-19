@@ -172,6 +172,7 @@ export function LessonStudio({
       >
         <div className="flex flex-wrap items-center gap-3">
           <BackLink
+            preferFallback
             fallbackHref={`${base}/planejador` as Route}
             className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             aria-label="Voltar ao planejador"

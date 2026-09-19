@@ -21,6 +21,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  // Fontes do PDF são lidas com `fs` em tempo de execução — o tracer do Next
+  // não as enxerga sozinho e elas ficariam de fora do bundle serverless.
+  outputFileTracingIncludes: {
+    "/**": ["./src/lib/pdf/fonts/**/*"],
+  },
   experimental: {
     /**
      * Rede de segurança para o autosave de uma aula cujo upload de imagem

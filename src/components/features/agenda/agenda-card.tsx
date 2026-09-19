@@ -47,6 +47,10 @@ export function toneOf(item: AgendaItem, tones: ToneMap): string {
   if (item.kind === "event") {
     return EVENT_TONES[item.eventKind ?? "meeting"];
   }
+  // A aula é colorida pelo status (pendente amarelo, concluída verde).
+  if (item.kind === "session" && item.status) {
+    return SESSION_STATUS_TONE[item.status];
+  }
   // Aula de turma que sumiu do filtro lateral ainda precisa de uma cor.
   return (item.groupId ? tones.get(item.groupId) : undefined) ?? "var(--navy-600)";
 }

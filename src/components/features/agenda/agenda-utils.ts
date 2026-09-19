@@ -70,17 +70,19 @@ export const AUDIENCE_LABEL: Record<AgendaAudience, string> = {
   students: "Alunos",
 };
 
+/** Na agenda a aula é pendente ou concluída — "em andamento" ainda é pendente. */
 export const SESSION_STATUS_LABEL: Record<SessionStatus, string> = {
-  scheduled: "Agendada",
-  in_progress: "Em andamento",
+  scheduled: "Pendente",
+  in_progress: "Pendente",
   completed: "Concluída",
   cancelled: "Cancelada",
 };
 
+/** Pendente em amarelo, concluída em verde — é também a cor do cartão. */
 export const SESSION_STATUS_TONE: Record<SessionStatus, string> = {
-  scheduled: "var(--navy-500)",
-  in_progress: "var(--success)",
-  completed: "var(--gold-700)",
+  scheduled: "var(--gold-500)",
+  in_progress: "var(--gold-500)",
+  completed: "var(--success)",
   cancelled: "var(--muted-foreground)",
 };
 

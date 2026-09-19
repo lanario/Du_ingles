@@ -120,6 +120,7 @@ export async function enrollStudentAction(
     kind: result.transferred ? "transferred" : "enrolled",
     toGroupId: groupId,
     fromGroupId: result.fromGroupId ?? null,
+    strandedAssignments: result.strandedAssignments,
   });
 
   revalidateStaffPath(`/turmas/${groupId}`);

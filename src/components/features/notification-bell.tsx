@@ -12,7 +12,6 @@ import {
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
-import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   markAllNotificationsReadAction,
@@ -29,7 +28,6 @@ import {
   type NotificationFilter,
   type PanelAnchor,
 } from "@/components/features/notification-panel";
-import { isLiteMode } from "@/lib/perf";
 
 const PANEL_WIDTH = 368;
 const FLASH_WIDTH = 300;
@@ -42,6 +40,7 @@ const MAX_ITEMS = 30;
  * espelham por este evento — sem ele, marcar como lida numa não mexeria na
  * outra até o próximo carregamento. */
 const SYNC_EVENT = "du:notifications-sync";
+const SEEN_EVENT = "du:notifications-seen";
 
 interface SyncDetail {
   origin: string;
@@ -151,13 +150,15 @@ export function NotificationBell({
   const [unread, setUnread] = useState(initialUnreadCount);
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const [flash, setFlash] = useState<NotificationItem | null>(null);
+  // Instante da última abertura do painel. O selo só conta o que chegou depois:
+  // notificação já vista mas ainda não lida não se anuncia de novo como novidade.
+  const [seenAt, setSeenAt] = useState(0);
   const [anchor, setAnchor] = useState<PanelAnchor>({ style: {}, origin: "top right" });
   const [markingAll, startMarkAll] = useTransition();
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<SVGSVGElement>(null);
-  const pulseRef = useRef<HTMLSpanElement>(null);
   const flashTimer = useRef<number | null>(null);
   // Espelho da lista para os handlers do Realtime: eles vivem fora do ciclo de
   // render e não podem ler `items` do closure sem reassinar o canal.
@@ -174,55 +175,74 @@ export function NotificationBell({
 
   useEffect(() => setMounted(true), []);
 
+  const seenKey = `notifications:seen:${userId}`;
+
+  useEffect(() => {
+    function read() {
+      try {
+        setSeenAt(Number(window.localStorage.getItem(seenKey)) || 0);
+      } catch {
+        /* storage indisponível: vale só o estado da sessão */
+      }
+    }
+    read();
+    function onStorage(event: StorageEvent) {
+      if (event.key === seenKey) read();
+    }
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(SEEN_EVENT, read);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(SEEN_EVENT, read);
+    };
+  }, [seenKey]);
+
+  const markSeen = useCallback(() => {
+    const now = Date.now();
+    setSeenAt(now);
+    try {
+      window.localStorage.setItem(seenKey, String(now));
+    } catch {
+      /* idem */
+    }
+    window.dispatchEvent(new Event(SEEN_EVENT));
+  }, [seenKey]);
+
+  const unseen = Math.min(
+    unread,
+    items.filter((item) => !item.readAt && new Date(item.createdAt).getTime() > seenAt)
+      .length,
+  );
+
+  // Com o painel aberto, o que chega já nasce visto.
+  useEffect(() => {
+    if (open) markSeen();
+  }, [open, items, markSeen]);
+
   /* ------------------------------------------------------------- animação */
 
-  /** Balança o sino e dispara a onda — chamado quando algo novo chega. */
+  /**
+   * Balança o sino e dispara a onda — chamado quando algo novo chega.
+   *
+   * `@keyframes` em `globals.css` (não GSAP): o sino vive em todo layout
+   * autenticado, e uma animação puramente decorativa não precisa pagar o
+   * bundle de uma lib de animação para isso. Remover e recolocar a classe —
+   * em vez de só adicioná-la — força um reflow que reinicia a animação
+   * quando duas notificações chegam em sequência rápida; sem o reflow o
+   * browser vê "mesma classe, já presente" e ignora o replay.
+   *
+   * `prefers-reduced-motion` e o modo leve (`data-perf="lite"`) já zeram
+   * `animation-duration` globalmente (ver bloco "Modo leve" em
+   * `globals.css`), então não há checagem equivalente a fazer aqui em JS.
+   */
   const ring = useCallback(() => {
-    if (reduceMotion) return;
     const bell = bellRef.current;
     if (bell) {
-      gsap
-        .timeline({ defaults: { ease: "power2.out", transformOrigin: "50% 15%" } })
-        .set(bell, { rotate: 0 })
-        .to(bell, { rotate: -16, duration: 0.09 })
-        .to(bell, { rotate: 12, duration: 0.11 })
-        .to(bell, { rotate: -8, duration: 0.1 })
-        .to(bell, { rotate: 5, duration: 0.09 })
-        .to(bell, { rotate: 0, duration: 0.12, ease: "power2.inOut" });
+      bell.classList.remove("animate-bell-ring");
+      void bell.getBoundingClientRect();
+      bell.classList.add("animate-bell-ring");
     }
-    if (pulseRef.current) {
-      gsap.fromTo(
-        pulseRef.current,
-        { scale: 0.55, opacity: 0.6 },
-        { scale: 2.4, opacity: 0, duration: 0.85, ease: "power2.out" },
-      );
-    }
-  }, [reduceMotion]);
-
-  // Respiração lenta do halo enquanto houver não lidas: chama atenção sem
-  // virar um piscar constante na periferia da visão.
-  useEffect(() => {
-    const pulse = pulseRef.current;
-    // O sino vive em todas as telas: um tween infinito aqui é o único
-    // laço que acompanha o usuário o dia inteiro, em qualquer página.
-    if (!pulse || reduceMotion || isLiteMode() || unread === 0) return;
-    const tween = gsap.fromTo(
-      pulse,
-      { scale: 0.7, opacity: 0.35 },
-      {
-        scale: 1.9,
-        opacity: 0,
-        duration: 1.6,
-        ease: "power2.out",
-        repeat: -1,
-        repeatDelay: 5,
-      },
-    );
-    return () => {
-      tween.kill();
-      gsap.set(pulse, { scale: 0.7, opacity: 0 });
-    };
-  }, [unread, reduceMotion]);
+  }, []);
 
   /* --------------------------------------------------------------- estado */
 
@@ -457,7 +477,7 @@ export function NotificationBell({
 
   const badge = (small: boolean) => (
     <AnimatePresence initial={false}>
-      {unread > 0 && (
+      {unseen > 0 && (
         <motion.span
           key="badge"
           initial={reduceMotion ? { opacity: 0 } : { scale: 0.3, opacity: 0 }}
@@ -477,30 +497,21 @@ export function NotificationBell({
           )}
         >
           <motion.span
-            key={unread}
+            key={unseen}
             initial={reduceMotion ? false : { y: -8, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 700, damping: 26 }}
           >
-            {unread > 99 ? "99+" : unread}
+            {unseen > 99 ? "99+" : unseen}
           </motion.span>
         </motion.span>
       )}
     </AnimatePresence>
   );
 
-  const pulse = (
-    <span
-      ref={pulseRef}
-      aria-hidden
-      style={{ opacity: 0 }}
-      className="pointer-events-none absolute inset-0 rounded-full bg-destructive/35"
-    />
-  );
-
   const ariaLabel =
-    unread > 0
-      ? `Notificações, ${unread} não lida${unread > 1 ? "s" : ""}`
+    unseen > 0
+      ? `Notificações, ${unseen} nova${unseen > 1 ? "s" : ""}`
       : "Notificações";
 
   let trigger: React.ReactNode;
@@ -540,7 +551,6 @@ export function NotificationBell({
         )}
       >
         <span className="relative grid h-[18px] w-[18px] flex-none place-items-center">
-          {pulse}
           <BellIcon
             ref={bellRef}
             className="relative h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110"
@@ -583,7 +593,6 @@ export function NotificationBell({
           open && openClass,
         )}
       >
-        {pulse}
         <BellIcon
           ref={bellRef}
           className="relative h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110"

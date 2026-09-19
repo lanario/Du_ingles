@@ -17,6 +17,32 @@ export const AVATAR_MAX_MB = AVATAR_MAX_BYTES / (1024 * 1024);
 
 const SIGNED_URL_TTL_SECONDS = 300;
 
+/**
+ * Cache da signed URL em memória do processo, por caminho.
+ *
+ * Sem isto, uma tela com N avatares (lista de turma, roster do chat) disparava
+ * N requests para `/api/avatars/...`, e cada um gerava uma signed URL NOVA no
+ * Storage — round-trip ao Supabase por foto, toda vez que a lista carrega.
+ * Path é conteúdo-endereçado (`uploadAvatar` gera um UUID novo a cada troca de
+ * foto — ver `avatars.ts`), então a mesma URL assinada serve qualquer request
+ * para o mesmo caminho até expirar; não há risco de servir foto desatualizada
+ * porque uma foto trocada tem caminho novo, nunca o mesmo caminho com
+ * conteúdo diferente.
+ *
+ * `SAFETY_MARGIN_SECONDS` deixa de reaproveitar a entrada um pouco antes do
+ * Storage invalidar a URL de verdade — sem a margem, um request que chegasse
+ * bem no limite serviria uma URL que expira no meio do download da imagem.
+ *
+ * Por processo (não compartilhado entre instâncias serverless): ajuda a
+ * instância já aquecida, que é o caso comum (Vercel mantém a mesma instância
+ * entre requests de uma sessão de navegação ativa); uma instância fria ainda
+ * paga o custo cheio na primeira vez. Ainda assim, numa lista de N avatares
+ * numa única instância, colapsa N chamadas ao Storage em no máximo 1 por
+ * caminho distinto.
+ */
+const SAFETY_MARGIN_SECONDS = 30;
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
 const EXTENSIONS: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -90,15 +116,24 @@ export async function uploadAvatar(
  */
 export async function deleteAvatar(path: string): Promise<void> {
   if (!path) return;
+  signedUrlCache.delete(path);
   const admin = createAdminSupabaseClient();
   await admin.storage.from(AVATARS_BUCKET).remove([path]);
 }
 
 export async function getAvatarSignedUrl(path: string): Promise<string | null> {
+  const cached = signedUrlCache.get(path);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
   const admin = createAdminSupabaseClient();
   const { data, error } = await admin.storage
     .from(AVATARS_BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
   if (error || !data) return null;
+
+  signedUrlCache.set(path, {
+    url: data.signedUrl,
+    expiresAt: Date.now() + (SIGNED_URL_TTL_SECONDS - SAFETY_MARGIN_SECONDS) * 1000,
+  });
   return data.signedUrl;
 }

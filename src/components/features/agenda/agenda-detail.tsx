@@ -25,15 +25,17 @@
  * está, não do papel: o "ver como" do admin não muda a URL da agenda.
  */
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   deleteAgendaEventAction,
+  getSessionHistoryAction,
   moveSessionAction,
   removeSessionAction,
+  setSessionStatusAction,
 } from "@/actions/admin/agenda";
 import { SidePanel } from "@/components/ui/side-panel";
 import { DateField } from "@/components/ui/date-field";
@@ -41,9 +43,10 @@ import { TimeField } from "@/components/ui/time-field";
 import { FormBanner } from "@/components/ui/form-message";
 import { Label } from "@/components/ui/label";
 import { LogoLoader } from "@/components/ui/logo-loader";
-import { CalendarIcon, PencilIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
+import { CalendarIcon, CheckIcon, PencilIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import type { AgendaItem } from "@/repositories/agenda";
+import type { AgendaItem, SessionHistoryEntry } from "@/repositories/agenda";
+import { SCHOOL_TZ } from "@/lib/schedule/session-preview";
 import type { ActionResult } from "@/types/action-result";
 import { itemTypeLabel, toneOf, type ToneMap } from "./agenda-card";
 import {
@@ -57,6 +60,43 @@ import {
 } from "./agenda-utils";
 
 const DURATIONS = [30, 45, 60, 90, 120];
+
+function historyText(entry: SessionHistoryEntry): string {
+  switch (entry.action) {
+    case "SESSION_START":
+      return "iniciou a aula";
+    case "SESSION_END":
+      return "encerrou a aula (concluída)";
+    case "SESSION_STATUS_SET":
+      return entry.metadata.to === "completed"
+        ? "marcou como concluída"
+        : "voltou para pendente";
+    case "SESSION_RESCHEDULE":
+      return "remarcou a aula";
+    case "SESSION_CANCEL":
+      return "desmarcou a aula";
+    default:
+      return entry.action;
+  }
+}
+
+function isCompletion(entry: SessionHistoryEntry): boolean {
+  return (
+    entry.action === "SESSION_END" ||
+    (entry.action === "SESSION_STATUS_SET" && entry.metadata.to === "completed")
+  );
+}
+
+function stamp(iso: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: SCHOOL_TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
 
 /** Rótulo e cor do link da sala, pelo status da aula — mesmo mapa do `SessionRow`. */
 function roomLinkMeta(status: AgendaItem["status"]): {
@@ -73,6 +113,12 @@ function roomLinkMeta(status: AgendaItem["status"]): {
     return {
       label: "Dar aula",
       className: "bg-navy-900 text-white hover:opacity-90",
+    };
+  }
+  if (status === "cancelled") {
+    return {
+      label: "Ver registro",
+      className: "border border-border text-foreground/80 hover:bg-muted",
     };
   }
   return {
@@ -106,6 +152,25 @@ export function AgendaDetail({
   const [duration, setDuration] = useState(60);
 
   const item = placed?.item ?? null;
+  const [history, setHistory] = useState<SessionHistoryEntry[]>([]);
+
+  const historyId = item?.kind === "session" && tone === "admin" ? item.id : null;
+  useEffect(() => {
+    setHistory([]);
+    if (!historyId) return;
+    let cancelled = false;
+    void getSessionHistoryAction(historyId).then((rows) => {
+      if (!cancelled) setHistory(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [historyId, item?.status]);
+
+  // O registro mais recente de conclusão; se a aula foi reaberta depois, o
+  // status atual já não é "concluída" e nada é mostrado.
+  const completion =
+    item?.status === "completed" ? history.find(isCompletion) : undefined;
   const accent = item ? toneOf(item, tones) : "var(--navy-600)";
 
   function close() {
@@ -177,6 +242,16 @@ export function AgendaDetail({
             )}
           </div>
 
+          {completion && (
+            <p className="text-sm text-muted-foreground">
+              Concluída por{" "}
+              <span className="font-medium text-foreground">
+                {completion.actorName ?? "usuário removido"}
+              </span>{" "}
+              em {stamp(completion.at)}
+            </p>
+          )}
+
           <dl className="space-y-3 text-sm">
             <Row label="Quando">
               {item.allDay
@@ -201,6 +276,27 @@ export function AgendaDetail({
             </p>
           )}
 
+          {history.length > 0 && (
+            <section aria-label="Histórico da aula" className="space-y-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Histórico
+              </h3>
+              <ol className="space-y-2 border-l border-border pl-4 text-sm">
+                {history.map((entry) => (
+                  <li key={entry.id}>
+                    <span className="font-medium text-foreground">
+                      {entry.actorName ?? "Sistema"}
+                    </span>{" "}
+                    {historyText(entry)}
+                    <span className="block text-xs text-muted-foreground">
+                      {stamp(entry.at)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
           {error && <FormBanner tone="error">{error}</FormBanner>}
 
           {/* ------------------------------------------------- ações ----- */}
@@ -215,7 +311,8 @@ export function AgendaDetail({
            */}
           {(() => {
             const showRoom = tone === "admin" && item.kind === "session" && item.id;
-            if (!item.canEdit && !item.canDelete && !showRoom) return null;
+            if (!item.canEdit && !item.canDelete && !item.canChangeStatus && !showRoom)
+              return null;
             const roomHref = showRoom
               ? (`${staffBase}/planejador/aula/${item.id}` as Route)
               : null;
@@ -322,6 +419,22 @@ export function AgendaDetail({
                           <PlayIcon className="h-4 w-4" />
                           {roomMeta.label}
                         </Link>
+                      )}
+                      {item.canChangeStatus && item.kind === "session" && (
+                        <PanelAction
+                          icon={CheckIcon}
+                          disabled={pending}
+                          onClick={() => {
+                            const id = item.id;
+                            if (!id) return;
+                            const done = item.status !== "completed";
+                            run(() => setSessionStatusAction(id, done));
+                          }}
+                        >
+                          {item.status === "completed"
+                            ? "Marcar como pendente"
+                            : "Marcar como concluída"}
+                        </PanelAction>
                       )}
                       {item.canEdit && item.kind === "session" && (
                         <PanelAction icon={CalendarIcon} onClick={openReschedule}>

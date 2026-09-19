@@ -75,6 +75,7 @@ function RoomHeader({
     <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-admin-border/70 bg-admin-background/85 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6">
       <div className="flex flex-wrap items-center gap-3">
         <BackLink
+          preferFallback
           fallbackHref={`${base}/planejador` as Route}
           aria-label="Voltar ao planejador"
           className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"

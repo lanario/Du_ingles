@@ -4,22 +4,22 @@
  * Coluna das turmas. Uma linha por chat, ordenada pela conversa mais recente
  * — quem tem mensagem nova sobe sozinho, sem o usuário procurar.
  *
- * A revelação em cascata das linhas é GSAP (roda uma vez, na montagem, e não
- * disputa transform com nada); o trilho da linha ativa é Framer, porque é ele
- * que sabe animar de uma posição para outra com `layoutId`.
+ * A revelação em cascata das linhas é CSS puro (`@keyframes chat-row-in` em
+ * `globals.css`, com o atraso de cada linha em `--i`): toca sozinha quando a
+ * linha entra no DOM e nunca mais — mover ou atualizar uma linha já montada
+ * não reinsere o nó, então reordenar a lista numa mensagem nova não reanima
+ * nada, sem precisar de nenhuma lógica "só na montagem" em JS. O trilho da
+ * linha ativa é Framer, porque é ele que sabe animar de uma posição para
+ * outra com `layoutId`.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import gsap from "gsap";
+import { useMemo, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { filterChats, relativeStamp, totalUnread } from "./chat-utils";
 import { GroupGlyph, PostingPill, UnreadBadge } from "./chat-visuals";
 import type { GroupChatSummary } from "@/repositories/group-chats";
-
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function ChatList({
   chats,
@@ -33,36 +33,9 @@ export function ChatList({
   className?: string;
 }) {
   const [term, setTerm] = useState("");
-  const listRef = useRef<HTMLDivElement>(null);
 
   const visible = useMemo(() => filterChats(chats, term), [chats, term]);
   const unread = totalUnread(chats);
-
-  // Só na montagem: reanimar a cada mensagem nova faria a lista piscar. A
-  // preferência de movimento é lida do `matchMedia` direto — `useReducedMotion`
-  // ainda pode estar em `null` neste primeiro layout effect, e é justamente
-  // aqui que a decisão precisa estar tomada.
-  useIsomorphicLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const rows = list.querySelectorAll<HTMLElement>("[data-chat-row]");
-    if (rows.length === 0) return;
-
-    const tween = gsap.from(rows, {
-      opacity: 0,
-      y: 10,
-      duration: 0.42,
-      ease: "power3.out",
-      stagger: 0.035,
-      overwrite: true,
-    });
-
-    return () => {
-      tween.kill();
-    };
-  }, []);
 
   return (
     <div
@@ -101,14 +74,12 @@ export function ChatList({
         </div>
       </div>
 
-      <div
-        ref={listRef}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
-      >
-        {visible.map((chat) => (
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+        {visible.map((chat, index) => (
           <ChatRow
             key={chat.conversationId}
             chat={chat}
+            index={index}
             selected={chat.conversationId === selectedId}
             onSelect={onSelect}
           />
@@ -128,10 +99,12 @@ export function ChatList({
 
 function ChatRow({
   chat,
+  index,
   selected,
   onSelect,
 }: {
   chat: GroupChatSummary;
+  index: number;
   selected: boolean;
   onSelect: (conversationId: string) => void;
 }) {
@@ -145,6 +118,7 @@ function ChatRow({
     <button
       type="button"
       data-chat-row
+      style={{ "--i": index } as CSSProperties}
       onClick={() => onSelect(chat.conversationId)}
       aria-current={selected ? "true" : undefined}
       className={cn(

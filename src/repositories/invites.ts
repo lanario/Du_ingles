@@ -241,18 +241,36 @@ export async function acceptInvite(
   }
 
   if (invite.role === "teacher") {
-    await admin.from("teacher_profiles").insert({
+    const { error: subtypeError } = await admin.from("teacher_profiles").insert({
       profile_id: created.user.id,
       organization_id: organizationId,
       is_public: false,
     });
+    if (subtypeError) {
+      await admin.from("profiles").delete().eq("id", created.user.id);
+      await admin.auth.admin.deleteUser(created.user.id);
+      return {
+        success: false,
+        reason: "internal",
+        message: "Falha ao criar o perfil. Tente novamente.",
+      };
+    }
   }
 
   if (invite.role === "student") {
-    await admin.from("student_profiles").insert({
+    const { error: subtypeError } = await admin.from("student_profiles").insert({
       profile_id: created.user.id,
       organization_id: organizationId,
     });
+    if (subtypeError) {
+      await admin.from("profiles").delete().eq("id", created.user.id);
+      await admin.auth.admin.deleteUser(created.user.id);
+      return {
+        success: false,
+        reason: "internal",
+        message: "Falha ao criar o perfil. Tente novamente.",
+      };
+    }
   }
 
   // Fecha o convite por id E ainda pendente: se duas submissões corressem

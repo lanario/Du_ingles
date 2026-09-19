@@ -875,11 +875,14 @@ export async function storeAutoGrade(
 
   const result = autoGrade(questions, readAnswerKey(data.answer_key), answers);
 
-  await admin
+  const { error } = await admin
     .from("assignment_submissions")
     .update({ auto_score: result.score, auto_max: result.max })
     .eq("assignment_id", assignmentId)
     .eq("student_id", studentId);
+  if (error) {
+    console.error("[assignments] correção automática não gravada:", error.message);
+  }
 }
 
 /** score/feedback/graded_at/graded_by têm UPDATE revogado de `authenticated`

@@ -1,11 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+} from "react";
 import Image from "next/image";
 import { NavLink } from "@/components/ui/nav-link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/domain";
@@ -32,6 +38,60 @@ const PANEL_WIDTH = 252;
 const OPEN_DELAY = 90;
 const CLOSE_DELAY = 120;
 const GLOW_HEIGHT = 72;
+
+/** Índice de revelação (`--nav-i`) de um rótulo em cascata — ver CSS de
+ * `[data-nav-label]` em `globals.css`. */
+function navStyle(index: number): CSSProperties {
+  return { "--nav-i": index } as CSSProperties;
+}
+
+/**
+ * Substitui `gsap.quickTo`: interpola a posição Y do brilho do rail quadro a
+ * quadro rumo ao alvo mais recente, sem puxar o GSAP inteiro para o bundle
+ * da sidebar só por causa de um brilho que segue o ponteiro. A curva (a taxa
+ * cresce com o tempo decorrido desde o último quadro) imita a desaceleração
+ * do "power3.out" do tween original; frame-rate independente, então não
+ * derrapa em tela de 120Hz nem capenga em hardware fraco.
+ */
+function createYFollower(node: HTMLElement, durationMs: number) {
+  let current = 0;
+  let target = 0;
+  let frame: number | null = null;
+  let last: number | null = null;
+
+  const tick = (time: number) => {
+    const dt = last === null ? 16 : time - last;
+    last = time;
+    const rate = 1 - Math.exp((-3 * dt) / durationMs);
+    current += (target - current) * rate;
+    node.style.transform = `translateY(${current}px)`;
+    if (Math.abs(target - current) > 0.1) {
+      frame = requestAnimationFrame(tick);
+    } else {
+      current = target;
+      node.style.transform = `translateY(${current}px)`;
+      frame = null;
+      last = null;
+    }
+  };
+
+  return {
+    set(value: number) {
+      target = value;
+      if (frame === null) frame = requestAnimationFrame(tick);
+    },
+    jump(value: number) {
+      current = value;
+      target = value;
+      node.style.transform = `translateY(${value}px)`;
+    },
+    stop() {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      last = null;
+    },
+  };
+}
 
 interface NavItem {
   href: Route;
@@ -150,7 +210,15 @@ const ROW_CLASS =
 
 /** Emblema "Du" — mesma peça usada em todo o chrome logado, aqui em duas
  * variantes (compacta/completa) para o cross-fade do cabeçalho da sidebar. */
-function Brand({ compact, labelled }: { compact?: boolean; labelled?: boolean }) {
+function Brand({
+  compact,
+  labelled,
+  labelIndex = 0,
+}: {
+  compact?: boolean;
+  labelled?: boolean;
+  labelIndex?: number;
+}) {
   return (
     <span className="flex items-center gap-3">
       <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-white p-1.5">
@@ -165,7 +233,7 @@ function Brand({ compact, labelled }: { compact?: boolean; labelled?: boolean })
       </span>
       {!compact && (
         <span
-          {...(labelled ? { "data-nav-label": "", style: { opacity: 0 } } : {})}
+          {...(labelled ? { "data-nav-label": "", style: navStyle(labelIndex) } : {})}
           className="whitespace-nowrap text-sm font-semibold tracking-tight text-app-shell-foreground"
         >
           Du Inglês
@@ -226,7 +294,7 @@ function Sidebar({
   const panelRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<number | null>(null);
-  const glowY = useRef<((value: number) => void) | null>(null);
+  const glowY = useRef<ReturnType<typeof createYFollower> | null>(null);
 
   const clearTimer = () => {
     if (hoverTimer.current !== null) {
@@ -260,41 +328,21 @@ function Sidebar({
   }, []);
 
   // Revelação em cascata dos rótulos (itens + títulos de seção) quando o
-  // painel abre — mesmo comportamento em qualquer elemento marcado
-  // `data-nav-label`, dentro ou fora da navegação.
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const labels = panel.querySelectorAll<HTMLElement>("[data-nav-label]");
-    if (labels.length === 0) return;
-
-    if (reduceMotion) {
-      gsap.set(labels, { opacity: expanded ? 1 : 0, x: 0 });
-      return;
-    }
-
-    gsap.to(labels, {
-      opacity: expanded ? 1 : 0,
-      x: expanded ? 0 : -6,
-      duration: expanded ? 0.3 : 0.12,
-      ease: expanded ? "power3.out" : "power2.in",
-      stagger: expanded ? 0.018 : 0,
-      overwrite: true,
-    });
-
-    return () => {
-      gsap.killTweensOf(labels);
-    };
-  }, [expanded, reduceMotion]);
+  // painel abre: `data-expanded` no painel liga a transição CSS de
+  // `[data-nav-label]` em `globals.css`, com o atraso de cada rótulo vindo
+  // de `--nav-i` (ver `navStyle`). `prefers-reduced-motion` já zera a
+  // duração dessa transição globalmente (mesmo bloco que cobre o resto do
+  // sistema), então não há ramo separado para `reduceMotion` aqui.
 
   // Fio de luz dourado que acompanha o ponteiro na borda do rail.
   useEffect(() => {
     const glow = glowRef.current;
     if (!glow || reduceMotion) return;
-    glowY.current = gsap.quickTo(glow, "y", { duration: 0.45, ease: "power3.out" });
+    const follower = createYFollower(glow, 450);
+    glowY.current = follower;
     return () => {
+      follower.stop();
       glowY.current = null;
-      gsap.killTweensOf(glow);
     };
   }, [reduceMotion]);
 
@@ -305,11 +353,12 @@ function Sidebar({
       if (!panel || !glow || reduceMotion) return;
       const y = clientY - panel.getBoundingClientRect().top - GLOW_HEIGHT / 2;
       if (instant) {
-        gsap.set(glow, { y });
-        gsap.to(glow, { opacity: 1, duration: 0.3, ease: "power2.out" });
+        glowY.current?.jump(y);
+        glow.style.transition = "opacity 300ms ease-out";
+        glow.style.opacity = "1";
         return;
       }
-      glowY.current?.(y);
+      glowY.current?.set(y);
     },
     [reduceMotion],
   );
@@ -317,10 +366,22 @@ function Sidebar({
   const hideGlow = useCallback(() => {
     const glow = glowRef.current;
     if (!glow || reduceMotion) return;
-    gsap.to(glow, { opacity: 0, duration: 0.25, ease: "power2.in" });
+    glow.style.transition = "opacity 250ms ease-in";
+    glow.style.opacity = "0";
   }, [reduceMotion]);
 
   const sections = sectionsFor(role);
+
+  // Índice de cascata de cada `data-nav-label`, na ordem em que aparece no
+  // painel: marca da Du Inglês, subtítulo do papel, e então título + itens
+  // de cada seção.
+  let navLabelCounter = 0;
+  const brandLabelIndex = navLabelCounter++;
+  const subtitleLabelIndex = navLabelCounter++;
+  const sectionLabelIndices = sections.map((section) => ({
+    titleIndex: navLabelCounter++,
+    itemIndices: section.items.map(() => navLabelCounter++),
+  }));
 
   return (
     <aside
@@ -330,6 +391,7 @@ function Sidebar({
       <motion.div
         ref={panelRef}
         data-sidebar-panel
+        data-expanded={expanded}
         initial={false}
         animate={{ width: expanded ? PANEL_WIDTH : RAIL_WIDTH }}
         transition={
@@ -368,10 +430,10 @@ function Sidebar({
         {/* Largura fixa: só a máscara do painel se move, o conteúdo nunca reflui. */}
         <div className="flex h-full flex-col" style={{ width: PANEL_WIDTH }}>
           <div className="relative flex h-16 shrink-0 flex-col justify-center border-b border-app-shell-border px-3">
-            <Brand labelled />
+            <Brand labelled labelIndex={brandLabelIndex} />
             <span
               data-nav-label
-              style={{ opacity: 0 }}
+              style={navStyle(subtitleLabelIndex)}
               className="mt-0.5 whitespace-nowrap pl-12 text-[10px] uppercase tracking-[0.14em] text-app-shell-foreground/70"
             >
               Área do {role === "teacher" ? "professor" : "aluno"}
@@ -387,13 +449,13 @@ function Sidebar({
                 {index > 0 && <div className="my-1.5 h-px bg-app-shell-border" />}
                 <p
                   data-nav-label
-                  style={{ opacity: 0 }}
+                  style={navStyle(sectionLabelIndices[index]!.titleIndex)}
                   className="px-2.5 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-app-shell-foreground/50"
                 >
                   {section.label}
                 </p>
                 <div className="space-y-0.5">
-                  {section.items.map((item) => {
+                  {section.items.map((item, itemIndex) => {
                     const active = isActive(pathname, item.href);
                     const Icon = item.icon;
                     return (
@@ -438,7 +500,9 @@ function Sidebar({
                         />
                         <span
                           data-nav-label
-                          style={{ opacity: 0 }}
+                          style={navStyle(
+                            sectionLabelIndices[index]!.itemIndices[itemIndex]!,
+                          )}
                           className="truncate whitespace-nowrap"
                         >
                           {item.label}

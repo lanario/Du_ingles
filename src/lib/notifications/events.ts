@@ -459,6 +459,8 @@ export function notifyEnrollmentChange(input: {
   kind: EnrollmentChange;
   toGroupId?: string | null;
   fromGroupId?: string | null;
+  /** Entregas não corrigidas da turma de origem que ficam inacessíveis após a transferência. */
+  strandedAssignments?: number;
 }): void {
   schedule(async () => {
     const groupIds = [input.toGroupId, input.fromGroupId].filter((id): id is string =>
@@ -494,10 +496,15 @@ export function notifyEnrollmentChange(input: {
           };
         }
         if (input.kind === "transferred") {
+          const pending = input.strandedAssignments ?? 0;
+          const strandedNote =
+            pending > 0
+              ? ` Você tinha ${pending === 1 ? "1 tarefa" : `${pending} tarefas`} sem correção em ${from?.name ?? "sua turma anterior"} — fale com a coordenação se precisar recuperá-la.`
+              : "";
           return {
             type: "enrollment_transferred",
             title: "Você mudou de turma",
-            body: `${from ? `De ${from.name} para ` : "Agora você está em "}${to?.name ?? "outra turma"}.`,
+            body: `${from ? `De ${from.name} para ` : "Agora você está em "}${to?.name ?? "outra turma"}.${strandedNote}`,
             link: groupLink(recipient.role, to?.id ?? ""),
           };
         }
@@ -527,10 +534,15 @@ export function notifyEnrollmentChange(input: {
                 : null;
 
         if (input.kind === "removed" || mine === "from") {
+          const pending = input.strandedAssignments ?? 0;
+          const strandedNote =
+            pending > 0
+              ? ` Ele(a) deixou ${pending === 1 ? "1 entrega" : `${pending} entregas`} sem correção.`
+              : "";
           return {
             type: "enrollment_removed",
             title: "Aluno saiu da turma",
-            body: `${studentName} não está mais em ${from?.name ?? "sua turma"}.`,
+            body: `${studentName} não está mais em ${from?.name ?? "sua turma"}.${strandedNote}`,
             link: groupLink(recipient.role, from?.id ?? to?.id ?? ""),
           };
         }

@@ -2,6 +2,8 @@ import "server-only";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { SessionPdfDocument } from "@/lib/pdf/session-pdf-document";
+import { registerPdfFonts } from "@/lib/pdf/fonts";
+import { attachImages, stripEmoji } from "@/lib/pdf/assets";
 import type { JSONContent } from "@tiptap/react";
 
 /**
@@ -30,16 +32,41 @@ export async function generateSessionPdf(
     .eq("id", session.organization_id)
     .single();
 
-  const buffer = await renderToBuffer(
-    SessionPdfDocument({
-      schoolName: org?.name ?? "Du Inglês",
-      groupName: session.group?.name ?? "",
-      sessionTitle: session.title,
-      scheduledAt: session.scheduled_at,
-      content: session.content as JSONContent,
-      homework: session.homework,
-    }),
+  registerPdfFonts();
+
+  // As imagens da aula são caminhos relativos numa rota autenticada: precisam
+  // ser lidas do Storage aqui, antes do render (ver `assets.ts`).
+  const content = await attachImages(
+    (session.content ?? { type: "doc", content: [] }) as JSONContent,
+    session.organization_id,
   );
+
+  const render = (doc: JSONContent) =>
+    renderToBuffer(
+      SessionPdfDocument({
+        schoolName: org?.name ?? "Du Inglês",
+        groupName: session.group?.name ?? "",
+        sessionTitle: session.title,
+        scheduledAt: session.scheduled_at,
+        content: doc,
+        homework: session.homework,
+      }),
+    );
+
+  let buffer: Buffer;
+  try {
+    buffer = await render(content);
+  } catch (error) {
+    // Os emojis vêm de um CDN no momento do render; se ele estiver fora do ar
+    // é melhor um PDF sem emoji do que nenhum PDF.
+    console.error("[pdf] falha no render, tentando sem emojis:", error);
+    try {
+      buffer = await render(stripEmoji(content));
+    } catch (retryError) {
+      console.error("[pdf] falha ao gerar o PDF:", retryError);
+      return { success: false };
+    }
+  }
 
   const path = `${session.organization_id}/${session.group_id}/${session.id}/${crypto.randomUUID()}-aula.pdf`;
 
