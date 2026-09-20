@@ -248,7 +248,6 @@ export function UserMenu({
 
         <span
           data-nav-label={compact ? "" : undefined}
-          style={compact ? { opacity: 0 } : undefined}
           className="min-w-0 flex-1 overflow-hidden"
         >
           <span
@@ -275,7 +274,6 @@ export function UserMenu({
 
         <ChevronIcon
           data-nav-label={compact ? "" : undefined}
-          style={compact ? { opacity: 0 } : undefined}
           className={cn(
             "h-4 w-4 flex-none transition-transform",
             open ? "rotate-90" : "-rotate-90",
