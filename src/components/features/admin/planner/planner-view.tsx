@@ -41,6 +41,7 @@ import { SlideTabs } from "@/components/ui/slide-tabs";
 import {
   CalendarIcon,
   CopyIcon,
+  DownloadIcon,
   FolderMoveIcon,
   GripIcon,
   PencilIcon,
@@ -1420,6 +1421,18 @@ function PlanCard({
             <PencilIcon className="h-4 w-4" />
           </IconAction>
         )}
+        <IconAction
+          label="Baixar PDF"
+          onClick={() =>
+            window.open(
+              `/api/lesson-plans/${plan.id}/pdf`,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
+        >
+          <DownloadIcon className="h-4 w-4" />
+        </IconAction>
         <IconAction label="Duplicar" onClick={onDuplicate} disabled={busy}>
           {busy ? (
             <LogoLoader size={16} label={null} />

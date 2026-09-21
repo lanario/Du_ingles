@@ -13,6 +13,7 @@ import {
   assignTemplateToGroupsAction,
   createAssignmentTemplateAction,
 } from "@/actions/admin/assignments";
+import { AssignmentPdfLinks } from "@/components/features/assignments/assignment-pdf-links";
 import { QuestionBuilder } from "./question-builder";
 import { SidePanel } from "@/components/ui/side-panel";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,10 @@ import {
 } from "@/components/ui/icons";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import { cn } from "@/lib/utils";
-import type { AssignmentTemplateFolder, AssignmentTemplateListItem } from "@/repositories/assignments";
+import type {
+  AssignmentTemplateFolder,
+  AssignmentTemplateListItem,
+} from "@/repositories/assignments";
 import type { PlannerGroupOption } from "@/repositories/lesson-planner";
 
 export function TaskTemplateCard({
@@ -137,6 +141,11 @@ export function TaskTemplateCard({
           </span>
         )}
       </div>
+
+      <AssignmentPdfLinks
+        href={`/api/assignment-templates/${template.id}/pdf`}
+        withAnswerKey
+      />
 
       <div className="mt-1 flex items-center gap-1.5">
         <button

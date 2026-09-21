@@ -7,6 +7,7 @@ import {
   getOrgAssignmentById,
 } from "@/repositories/assignments";
 import { isGroupOwnedByTeacher } from "@/repositories/groups";
+import { AssignmentPdfLinks } from "@/components/features/assignments/assignment-pdf-links";
 import { SubmissionReview } from "@/components/features/assignments/submission-review";
 import { BackLink } from "@/components/ui/back-link";
 import { ArrowLeftIcon, CalendarIcon, TaskIcon } from "@/components/ui/icons";
@@ -80,6 +81,12 @@ export default async function ProfessorTarefaPage({ params }: PageProps) {
             </span>
           )}
         </div>
+
+        <AssignmentPdfLinks
+          href={`/api/assignments/${id}/pdf`}
+          withAnswerKey
+          className="mt-4"
+        />
 
         {assignment.instructions && (
           <p className="mt-4 whitespace-pre-wrap rounded-2xl border border-admin-border bg-admin-background p-4 text-sm leading-relaxed text-admin-foreground/80">

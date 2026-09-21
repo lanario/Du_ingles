@@ -21,10 +21,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
-  // Fontes do PDF são lidas com `fs` em tempo de execução — o tracer do Next
-  // não as enxerga sozinho e elas ficariam de fora do bundle serverless.
+  // Fontes e logo do PDF são lidos com `fs` em tempo de execução — o tracer do Next
+  // não os enxerga sozinho e eles ficariam de fora do bundle serverless.
   outputFileTracingIncludes: {
-    "/**": ["./src/lib/pdf/fonts/**/*"],
+    "/**": ["./src/lib/pdf/fonts/**/*", "./src/lib/pdf/brand/**/*"],
   },
   experimental: {
     /**

@@ -12,6 +12,7 @@ import { SubmitAssignmentForm } from "@/components/features/assignments/submit-a
 import { ExercisePlayer } from "@/components/features/assignments/exercise-player";
 import { StudentAnswersView } from "@/components/features/assignments/student-answers-view";
 import { SubmissionReview } from "@/components/features/assignments/submission-review";
+import { AssignmentPdfLinks } from "@/components/features/assignments/assignment-pdf-links";
 import { StatusPill } from "@/components/features/assignments/status-pill";
 import { BackLink } from "@/components/ui/back-link";
 import { buttonVariants } from "@/components/ui/button";
@@ -72,6 +73,12 @@ export default async function TarefaDetailPage({ params }: PageProps) {
           </span>
         )}
       </div>
+
+      <AssignmentPdfLinks
+        href={`/api/assignments/${id}/pdf`}
+        withAnswerKey={ctx.effectiveRole === "teacher"}
+        className="mt-4"
+      />
 
       {assignment.instructions && (
         <p className="mt-4 whitespace-pre-wrap rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-relaxed text-foreground/80">

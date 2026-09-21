@@ -25,6 +25,7 @@ import {
   ArrowLeftIcon,
   CalendarIcon,
   CloseIcon,
+  DownloadIcon,
   EyeIcon,
   PencilIcon,
 } from "@/components/ui/icons";
@@ -211,6 +212,26 @@ export function LessonStudio({
                 <span className="hidden sm:inline">Ficha</span>
               </button>
             )}
+
+            <button
+              type="button"
+              title="Baixar o plano em PDF"
+              onClick={() => {
+                // A aba abre já no clique (senão o bloqueador de pop-up barra),
+                // e só recebe o endereço depois que o autosave pendente
+                // gravou — o PDF sai com o que está na tela.
+                const tab = window.open("about:blank", "_blank");
+                void flush().then(() => {
+                  const url = `/api/lesson-plans/${plan.id}/pdf`;
+                  if (tab) tab.location.href = url;
+                  else window.open(url, "_blank");
+                });
+              }}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+            >
+              <DownloadIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
 
             <button
               type="button"

@@ -13,7 +13,13 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { formatInTimeZone } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, CheckIcon, ChevronIcon, TaskIcon } from "@/components/ui/icons";
+import {
+  CalendarIcon,
+  CheckIcon,
+  ChevronIcon,
+  DownloadIcon,
+  TaskIcon,
+} from "@/components/ui/icons";
 import { StatusPill } from "@/components/features/assignments/status-pill";
 import { cn } from "@/lib/utils";
 import type { AssignmentListItem } from "@/repositories/assignments";
@@ -51,7 +57,9 @@ export function StudentAssignments({
   assignments: AssignmentListItem[];
 }) {
   const reduceMotion = useReducedMotion();
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ todo: true });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    todo: true,
+  });
 
   const { sections, todo, overdue, graded } = useMemo(() => {
     const isTodo = (a: AssignmentListItem) =>
@@ -193,16 +201,22 @@ function AssignmentCard({ assignment }: { assignment: AssignmentListItem }) {
   const graded = assignment.myStatus === "graded";
 
   return (
-    <Link
-      href={`/tarefas/${assignment.id}`}
+    // O cartão inteiro abre a tarefa por um link sobreposto (`absolute inset-0`):
+    // um <Link> envolvendo tudo não deixaria o atalho do PDF ser outro link.
+    <div
       className={cn(
-        "group flex items-center gap-4 rounded-2xl border bg-background p-4 shadow-[var(--shadow-card)] transition-all",
+        "group relative flex items-center gap-4 rounded-2xl border bg-background p-4 shadow-[var(--shadow-card)] transition-all",
         "hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]",
         late
           ? "border-destructive/40 hover:border-destructive/60"
           : "border-border hover:border-navy-200",
       )}
     >
+      <Link
+        href={`/tarefas/${assignment.id}`}
+        aria-label={assignment.title}
+        className="absolute inset-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-300"
+      />
       <span
         className={cn(
           "flex h-10 w-10 flex-none items-center justify-center rounded-xl transition-colors",
@@ -252,7 +266,18 @@ function AssignmentCard({ assignment }: { assignment: AssignmentListItem }) {
           </p>
         )}
       </div>
-    </Link>
+
+      <a
+        href={`/api/assignments/${assignment.id}/pdf`}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Baixar a folha de exercícios em PDF"
+        aria-label={`Baixar PDF de ${assignment.title}`}
+        className="relative z-10 grid h-9 w-9 flex-none place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-navy-200 hover:bg-navy-50 hover:text-navy-800"
+      >
+        <DownloadIcon className="h-4 w-4" />
+      </a>
+    </div>
   );
 }
 

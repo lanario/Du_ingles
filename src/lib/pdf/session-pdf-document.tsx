@@ -1,41 +1,104 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { JSONContent } from "@tiptap/react";
 import { renderNode } from "@/lib/pdf/tiptap-nodes";
-import { PDF_FONT } from "@/lib/pdf/fonts";
+import {
+  BRAND,
+  BrandFooter,
+  BrandHeader,
+  BrandSection,
+  brandPageStyle,
+} from "@/lib/pdf/brand";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, paddingBottom: 56, fontFamily: PDF_FONT, color: "#0b1a33" },
-  header: {
-    marginBottom: 20,
-    paddingBottom: 12,
-    borderBottom: "1pt solid #e3e9f3",
-  },
-  schoolName: { fontSize: 9, color: "#a8842a", marginBottom: 4, fontWeight: 700 },
-  title: { fontSize: 20, fontWeight: 700, marginBottom: 4, color: "#0a1f44" },
-  meta: { fontSize: 10, color: "#64748b" },
-  section: {
+  title: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: BRAND.navy900,
     marginTop: 20,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#fdf8ec",
-    border: "0.75pt solid #e7cd8c",
   },
-  sectionTitle: { fontSize: 11, fontWeight: 700, marginBottom: 6, color: "#0f2c5c" },
-  body: { fontSize: 10.5, lineHeight: 1.5 },
-  footer: {
-    position: "absolute",
-    bottom: 20,
-    left: 40,
-    right: 40,
-    fontSize: 8,
-    color: "#94a3b8",
-    textAlign: "center",
+  summary: { fontSize: 10, color: BRAND.muted, marginTop: 4, lineHeight: 1.45 },
+  titleGap: { height: 16 },
+  box: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: BRAND.gold50,
+    borderLeft: `3pt solid ${BRAND.gold500}`,
+    fontSize: 10.5,
+    lineHeight: 1.5,
   },
 });
+
+/**
+ * Moldura comum às duas folhas de aula: a aula dada (`class_sessions`) e o
+ * plano do ateliê (`lesson_plans`). O corpo é a folha desenhada como na tela
+ * (`renderNode`), dentro da identidade da marca (`brand.tsx`) — a mesma do
+ * PDF de tarefa. A coluna útil continua com 40pt de margem lateral (`COLUMN`
+ * em `tiptap-nodes.tsx`).
+ */
+function LessonPdfFrame({
+  schoolName,
+  tagline,
+  title,
+  summary,
+  kicker,
+  value,
+  caption,
+  subBar,
+  footerLabel,
+  content,
+  extra,
+}: {
+  schoolName: string;
+  tagline: string;
+  title: string;
+  summary?: string | null;
+  kicker: string;
+  value: string;
+  caption?: string;
+  subBar: string;
+  footerLabel: string;
+  content: JSONContent;
+  extra?: { label: string; text: string } | null;
+}) {
+  return (
+    <Document title={title} author={schoolName}>
+      <Page size="A4" style={brandPageStyle}>
+        <BrandHeader
+          schoolName={schoolName}
+          tagline={tagline}
+          kicker={kicker}
+          value={value}
+          caption={caption}
+          subBar={subBar}
+        />
+
+        <Text style={styles.title}>{title}</Text>
+        {summary ? <Text style={styles.summary}>{summary}</Text> : null}
+        <View style={styles.titleGap} />
+
+        {renderNode(content, "root")}
+
+        {extra && (
+          <View wrap={false}>
+            <BrandSection label={extra.label}>
+              <Text style={styles.box}>{extra.text}</Text>
+            </BrandSection>
+          </View>
+        )}
+
+        <BrandFooter label={footerLabel} />
+      </Page>
+    </Document>
+  );
+}
+
+const TZ = "America/Sao_Paulo";
 
 interface SessionPdfDocumentProps {
   schoolName: string;
   groupName: string;
+  /** Professor que deu a aula, abaixo do nome da escola no cabeçalho. */
+  teacherName: string | null;
   sessionTitle: string;
   scheduledAt: string;
   content: JSONContent;
@@ -45,53 +108,84 @@ interface SessionPdfDocumentProps {
 /**
  * NUNCA recebe teacher_notes — quem monta isto já busca a sessão sem essa
  * coluna (RLS/coluna revogada, §5.3, §8.4).
- *
- * O corpo é a folha da aula desenhada como na tela (`renderNode`). O antigo
- * bloco "Vocabulário" saiu: ele repetia como lista as palavras realçadas, que
- * já aparecem realçadas no texto — coisa que a folha do planejador não tem.
  */
 export function SessionPdfDocument({
   schoolName,
   groupName,
+  teacherName,
   sessionTitle,
   scheduledAt,
   content,
   homework,
 }: SessionPdfDocumentProps) {
-  const dateLabel = new Date(scheduledAt).toLocaleDateString("pt-BR", {
+  const date = new Date(scheduledAt);
+  const dateLabel = date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
-    timeZone: "America/Sao_Paulo",
+    timeZone: TZ,
   });
 
   return (
-    <Document title={sessionTitle} author={schoolName}>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.schoolName}>{schoolName}</Text>
-          <Text style={styles.title}>{sessionTitle}</Text>
-          <Text style={styles.meta}>
-            {groupName ? `${groupName} · ` : ""}
-            {dateLabel}
-          </Text>
-        </View>
+    <LessonPdfFrame
+      schoolName={schoolName}
+      tagline={teacherName ? `Professor(a): ${teacherName}` : "ESCOLA DE INGLÊS"}
+      title={sessionTitle}
+      kicker="MATERIAL DA AULA"
+      value={date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        timeZone: TZ,
+      })}
+      caption={date.toLocaleDateString("pt-BR", { year: "numeric", timeZone: TZ })}
+      subBar={[groupName ? `Turma: ${groupName}` : null, dateLabel]
+        .filter(Boolean)
+        .join("   ·   ")}
+      footerLabel={`Aula · ${sessionTitle}`}
+      content={content}
+      extra={homework ? { label: "Tarefa de casa", text: homework } : null}
+    />
+  );
+}
 
-        {renderNode(content, "root")}
+interface LessonPlanPdfDocumentProps {
+  schoolName: string;
+  title: string;
+  summary: string | null;
+  level: string;
+  durationMinutes: number;
+  authorName: string;
+  content: JSONContent;
+}
 
-        {homework && (
-          <View style={styles.section} wrap={false}>
-            <Text style={styles.sectionTitle}>Tarefa de casa</Text>
-            <Text style={styles.body}>{homework}</Text>
-          </View>
-        )}
+/** Plano de aula do ateliê — ainda sem turma nem data, então o selo é o nível. */
+export function LessonPlanPdfDocument({
+  schoolName,
+  title,
+  summary,
+  level,
+  durationMinutes,
+  authorName,
+  content,
+}: LessonPlanPdfDocumentProps) {
+  const today = new Date().toLocaleDateString("pt-BR", { timeZone: TZ });
 
-        <Text
-          style={styles.footer}
-          render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`}
-          fixed
-        />
-      </Page>
-    </Document>
+  return (
+    <LessonPdfFrame
+      schoolName={schoolName}
+      tagline={`Autor(a): ${authorName}`}
+      title={title}
+      summary={summary}
+      kicker="PLANO DE AULA"
+      value={level}
+      caption={`${durationMinutes} min`}
+      subBar={[
+        `Autor(a): ${authorName}`,
+        `${durationMinutes} min`,
+        `Gerado em ${today}`,
+      ].join("   ·   ")}
+      footerLabel={`Plano de aula · ${title}`}
+      content={content}
+    />
   );
 }
