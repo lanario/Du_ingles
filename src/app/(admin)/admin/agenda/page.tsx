@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
+import { GoogleConnect } from "@/components/features/google/google-connect";
+import { googleStatus } from "@/lib/google/connection";
+import { queueBackfill } from "@/lib/google/sync";
 import { getAgenda } from "@/repositories/agenda";
 import { AgendaView } from "@/components/features/agenda/agenda-view";
 
@@ -14,9 +17,19 @@ export const metadata: Metadata = { title: "Agenda" };
  * contexto e devolve cada item já marcado com o que este usuário pode fazer
  * com ele.
  */
-export default async function AdminAgendaPage() {
+export default async function AdminAgendaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ google?: string }>;
+}) {
   const ctx = await requireRole(["admin"]);
-  const agenda = await getAgenda(ctx);
+  const { google } = await searchParams;
+  const [agenda, googleState] = await Promise.all([
+    getAgenda(ctx),
+    googleStatus(ctx.userId),
+  ]);
+  // Aulas que o banco gerou sozinho ainda não estão na agenda Google: manda agora.
+  if (googleState.connected) queueBackfill(ctx.userId, ctx.realRole);
 
   return (
     <div className="space-y-5">
@@ -26,6 +39,8 @@ export default async function AdminAgendaPage() {
           Aulas, reuniões, provas e eventos de todas as turmas.
         </p>
       </header>
+
+      <GoogleConnect status={googleState} notice={google} />
 
       <AgendaView initial={agenda} area="admin" />
     </div>

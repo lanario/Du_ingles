@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
+import { GoogleConnect } from "@/components/features/google/google-connect";
+import { googleStatus } from "@/lib/google/connection";
+import { queueBackfill } from "@/lib/google/sync";
 import { getAgenda } from "@/repositories/agenda";
 import { AgendaView } from "@/components/features/agenda/agenda-view";
 
@@ -18,9 +21,19 @@ export const metadata: Metadata = { title: "Agenda" };
  * do repositório, nenhum item vem com `canEdit`, e as actions de escrita
  * exigem `requireStaff`. As três camadas dizem a mesma coisa.
  */
-export default async function AgendaPage() {
+export default async function AgendaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ google?: string }>;
+}) {
   const ctx = await requireRole(["student"]);
-  const agenda = await getAgenda(ctx);
+  const { google } = await searchParams;
+  const [agenda, googleState] = await Promise.all([
+    getAgenda(ctx),
+    googleStatus(ctx.userId),
+  ]);
+  // Aulas que o banco gerou sozinho ainda não estão na agenda Google: manda agora.
+  if (googleState.connected) queueBackfill(ctx.userId, ctx.realRole);
 
   return (
     <div className="space-y-5">
@@ -30,6 +43,8 @@ export default async function AgendaPage() {
           Suas aulas, provas e o que a escola marcou.
         </p>
       </header>
+
+      <GoogleConnect status={googleState} notice={google} />
 
       <AgendaView initial={agenda} area="app" />
     </div>

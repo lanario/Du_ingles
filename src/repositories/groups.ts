@@ -1,12 +1,10 @@
 import "server-only";
+import { queueEventCleanup, queueSessionsSync, snapshotEvents } from "@/lib/google/sync";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { CefrLevel } from "@/types/domain";
 import type { CreateGroupInput, UpdateGroupInput } from "@/schemas/groups";
-import {
-  projectSessions,
-  type SchedulePattern,
-} from "@/lib/schedule/session-preview";
+import { projectSessions, type SchedulePattern } from "@/lib/schedule/session-preview";
 
 export interface GroupListItem {
   id: string;
@@ -282,6 +280,8 @@ async function handOverFutureSessions(
     console.error("[groups] falha ao passar as aulas futuras:", error.message);
     return null;
   }
+  // O evento do professor antigo sai do Google e o do novo (com o Meet) nasce.
+  queueSessionsSync((data ?? []).map((row) => row.id));
   return data?.length ?? 0;
 }
 
@@ -312,15 +312,13 @@ async function dropStaleScheduleSessions(
     projectSessions({ ...window, schedule: next }).map((slot) => slot.scheduledAt),
   );
 
-  const stale = before
-    .map((slot) => slot.scheduledAt)
-    .filter((iso) => !after.has(iso));
+  const stale = before.map((slot) => slot.scheduledAt).filter((iso) => !after.has(iso));
   if (stale.length === 0) return;
 
   const admin = createAdminSupabaseClient();
-  const { error } = await admin
+  const { data: doomed } = await admin
     .from("class_sessions")
-    .delete()
+    .select("id")
     .eq("group_id", groupId)
     .eq("status", "scheduled")
     .eq("is_published", false)
@@ -330,10 +328,19 @@ async function dropStaleScheduleSessions(
     .is("pdf_path", null)
     .is("teacher_notes", null)
     .is("homework", null);
+  const ids = (doomed ?? []).map((row) => row.id);
+  if (ids.length === 0) return;
 
+  // Foto dos eventos do Google antes do delete: o cascade leva junto as linhas
+  // que dizem quais são.
+  const googleEvents = await snapshotEvents(ids);
+
+  const { error } = await admin.from("class_sessions").delete().in("id", ids);
   if (error) {
     console.error("[groups] falha ao limpar a grade antiga:", error.message);
+    return;
   }
+  queueEventCleanup(googleEvents);
 }
 
 /** Turma que nunca gerou sessão nenhuma — nem futura, nem histórico. */

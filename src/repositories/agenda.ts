@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { meetOpensAt, meetUrlsFor } from "@/lib/google/meet-access";
 import { projectSessions, type SchedulePattern } from "@/lib/schedule/session-preview";
 import type { SessionContext } from "@/lib/auth/session";
 import type {
@@ -66,6 +67,13 @@ export interface AgendaItem {
   /** Só em aula: alternar pendente ↔ concluída. Vale em qualquer status
    * (menos cancelada), ao contrário de `canEdit`, que exige aula agendada. */
   canChangeStatus: boolean;
+  /**
+   * Link do Google Meet, já filtrado pelo servidor: o professor vê desde a
+   * criação; o aluno, só a partir de 30 min antes. `null` antes disso.
+   */
+  meetUrl: string | null;
+  /** Só em aula, e só para o aluno: quando o link abre (para a tela liberar sozinha). */
+  meetOpensAt: string | null;
 }
 
 export interface AgendaData {
@@ -280,7 +288,9 @@ async function listEvents(
     groupIds.length > 0
       ? base().in("group_id", groupIds).neq("audience", forbidden)
       : Promise.resolve({ data: [] }),
-    role === "teacher" ? base().eq("owner_id", ctx.userId) : Promise.resolve({ data: [] }),
+    role === "teacher"
+      ? base().eq("owner_id", ctx.userId)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const merged = new Map<string, EventRow>();
@@ -366,6 +376,8 @@ function buildPreviews(
         canEdit: false,
         canDelete: false,
         canChangeStatus: false,
+        meetUrl: null,
+        meetOpensAt: null,
       }));
     });
 }
@@ -404,7 +416,8 @@ function eventRights(
 ): { canEdit: boolean; canDelete: boolean; canChangeStatus: boolean } {
   const role = ctx.effectiveRole;
   if (role === "admin") return { canEdit: true, canDelete: true, canChangeStatus: false };
-  if (role !== "teacher") return { canEdit: false, canDelete: false, canChangeStatus: false };
+  if (role !== "teacher")
+    return { canEdit: false, canDelete: false, canChangeStatus: false };
 
   const mine = row.group_id !== null && groupIds.has(row.group_id);
   return { canEdit: mine, canDelete: mine, canChangeStatus: false };
@@ -429,6 +442,16 @@ export async function getAgenda(
   const groups = mapGroupRefs(groupRows);
   const groupName = new Map(groups.map((group) => [group.id, group.name]));
 
+  const meetUrls = await meetUrlsFor(
+    { id: ctx.userId, role: ctx.effectiveRole },
+    sessions.map((row) => ({
+      id: row.id,
+      scheduledAt: row.scheduled_at,
+      status: row.status,
+      teacherId: row.teacher_id,
+    })),
+  );
+
   const sessionItems = sessions.map<AgendaItem>((row) => ({
     key: `session-${row.id}`,
     kind: "session",
@@ -446,6 +469,11 @@ export async function getAgenda(
     audience: null,
     location: null,
     description: null,
+    meetUrl: meetUrls.get(row.id) ?? null,
+    meetOpensAt:
+      ctx.effectiveRole === "student" && row.status !== "cancelled"
+        ? meetOpensAt(row.scheduled_at).toISOString()
+        : null,
     ...sessionRights(ctx, row, ownedGroupIds),
   }));
 
@@ -466,6 +494,8 @@ export async function getAgenda(
     audience: row.audience,
     location: row.location,
     description: row.description,
+    meetUrl: null,
+    meetOpensAt: null,
     ...eventRights(ctx, row, ownedGroupIds),
   }));
 
@@ -528,7 +558,12 @@ export async function setSessionDone(
     .from("class_sessions")
     .update(
       done
-        ? { status: "completed" as const, ended_at: now, is_published: true, updated_at: now }
+        ? {
+            status: "completed" as const,
+            ended_at: now,
+            is_published: true,
+            updated_at: now,
+          }
         : {
             status: "scheduled" as const,
             started_at: null,
@@ -579,7 +614,9 @@ export async function listSessionHistory(
     .limit(50);
   if (error || !data) return [];
 
-  const actorIds = [...new Set(data.map((row) => row.actor_id).filter(Boolean))] as string[];
+  const actorIds = [
+    ...new Set(data.map((row) => row.actor_id).filter(Boolean)),
+  ] as string[];
   const names = new Map<string, string>();
   if (actorIds.length > 0) {
     const { data: profiles } = await admin

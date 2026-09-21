@@ -31,6 +31,39 @@ export default function PrivacidadePage() {
           dados&quot; dentro da plataforma; caso contrário, entre em contato pelo e-mail
           contato@duingles.com.br.
         </p>
+        <h2 className="font-semibold text-foreground">Integração com o Google Agenda</h2>
+        <p>
+          Se você optar por conectar sua conta Google, o Du Inglês solicita acesso ao
+          Google Agenda apenas para criar, atualizar e cancelar eventos das suas aulas,
+          incluindo o link do Google Meet, e para enviar lembretes aos participantes. Não
+          lemos, não armazenamos nem usamos o restante da sua agenda ou de outros serviços
+          Google.
+        </p>
+        <p>
+          Guardamos somente o token de acesso necessário para manter a integração e os
+          identificadores dos eventos criados pela plataforma. Esses dados não são
+          vendidos, compartilhados com terceiros nem usados para publicidade. O uso e a
+          transferência das informações recebidas das APIs do Google seguem a{" "}
+          <a
+            href="https://developers.google.com/terms/api-services-user-data-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Política de Dados do Usuário dos Serviços de API do Google
+          </a>
+          , incluindo os requisitos de Uso Limitado. Você pode desconectar a integração a
+          qualquer momento na plataforma ou em{" "}
+          <a
+            href="https://myaccount.google.com/permissions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            myaccount.google.com/permissions
+          </a>
+          .
+        </p>
         <h2 className="font-semibold text-foreground">Retenção</h2>
         <p>
           Registros de auditoria são mantidos por até 24 meses. Dados pedagógicos são

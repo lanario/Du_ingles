@@ -19,6 +19,14 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().startsWith("sk_").optional(),
   STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  /*
+   * Google Agenda/Meet — opcionais pelo mesmo motivo da Stripe: sem elas o
+   * botão "Conectar Google Agenda" some e o resto da plataforma segue igual.
+   * A chave cifra o refresh token em repouso (base64 de 32 bytes).
+   */
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  TOKEN_ENCRYPTION_KEY: z.string().min(1).optional(),
 });
 
 type Env = z.infer<typeof envSchema>;
@@ -39,6 +47,9 @@ function loadEnv(): Env {
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: orUndefined(
       process.env["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"],
     ),
+    GOOGLE_CLIENT_ID: orUndefined(process.env["GOOGLE_CLIENT_ID"]),
+    GOOGLE_CLIENT_SECRET: orUndefined(process.env["GOOGLE_CLIENT_SECRET"]),
+    TOKEN_ENCRYPTION_KEY: orUndefined(process.env["TOKEN_ENCRYPTION_KEY"]),
   });
 
   if (!parsed.success) {
@@ -78,4 +89,25 @@ export function requireStripeWebhookSecret(): string {
     throw new Error("STRIPE_WEBHOOK_SECRET não configurada.");
   }
   return env.STRIPE_WEBHOOK_SECRET;
+}
+
+/** `true` quando a integração com o Google Agenda está utilizável neste ambiente. */
+export function isGoogleConfigured(): boolean {
+  return Boolean(
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.TOKEN_ENCRYPTION_KEY,
+  );
+}
+
+export function requireGoogleCredentials(): { clientId: string; clientSecret: string } {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    throw new Error("GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET não configurados.");
+  }
+  return { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET };
+}
+
+export function requireTokenEncryptionKey(): string {
+  if (!env.TOKEN_ENCRYPTION_KEY) {
+    throw new Error("TOKEN_ENCRYPTION_KEY não configurada.");
+  }
+  return env.TOKEN_ENCRYPTION_KEY;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
+import { meetOpensAt, meetUrlsFor } from "@/lib/google/meet-access";
 import { listMyUpcomingSessions } from "@/repositories/class-sessions";
 import { listStudentAssignments } from "@/repositories/assignments";
 import { getStudentProgress } from "@/repositories/progress";
@@ -107,6 +108,19 @@ export default async function DashboardPage() {
         ) / 10
       : null;
 
+  // O aluno só recebe o link do Meet a partir de 30 min antes (decidido aqui, no
+  // servidor). As aulas vêm da RLS do próprio aluno, então a matrícula já foi
+  // conferida; o `teacherId` não entra na regra do aluno.
+  const meetUrls = await meetUrlsFor(
+    { id: ctx.userId, role: "student" },
+    sessions.map((session) => ({
+      id: session.id,
+      scheduledAt: session.scheduledAt,
+      status: session.status,
+      teacherId: "",
+    })),
+  );
+
   return (
     <StudentDashboard
       data={{
@@ -122,6 +136,8 @@ export default async function DashboardPage() {
           groupName: session.groupName,
           scheduledAt: session.scheduledAt,
           durationMinutes: session.durationMinutes,
+          meetUrl: meetUrls.get(session.id) ?? null,
+          meetOpensAt: meetOpensAt(session.scheduledAt).toISOString(),
         })),
         tasks: openTasks.slice(0, 5).map((task) => ({
           id: task.id,

@@ -73,6 +73,8 @@ const LEAD: NotificationVisual = { icon: MailIcon, tone: "gold", label: "Contato
 const EXACT: Record<string, NotificationVisual> = {
   announcement: ANNOUNCEMENT,
   lgpd_request: LGPD,
+  google_disconnected: { icon: CalendarIcon, tone: "warning", label: "Google Agenda" },
+  google_meet_missing: { icon: CalendarIcon, tone: "info", label: "Google Agenda" },
   group_change_request: { icon: SwapIcon, tone: "info", label: "Turma" },
   group_change_approved: { icon: SwapIcon, tone: "success", label: "Turma" },
   group_change_rejected: { icon: SwapIcon, tone: "danger", label: "Turma" },

@@ -37,13 +37,20 @@ import {
   removeSessionAction,
   setSessionStatusAction,
 } from "@/actions/admin/agenda";
+import { AgendaMeet } from "@/components/features/agenda/agenda-meet";
 import { SidePanel } from "@/components/ui/side-panel";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
 import { FormBanner } from "@/components/ui/form-message";
 import { Label } from "@/components/ui/label";
 import { LogoLoader } from "@/components/ui/logo-loader";
-import { CalendarIcon, CheckIcon, PencilIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
+import {
+  CalendarIcon,
+  CheckIcon,
+  PencilIcon,
+  PlayIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { AgendaItem, SessionHistoryEntry } from "@/repositories/agenda";
 import { SCHOOL_TZ } from "@/lib/schedule/session-preview";
@@ -267,6 +274,16 @@ export function AgendaDetail({
             <p className="whitespace-pre-wrap rounded-xl bg-muted/60 p-3 text-sm text-foreground/80">
               {item.description}
             </p>
+          )}
+
+          {item.kind === "session" && (
+            <AgendaMeet
+              meetUrl={item.meetUrl}
+              opensAt={item.meetOpensAt}
+              endsAt={new Date(
+                new Date(item.startsAt).getTime() + item.durationMinutes * 60_000,
+              ).toISOString()}
+            />
           )}
 
           {item.kind === "preview" && (

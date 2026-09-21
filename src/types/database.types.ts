@@ -503,6 +503,81 @@ export type Database = {
           },
         ]
       }
+      google_connections: {
+        Row: {
+          connected_at: string
+          organization_id: string
+          profile_id: string
+          refresh_token_enc: string
+          scope: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string
+          organization_id: string
+          profile_id: string
+          refresh_token_enc: string
+          scope: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string
+          organization_id?: string
+          profile_id?: string
+          refresh_token_enc?: string
+          scope?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      google_event_links: {
+        Row: {
+          google_event_id: string
+          profile_id: string
+          session_id: string
+          synced_at: string
+          synced_start: string
+        }
+        Insert: {
+          google_event_id: string
+          profile_id: string
+          session_id: string
+          synced_at?: string
+          synced_start: string
+        }
+        Update: {
+          google_event_id?: string
+          profile_id?: string
+          session_id?: string
+          synced_at?: string
+          synced_start?: string
+        }
+        Relationships: []
+      }
+      session_meet_links: {
+        Row: {
+          created_at: string
+          host_profile_id: string
+          meet_url: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          host_profile_id: string
+          meet_url: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          host_profile_id?: string
+          meet_url?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       class_sessions: {
         Row: {
           content: Json

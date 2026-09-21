@@ -12,6 +12,7 @@ import {
   RevealGrid,
   RevealItem,
 } from "@/components/features/admin/dashboard/primitives";
+import { AgendaMeet } from "@/components/features/agenda/agenda-meet";
 import { RadialGauge, PALETTE } from "@/components/features/admin/dashboard/charts";
 
 const TZ = "America/Sao_Paulo";
@@ -22,6 +23,10 @@ export interface DashboardSession {
   groupName: string;
   scheduledAt: string;
   durationMinutes: number;
+  /** Link do Meet, já filtrado pelo servidor (aluno: só a partir de 30 min antes). */
+  meetUrl?: string | null;
+  /** Quando o link abre para o aluno. */
+  meetOpensAt?: string | null;
 }
 
 export interface DashboardTask {
@@ -161,6 +166,15 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
                   <p className="mt-1 text-sm text-white/65">
                     {nextSession.groupName} · {nextSession.durationMinutes} min
                   </p>
+                  <AgendaMeet
+                    className="mt-3 text-sm text-white/65"
+                    meetUrl={nextSession.meetUrl ?? null}
+                    opensAt={nextSession.meetOpensAt ?? null}
+                    endsAt={new Date(
+                      new Date(nextSession.scheduledAt).getTime() +
+                        nextSession.durationMinutes * 60_000,
+                    ).toISOString()}
+                  />
                 </>
               ) : (
                 <p className="mt-2 text-lg text-white/70">

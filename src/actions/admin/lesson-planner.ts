@@ -17,6 +17,12 @@ import {
   notifySessionScheduled,
   notifySessionStarted,
 } from "@/lib/notifications/events";
+import {
+  queueEventCleanup,
+  queueSessionCleanup,
+  queueSessionSync,
+  snapshotEvents,
+} from "@/lib/google/sync";
 import { generateSessionPdf } from "@/lib/pdf/generate";
 import * as planner from "@/repositories/lesson-planner";
 import * as live from "@/repositories/live-session";
@@ -448,6 +454,8 @@ export async function scheduleSessionAction(
     metadata: { groupId: parsed.data.groupId },
   });
 
+  queueSessionSync(id);
+
   notifySessionScheduled({
     organizationId: ctx.organizationId,
     actorId: ctx.userId,
@@ -518,6 +526,8 @@ export async function rescheduleSessionAction(
     metadata: { from: session.scheduledAt, to: scheduledAt },
   });
 
+  queueSessionSync(sessionId);
+
   notifySessionRescheduled({
     organizationId: ctx.organizationId,
     actorId: ctx.userId,
@@ -556,6 +566,8 @@ export async function cancelSessionAction(
     entityType: "class_session",
     entityId: sessionId,
   });
+
+  queueSessionCleanup(sessionId);
 
   notifySessionCancelled({
     organizationId: ctx.organizationId,
@@ -602,8 +614,14 @@ export async function deleteSessionAction(
     });
   }
 
+  // Foto dos eventos do Google antes do delete: o cascade leva junto as
+  // linhas que dizem quais são.
+  const googleEvents = await snapshotEvents([sessionId]);
+
   const success = await planner.deletePlannerSession(sessionId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir a aula.");
+
+  queueEventCleanup(googleEvents);
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -687,6 +705,8 @@ export async function scheduleNextSessionAction(
     entityId: id,
     metadata: { groupId: session.groupId, afterSessionId: sessionId },
   });
+
+  queueSessionSync(id);
 
   notifySessionScheduled({
     organizationId: ctx.organizationId,

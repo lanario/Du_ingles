@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/auth/session";
 import { canTouchGroup, requireStaff } from "@/lib/auth/staff";
 import { revalidateStaffPath } from "@/lib/areas.server";
 import { auditLog } from "@/lib/audit";
+import { queueSessionCleanup, queueSessionSync } from "@/lib/google/sync";
 import { notifyAgendaEvent } from "@/lib/notifications/events";
 import {
   notifySessionCancelled,
@@ -307,6 +308,8 @@ export async function moveSessionAction(
     metadata: { from: session.scheduledAt, to: scheduledAt, source: "agenda" },
   });
 
+  queueSessionSync(sessionId);
+
   notifySessionRescheduled({
     organizationId: ctx.organizationId,
     actorId: ctx.userId,
@@ -359,8 +362,15 @@ export async function setSessionStatusAction(
     action: "SESSION_STATUS_SET",
     entityType: "class_session",
     entityId: sessionId,
-    metadata: { from: session.status, to: done ? "completed" : "scheduled", source: "agenda" },
+    metadata: {
+      from: session.status,
+      to: done ? "completed" : "scheduled",
+      source: "agenda",
+    },
   });
+
+  // Reaberta, a aula volta a valer na agenda Google; concluída, o evento fica como está.
+  if (!done) queueSessionSync(sessionId);
 
   revalidateAgenda();
   revalidateStaffPath("/planejador");
@@ -406,6 +416,8 @@ export async function removeSessionAction(
     entityId: sessionId,
     metadata: { source: "agenda" },
   });
+
+  queueSessionCleanup(sessionId);
 
   revalidateAgenda();
   revalidateStaffPath("/planejador");
