@@ -32,7 +32,11 @@ export default async function PlanosPage({
       ? "confirmada"
       : params.assinatura === "cancelada"
         ? "cancelada"
-        : null;
+        : params.assinatura === "experiencia"
+          ? "experiencia"
+          : params.assinatura === "pendente"
+            ? "pendente"
+            : null;
 
   return (
     <PlansShowcase

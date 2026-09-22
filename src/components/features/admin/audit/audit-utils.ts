@@ -460,6 +460,42 @@ const CATALOG: Record<string, Descriptor> = {
     icon: "privacidade",
     phrase: () => "pediu a exclusão dos próprios dados (LGPD)",
   },
+  LGPD_DATA_EXPORTED: {
+    category: "privacidade",
+    severity: "atencao",
+    icon: "privacidade",
+    phrase: () => "baixou a cópia dos próprios dados (LGPD)",
+  },
+  LGPD_REQUEST_CREATED: {
+    category: "privacidade",
+    severity: "atencao",
+    icon: "privacidade",
+    phrase: () => "abriu um pedido de titular (LGPD)",
+  },
+  LGPD_REQUEST_CANCELED: {
+    category: "privacidade",
+    severity: "rotina",
+    icon: "privacidade",
+    phrase: () => "desistiu de um pedido de titular (LGPD)",
+  },
+  LGPD_REQUEST_STARTED: {
+    category: "privacidade",
+    severity: "rotina",
+    icon: "privacidade",
+    phrase: () => "assumiu um pedido de titular (LGPD)",
+  },
+  LGPD_REQUEST_RESOLVED: {
+    category: "privacidade",
+    severity: "atencao",
+    icon: "privacidade",
+    phrase: () => "respondeu um pedido de titular (LGPD)",
+  },
+  LGPD_ANONYMIZED: {
+    category: "privacidade",
+    severity: "critico",
+    icon: "privacidade",
+    phrase: () => "anonimizou os dados de um titular (LGPD)",
+  },
 };
 
 /** Verbos usados quando a ação é nova e ainda não está no catálogo. */

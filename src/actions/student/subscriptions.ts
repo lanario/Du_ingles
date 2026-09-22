@@ -2,11 +2,14 @@
 
 import { requireRole, getSessionContext } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
-import { isStripeConfigured, stripeErrorMessage } from "@/lib/stripe/client";
+import { getStripe, isStripeConfigured, stripeErrorMessage } from "@/lib/stripe/client";
 import { createBillingPortalSession, createCheckoutSession } from "@/lib/stripe/checkout";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getStudentPlan } from "@/repositories/student-plans";
-import { findStripeCustomerId } from "@/repositories/student-subscriptions";
+import {
+  findStripeCustomerId,
+  getActiveSubscriptionFor,
+} from "@/repositories/student-subscriptions";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -48,6 +51,44 @@ export async function startPlanCheckoutAction(
 
   const admin = createAdminSupabaseClient();
 
+  // Autocadastros têm uma única experiência grátis de 7 dias. Se o primeiro
+  // checkout falhou ou foi fechado, o aluno ainda pode concluí-lo aqui; uma
+  // assinatura anterior impede abrir outro período de teste.
+  const { data: registration } = await admin
+    .from("student_registrations")
+    .select("profile_id, requested_plan_id, stripe_checkout_session_id")
+    .eq("profile_id", ctx.userId)
+    .maybeSingle();
+  let trialDaysOverride: number | undefined;
+  let existingSubscriptionCount = 0;
+  if (registration) {
+    const { count } = await admin
+      .from("student_subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", ctx.userId);
+    existingSubscriptionCount = count ?? 0;
+    trialDaysOverride = existingSubscriptionCount > 0 ? 0 : 7;
+
+    if (registration.stripe_checkout_session_id) {
+      try {
+        const session = await getStripe().checkout.sessions.retrieve(
+          registration.stripe_checkout_session_id,
+        );
+        if (session.status === "complete" && existingSubscriptionCount === 0) {
+          return ok({ url: session.success_url ?? "/planos?assinatura=confirmada" });
+        }
+        if (session.status === "open") {
+          if (registration.requested_plan_id === plan.id && session.url) {
+            return ok({ url: session.url });
+          }
+          await getStripe().checkout.sessions.expire(session.id);
+        }
+      } catch (error) {
+        return fail("INTERNAL_ERROR", stripeErrorMessage(error));
+      }
+    }
+  }
+
   // Vaga esgotada é a última checagem antes da Stripe: o teto é comercial e
   // pode ter sido atingido entre o render da vitrine e o clique.
   if (plan.seatLimit !== null) {
@@ -75,6 +116,24 @@ export async function startPlanCheckoutAction(
       studentName: profile?.full_name ?? "Aluno",
       studentEmail: profile?.email ?? ctx.email,
       organizationId: ctx.organizationId,
+      ...(trialDaysOverride === undefined ? {} : { trialDaysOverride }),
+      onCustomerReady: async (stripeCustomerId) => {
+        const { error } = await admin
+          .from("student_registrations")
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq("profile_id", ctx.userId);
+        if (error) throw error;
+      },
+      onSessionCreated: async (stripeCheckoutSessionId) => {
+        const { error } = await admin
+          .from("student_registrations")
+          .update({
+            requested_plan_id: plan.id,
+            stripe_checkout_session_id: stripeCheckoutSessionId,
+          })
+          .eq("profile_id", ctx.userId);
+        if (error) throw error;
+      },
     });
 
     await auditLog({
@@ -112,6 +171,40 @@ export async function openBillingPortalAction(): Promise<ActionResult<{ url: str
 
   try {
     return ok({ url: await createBillingPortalSession(customerId) });
+  } catch (error) {
+    return fail("INTERNAL_ERROR", stripeErrorMessage(error));
+  }
+}
+
+/**
+ * Cancela a experiência sem cobrança. O cancelamento fica agendado para o fim
+ * do teste, então o aluno mantém o acesso durante os dias que ainda restam.
+ */
+export async function cancelStudentTrialAction(): Promise<ActionResult<never>> {
+  const ctx = await requireRole(["student"]);
+  if (ctx.isViewAs) return fail("READ_ONLY_MODE", 'O modo "ver como" é somente leitura.');
+  if (!isStripeConfigured()) {
+    return fail("INTERNAL_ERROR", "Pagamentos ainda não estão disponíveis.");
+  }
+
+  const subscription = await getActiveSubscriptionFor(ctx.userId);
+  if (
+    !subscription ||
+    subscription.status !== "trialing" ||
+    !subscription.stripeSubscriptionId
+  ) {
+    return fail("CONFLICT", "Não encontramos uma experiência ativa para cancelar.");
+  }
+  if (subscription.cancelAtPeriodEnd) return ok(undefined as never);
+  if (subscription.trialEnd && new Date(subscription.trialEnd).getTime() <= Date.now()) {
+    return fail("CONFLICT", "O período de experiência já terminou.");
+  }
+
+  try {
+    await getStripe().subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+    return ok(undefined as never);
   } catch (error) {
     return fail("INTERNAL_ERROR", stripeErrorMessage(error));
   }

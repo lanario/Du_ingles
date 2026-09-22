@@ -111,6 +111,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { href: "/admin/relatorios", label: "Relatórios", icon: "chart" },
       { href: "/admin/mensagens", label: "Mensagens", icon: "chat" },
       { href: "/admin/auditoria", label: "Auditoria", icon: "shield" },
+      { href: "/admin/lgpd", label: "Pedidos LGPD", icon: "lock" },
     ],
   },
   {
@@ -129,6 +130,7 @@ export type IconName =
   | "chart"
   | "chat"
   | "shield"
+  | "lock"
   | "user"
   | "graduation"
   | "clipboard"
@@ -178,6 +180,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M12 3l7.5 3v5.5c0 4.4-3.1 8.2-7.5 9.5-4.4-1.3-7.5-5.1-7.5-9.5V6Z" />
       <path d="M9.5 12l1.8 1.8L15 10" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3" />
+      <path d="M12 14.5v2.5" />
     </>
   ),
   user: (
@@ -534,13 +543,17 @@ function AdminRail({
                 </p>
                 <div className="space-y-0.5">
                   {section.items.map((item, itemIndex) => {
-                    const labelIndex = sectionLabelIndices[index]!.itemIndices[itemIndex]!;
+                    const labelIndex =
+                      sectionLabelIndices[index]!.itemIndices[itemIndex]!;
                     if (item.disabled) {
                       return (
                         <div
                           key={item.href}
                           aria-disabled="true"
-                          className={cn(ROW_CLASS, "cursor-default text-admin-shell-foreground/40")}
+                          className={cn(
+                            ROW_CLASS,
+                            "cursor-default text-admin-shell-foreground/40",
+                          )}
                         >
                           <span className="flex-none">
                             <NavIcon name={item.icon} />
@@ -791,7 +804,9 @@ function AdminNavMobile({
                               <span className="flex-none text-admin-shell-foreground/40">
                                 <NavIcon name={item.icon} />
                               </span>
-                              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                              <span className="min-w-0 flex-1 truncate">
+                                {item.label}
+                              </span>
                               <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
                                 Em breve
                               </span>

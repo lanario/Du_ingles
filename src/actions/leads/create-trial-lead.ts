@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { TRIAL_CLASS_FIELDS, trialClassSchema } from "@/schemas/leads";
 import { describeInvalidFields } from "@/lib/form-errors";
 import { notifyLeadReceived } from "@/lib/notifications/events";
+import { PRIVACY_POLICY_VERSION, recordConsent } from "@/lib/consent/record";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 /**
@@ -28,6 +29,7 @@ export async function createTrialLeadAction(
     phone: formData.get("phone"),
     isAdult: formData.get("isAdult"),
     goal: formData.get("goal") || undefined,
+    consent: formData.get("consent"),
   });
   if (!parsed.success) {
     const fields = parsed.error.flatten().fieldErrors as Record<string, string[]>;
@@ -67,6 +69,15 @@ export async function createTrialLeadAction(
       "Não foi possível enviar. Tente novamente em instantes.",
     );
   }
+
+  await recordConsent({
+    organizationId,
+    purpose: "trial_class",
+    granted: true,
+    documentVersion: PRIVACY_POLICY_VERSION,
+    subjectEmail: email,
+    choices: { isAdult: isAdult === "sim" },
+  });
 
   notifyLeadReceived({ organizationId, name, kind: "trial", contact: phone });
 

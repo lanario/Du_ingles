@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { after, NextResponse, type NextRequest } from "next/server";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
+import { PRIVACY_POLICY_VERSION, recordConsent } from "@/lib/consent/record";
 import { isGoogleConfigured } from "@/lib/env";
 import { saveConnection } from "@/lib/google/connection";
 import { exchangeCode, siteUrl, STATE_COOKIE } from "@/lib/google/oauth";
@@ -59,6 +60,14 @@ export async function GET(request: NextRequest) {
     action: "GOOGLE_CALENDAR_CONNECTED",
     entityType: "profile",
     entityId: ctx.userId,
+  });
+  await recordConsent({
+    organizationId: ctx.organizationId,
+    purpose: "google_calendar",
+    granted: true,
+    documentVersion: PRIVACY_POLICY_VERSION,
+    subjectId: ctx.userId,
+    subjectEmail: ctx.email,
   });
 
   after(() => backfillForProfile(ctx.userId, ctx.realRole));

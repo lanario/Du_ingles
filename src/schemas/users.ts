@@ -4,9 +4,8 @@ import { passwordRules } from "@/schemas/auth";
 import { confirmPasswordMatches } from "@/schemas/field-messages";
 
 /**
- * O que o admin ainda edita num usuário existente. A criação não mora mais
- * aqui: toda conta nasce de um convite por WhatsApp preenchido pela própria
- * pessoa (ver `schemas/invites.ts`).
+ * O que o admin ainda edita num usuário existente. Contas de alunos podem ser
+ * criadas pelo autocadastro ou por convite (ver `schemas/invites.ts`).
  */
 export const updateUserSchema = z.object({
   fullName: z.string().trim().min(2, "Informe o nome completo.").max(160),

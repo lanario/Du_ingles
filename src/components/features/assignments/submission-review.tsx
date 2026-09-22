@@ -119,6 +119,7 @@ export function SubmissionReview({
                         <AnswerText
                           question={question}
                           raw={submission.answers[question.id] ?? ""}
+                          verdict={verdict}
                         />
                         {verdict === null &&
                           (canGrade ? (
@@ -161,6 +162,7 @@ export function SubmissionReview({
                   variant={variant}
                   openQuestions={questions.filter((q) => auto.verdicts[q.id] === null)}
                   initialManualGrades={submission.manualGrades}
+                  initialManualNotes={submission.manualNotes}
                   autoScore={auto.score}
                   autoMax={auto.max}
                 />

@@ -63,6 +63,11 @@ export const acceptInviteSchema = z
     cpf: cpfField,
     password: passwordRules,
     confirmPassword: z.string().min(1, "Confirme a senha."),
+    // Aceite explícito, e não "ao concluir você concorda": é o registro dele
+    // (`consent_records`) que prova qual versão dos termos a pessoa aceitou.
+    acceptTerms: z.literal("on", {
+      error: "Para criar o acesso, aceite os termos de uso e a política de privacidade.",
+    }),
   })
   .superRefine(confirmPasswordMatches);
 export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;
@@ -81,6 +86,7 @@ export const ACCEPT_INVITE_FIELDS = [
   ["cpf", "CPF"],
   ["password", "Senha"],
   ["confirmPassword", "Confirmar senha"],
+  ["acceptTerms", "Termos e privacidade"],
 ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
 export type AcceptInviteField = (typeof ACCEPT_INVITE_FIELDS)[number][0];

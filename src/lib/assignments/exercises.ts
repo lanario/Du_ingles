@@ -295,6 +295,53 @@ export function manualGradeFieldName(questionId: string): string {
 }
 
 /**
+ * Comentário do professor por questão dissertativa (ou objetiva sem
+ * gabarito) — tipicamente a resposta certa e uma explicação. Ao contrário de
+ * `manual_grades`, esta coluna É visível ao aluno assim que a entrega é
+ * corrigida (ver grant em `20260922_assignment_manual_notes.sql`): é
+ * justamente o que o aluno deve ler para entender o que errou.
+ */
+export type ManualNotes = Record<string, string>;
+
+export function readManualNotes(value: Json | null): ManualNotes {
+  const obj = asObject(value);
+  if (!obj) return {};
+
+  const notes: ManualNotes = {};
+  for (const [questionId, text] of Object.entries(obj)) {
+    if (typeof text === "string" && text.trim() !== "") notes[questionId] = text;
+  }
+  return notes;
+}
+
+/** Nome do campo do form de correção para o comentário de uma questão. */
+export function manualNoteFieldName(questionId: string): string {
+  return `note_${questionId}`;
+}
+
+/**
+ * Lê os comentários do `FormData` do form de correção, um campo por questão
+ * dissertativa — mesmo recorte de `parseManualGradesFromForm` (só questões
+ * que `autoGrade` deixaria em aberto).
+ */
+export function parseManualNotesFromForm(
+  formData: FormData,
+  questions: Question[],
+  answerKey: AnswerKey,
+): ManualNotes {
+  const notes: ManualNotes = {};
+  for (const question of questions) {
+    if (isObjective(question.type) && answerKey[question.id]) continue;
+
+    const raw = formData.get(manualNoteFieldName(question.id));
+    if (typeof raw !== "string") continue;
+    const trimmed = raw.trim();
+    if (trimmed) notes[question.id] = trimmed.slice(0, 2000);
+  }
+  return notes;
+}
+
+/**
  * Lê os pontos manuais do `FormData` do form de correção, um campo por
  * questão dissertativa (ver `manualGradeFieldName`). Só entram questões que
  * `autoGrade` deixaria em aberto — campo estranho no payload não vira nota de

@@ -4,7 +4,7 @@ import Image from "next/image";
 
 /**
  * Cartão flutuante sobre a prévia do painel: mostra uma aula "acontecendo
- * agora" com o professor e leva para o formulário de cadastro (`#faq`),
+ * agora" com o professor e leva para o cadastro público (`/cadastro`),
  * o mesmo destino do CTA principal do hero.
  *
  * É conteúdo de verdade (link real), por isso vive fora do DashboardPreview —
@@ -28,7 +28,7 @@ const hasPhoto = existsSync(path.join(process.cwd(), "public", TEACHER.photo));
 export function LiveClassCta() {
   return (
     <a
-      href="#faq"
+      href="/cadastro"
       className="group/cta mt-4 block rounded-2xl border border-border bg-background p-4 shadow-[0_24px_50px_-24px_rgba(10,31,68,0.55)] transition active:border-gold-400 hover:border-gold-400 md:absolute md:-bottom-8 md:-left-10 md:mt-0 md:w-[19rem]"
     >
       <div className="flex items-start gap-3">
@@ -67,7 +67,7 @@ export function LiveClassCta() {
       </div>
 
       <p className="mt-3 border-t border-border pt-3 text-[13px] font-medium text-navy-800 sm:text-[11px]">
-        Quero uma aula assim: agendar minha aula grátis
+        Quero uma aula assim: começar minha experiência
         <span className="ml-1 inline-block transition-transform group-hover/cta:translate-x-0.5">
           →
         </span>

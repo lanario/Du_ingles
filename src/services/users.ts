@@ -12,7 +12,9 @@ export type ServiceResult<T> =
  * apontando pra uma conta inativa e ninguém é avisado. Reatribuir antes é o
  * que fecha essa porta.
  */
-async function blockedByActiveGroups(id: string): Promise<ServiceResult<void> | null> {
+export async function blockedByActiveGroups(
+  id: string,
+): Promise<ServiceResult<void> | null> {
   const target = await usersRepo.getUserRoleAndOrg(id);
   if (!target || target.role !== "teacher") return null;
 

@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { emailField, nameField, phoneIssue } from "@/schemas/field-messages";
 
+/**
+ * Caixa "li a política e autorizo o contato" (LGPD art. 8: consentimento
+ * livre, informado e demonstrável). Checkbox marcado chega como "on"; qualquer
+ * outra coisa, inclusive ausente, trava o envio.
+ */
+const contactConsentField = z.literal("on", {
+  error: "Marque a autorização de contato para podermos responder.",
+});
+
 export const createLeadSchema = z.object({
   name: nameField({ requireSurname: false, max: 120 }),
   email: emailField,
@@ -15,6 +24,7 @@ export const createLeadSchema = z.object({
     .trim()
     .max(2000, "A mensagem passou de 2000 caracteres.")
     .optional(),
+  consent: contactConsentField,
 });
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 
@@ -23,6 +33,7 @@ export const CREATE_LEAD_FIELDS = [
   ["email", "E-mail"],
   ["phone", "Telefone"],
   ["message", "Mensagem"],
+  ["consent", "Autorização de contato"],
 ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
 // ---------------------------------------------------------------------------
@@ -61,6 +72,7 @@ export const trialClassSchema = z.object({
     .max(2000, "O objetivo passou de 2000 caracteres. Resuma um pouco.")
     .optional()
     .transform((v) => (v ? v : undefined)),
+  consent: contactConsentField,
 });
 export type TrialClassInput = z.infer<typeof trialClassSchema>;
 
@@ -76,4 +88,5 @@ export const TRIAL_CLASS_FIELDS = [
   // "Corrija o campo Você tem 18 anos ou mais?." tropeça na pontuação.
   ["isAdult", "Maioridade (18 anos ou mais)"],
   ["goal", "Objetivo das aulas"],
+  ["consent", "Autorização de contato"],
 ] as const satisfies ReadonlyArray<readonly [string, string]>;

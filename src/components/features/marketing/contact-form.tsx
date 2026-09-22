@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { createLeadAction } from "@/actions/leads/create-lead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,27 @@ export function ContactForm() {
           name="message"
           rows={3}
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+      </div>
+
+      <div className="space-y-1.5 sm:col-span-2">
+        <label className="flex items-start gap-2.5 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            name="consent"
+            required
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
+          />
+          <span>
+            Li a{" "}
+            <Link href="/privacidade" className="underline" target="_blank">
+              política de privacidade
+            </Link>{" "}
+            e autorizo o Du Inglês a usar estes dados para responder a este contato.
+          </span>
+        </label>
+        <FieldError
+          messages={state && !state.success ? state.error.fields?.["consent"] : undefined}
         />
       </div>
 

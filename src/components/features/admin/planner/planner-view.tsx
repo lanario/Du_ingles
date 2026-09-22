@@ -37,9 +37,9 @@ import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useListProgress } from "@/components/motion/list-motion";
 import { ActionMenu } from "@/components/ui/action-menu";
 import { Select } from "@/components/ui/select";
-import { SlideTabs } from "@/components/ui/slide-tabs";
 import {
   CalendarIcon,
+  ChevronRightIcon,
   CopyIcon,
   DownloadIcon,
   FolderMoveIcon,
@@ -79,11 +79,14 @@ import {
   dayKey,
   folderKeyFromParam,
   formatDay,
+  formatMonthLabel,
   formatTime,
   formatWeekday,
+  monthKey,
   relativeFrom,
   taskFolderKeyFromParam,
   todayKey,
+  todayMonthKey,
   type AtelieKey,
   type TaskAtelieKey,
 } from "./planner-utils";
@@ -560,6 +563,54 @@ export function PlannerView({
     return Array.from(map.entries());
   }, [visibleSessions]);
 
+  /**
+   * "Concluídas" lê para trás: a mais recente no topo, agrupada por mês — o
+   * mês corrente já vem aberto (é o que se está revisando agora), os
+   * anteriores vêm fechados (histórico, não o trabalho do dia).
+   */
+  const currentMonthKey = todayMonthKey();
+  const [openMonths, setOpenMonths] = useState<Set<string>>(
+    () => new Set([currentMonthKey]),
+  );
+
+  function toggleMonth(key: string) {
+    setOpenMonths((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const groupedCompletedSessions = useMemo(() => {
+    const sorted = [...visibleSessions].sort(
+      (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime(),
+    );
+
+    const monthMap = new Map<string, PlannerSession[]>();
+    for (const session of sorted) {
+      const key = monthKey(session.scheduledAt);
+      const bucket = monthMap.get(key);
+      if (bucket) bucket.push(session);
+      else monthMap.set(key, [session]);
+    }
+
+    return Array.from(monthMap.entries()).map(([key, monthSessions]) => {
+      const dayMap = new Map<string, PlannerSession[]>();
+      for (const session of monthSessions) {
+        const dKey = dayKey(session.scheduledAt);
+        const bucket = dayMap.get(dKey);
+        if (bucket) bucket.push(session);
+        else dayMap.set(dKey, [session]);
+      }
+      return {
+        key,
+        label: formatMonthLabel(monthSessions[0]!.scheduledAt),
+        days: Array.from(dayMap.entries()),
+      };
+    });
+  }, [visibleSessions]);
+
   function runPlanAction(
     id: string,
     action: () => Promise<{ success: boolean; error?: { message: string } }>,
@@ -656,37 +707,36 @@ export function PlannerView({
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <SlideTabs
-          tone="surface"
-          label="Modo do planejador"
+        <Select
+          aria-label="Modo do planejador"
+          tone="admin"
+          accent="primary"
+          filled
+          fit
           value={tab}
-          onValueChange={(value) => setTab(value as Tab)}
-          items={[
-            { label: "Ateliê", value: "atelie" },
-            { label: "Agenda", value: "agenda" },
-            { label: "Tarefas", value: "tarefas" },
-          ]}
-        />
+          onChange={(value) => setTab(value as Tab)}
+        >
+          <option value="atelie">Ateliê</option>
+          <option value="agenda">Agenda</option>
+          <option value="tarefas">Tarefas</option>
+        </Select>
 
         {tab === "agenda" ? (
-          <div className="flex flex-wrap gap-1.5">
+          <Select
+            aria-label="Recorte da agenda"
+            tone="admin"
+            accent="primary"
+            filled
+            fit
+            value={agendaFilter}
+            onChange={(value) => setAgendaFilter(value as AgendaFilter)}
+          >
             {AGENDA_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                onClick={() => setAgendaFilter(filter.value)}
-                aria-pressed={agendaFilter === filter.value}
-                className={cn(
-                  "h-9 rounded-full border px-3.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors",
-                  agendaFilter === filter.value
-                    ? "border-navy-900 bg-navy-900 text-white"
-                    : "border-admin-border bg-admin-surface text-admin-foreground/60 hover:bg-admin-muted",
-                )}
-              >
+              <option key={filter.value} value={filter.value}>
                 {filter.label}
-              </button>
+              </option>
             ))}
-          </div>
+          </Select>
         ) : (
           <label className="relative flex h-10 w-full max-w-xs items-center">
             <SearchIcon className="pointer-events-none absolute left-3 h-4 w-4 text-admin-foreground/40" />
@@ -734,6 +784,7 @@ export function PlannerView({
               value={taskGroupFilter}
               onChange={setTaskGroupFilter}
               tone="admin"
+              accent="primary"
               aria-label="Filtrar por turma"
               className="w-full max-w-[14rem]"
             >
@@ -896,7 +947,100 @@ export function PlannerView({
               transition={{ duration: reduceMotion ? 0 : 0.24 }}
               className="space-y-8"
             >
-              {groupedSessions.length === 0 ? (
+              {agendaFilter === "concluidas" ? (
+                groupedCompletedSessions.length === 0 ? (
+                  <EmptyBoard
+                    title="Nenhuma aula concluída"
+                    body="As aulas já dadas aparecem aqui, da mais recente para a mais antiga."
+                  />
+                ) : (
+                  groupedCompletedSessions.map(({ key, label, days }) => {
+                    const open = openMonths.has(key);
+                    return (
+                      <section key={key}>
+                        <button
+                          type="button"
+                          onClick={() => toggleMonth(key)}
+                          aria-expanded={open}
+                          className="mb-3 flex w-full items-center gap-3 text-left"
+                        >
+                          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-admin-foreground/60">
+                            {label}
+                          </h2>
+                          <span className="h-px flex-1 bg-gradient-to-r from-gold-300 to-transparent" />
+                          <ChevronRightIcon
+                            className={cn(
+                              "h-4 w-4 shrink-0 text-admin-foreground/45 transition-transform",
+                              open && "rotate-90",
+                            )}
+                          />
+                        </button>
+
+                        <AnimatePresence initial={false}>
+                          {open && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: reduceMotion ? 0 : 0.24 }}
+                              className="space-y-6 overflow-hidden"
+                            >
+                              {days.map(([dayKeyValue, items]) => (
+                                <div key={dayKeyValue}>
+                                  <div className="mb-3 flex items-baseline gap-3">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-admin-foreground/55">
+                                      {dayKeyValue === today
+                                        ? "Hoje"
+                                        : formatWeekday(items[0]!.scheduledAt)}
+                                    </h3>
+                                    <span className="text-xs text-admin-foreground/45">
+                                      {formatDay(items[0]!.scheduledAt)}
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-2.5">
+                                    {items.map((session, index) => (
+                                      <SessionRow
+                                        key={session.id}
+                                        session={session}
+                                        index={index}
+                                        busy={busyId === session.id}
+                                        onEdit={() => setEditingSession(session)}
+                                        onCancel={() => {
+                                          if (
+                                            !window.confirm(
+                                              `Cancelar a aula "${session.title}" de ${session.groupName}? Ela fica na agenda como cancelada e o horário não é remarcado sozinho.`,
+                                            )
+                                          )
+                                            return;
+                                          runPlanAction(session.id, () =>
+                                            cancelSessionAction(session.id),
+                                          );
+                                        }}
+                                        onDelete={() => {
+                                          if (
+                                            !window.confirm(
+                                              `Excluir de vez a aula "${session.title}" de ${session.groupName}? O horário volta a ficar livre na grade da turma.`,
+                                            )
+                                          )
+                                            return;
+                                          runPlanAction(session.id, () =>
+                                            deleteSessionAction(session.id),
+                                          );
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </section>
+                    );
+                  })
+                )
+              ) : groupedSessions.length === 0 ? (
                 <EmptyBoard
                   title="Nada na agenda"
                   body="Agende uma aula para uma turma — ela aparece aqui com o botão de começar."

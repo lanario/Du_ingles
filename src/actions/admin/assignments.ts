@@ -10,7 +10,10 @@ import {
   notifyAssignmentDeleted,
   notifyAssignmentGraded,
 } from "@/lib/notifications/events";
-import { parseManualGradesFromForm } from "@/lib/assignments/exercises";
+import {
+  parseManualGradesFromForm,
+  parseManualNotesFromForm,
+} from "@/lib/assignments/exercises";
 import * as repo from "@/repositories/assignments";
 import {
   assignTemplateSchema,
@@ -180,6 +183,7 @@ export async function gradeSubmissionAsAdminAction(
 
   const answerKey = await repo.getAssignmentAnswerKey(assignmentId);
   const manualGrades = parseManualGradesFromForm(formData, assignment.questions, answerKey);
+  const manualNotes = parseManualNotesFromForm(formData, assignment.questions, answerKey);
 
   const success = await repo.gradeSubmission(
     assignmentId,
@@ -188,6 +192,7 @@ export async function gradeSubmissionAsAdminAction(
     parsed.data.score,
     parsed.data.feedback,
     manualGrades,
+    manualNotes,
   );
   if (!success) return fail("INTERNAL_ERROR", "Falha ao salvar a nota.");
 

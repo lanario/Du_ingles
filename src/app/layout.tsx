@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { env } from "@/lib/env";
 import { PERF_INIT_SCRIPT } from "@/lib/perf";
+import { CookieConsent } from "@/components/features/consent/cookie-consent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -81,7 +82,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: PERF_INIT_SCRIPT }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }

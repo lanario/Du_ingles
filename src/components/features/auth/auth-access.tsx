@@ -8,18 +8,7 @@ import { LoginForm } from "@/components/features/auth/login-form";
 import { RequestResetForm } from "@/components/features/auth/request-reset-form";
 import { SignUpPanel } from "@/components/features/auth/signup-panel";
 
-/**
- * Tela de acesso do Du Inglês nas duas faces do `AuthSwitch`.
- *
- * "Cadastre-se" não abre formulário: não existe cadastro público — a conta
- * nasce de um convite emitido depois da matrícula —, então a face mostra o
- * caminho real até ela em vez de criar um usuário sem turma e sem plano.
- *
- * Recuperar senha não é uma terceira face: é um desvio do login. O "Esqueceu a
- * senha?" troca o conteúdo da face "entrar" no lugar, sem recarregar a página
- * e sem mexer no navy; a rota `/recuperar-senha` continua existindo para quem
- * chega por link direto.
- */
+/** Tela de acesso e início do autocadastro do Du Inglês. */
 
 const HIGHLIGHTS = [
   { value: "100%", label: "das aulas ao vivo" },
@@ -77,25 +66,24 @@ export function AuthAccess() {
             }
           : {
               title: "Entrar",
-              description: "Use o e-mail cadastrado na sua matrícula.",
+              description: "Use o e-mail e a senha da sua conta.",
               content: <LoginForm onForgotPassword={() => setRecovering(true)} />,
             },
         cadastrar: {
           title: "Cadastre-se",
-          description:
-            "A conta nasce do convite que enviamos depois da aula experimental.",
+          description: "Conte sobre você, escolha um plano e crie seu acesso.",
           content: <SignUpPanel />,
         },
       }}
       prompts={{
         entrar: {
           heading: "Novo por aqui?",
-          text: "A matrícula começa por uma aula experimental gratuita, com professor ao vivo.",
+          text: "Crie sua conta, escolha um plano e tenha 7 dias de experiência antes da primeira cobrança.",
           action: "Cadastre-se",
         },
         cadastrar: {
           heading: "Já é aluno?",
-          text: "Entre com o e-mail da matrícula para ver suas aulas, tarefas e progresso.",
+          text: "Entre com seu e-mail para ver suas aulas, tarefas e progresso.",
           action: "Entrar",
         },
       }}

@@ -1,13 +1,15 @@
 "use client";
 
 /**
- * Preferência de visualização (cartões/lista) persistida no localStorage —
+ * Preferência de visualização (cartões/lista) persistida no localStorage
+ * (só com aceite de cookies de "preferências") —
  * uma fonte externa ao React, daí o `useSyncExternalStore`. O servidor
  * sempre renderiza "cards" e o cliente corrige na hidratação, sem
  * divergência de HTML e sem `setState` dentro de efeito.
  */
 
 import { useSyncExternalStore } from "react";
+import { preferenceStorage, useConsent } from "@/lib/consent/client";
 
 export type ViewMode = "cards" | "list";
 
@@ -25,15 +27,30 @@ function subscribe(onChange: () => void, key: string) {
   };
 }
 
+/**
+ * Escolhas desta visita. Sem aceite de cookies de "preferências" o
+ * `preferenceStorage` não grava nada, e é aqui que a troca sobrevive até a
+ * página recarregar.
+ */
+const sessionModes = new Map<string, ViewMode>();
+
+function readMode(storageKey: string): ViewMode {
+  const current = sessionModes.get(storageKey) ?? preferenceStorage.get(storageKey);
+  return current === "list" ? "list" : "cards";
+}
+
 export function useViewMode(storageKey: string): [ViewMode, (mode: ViewMode) => void] {
+  // Assinar o consentimento re-renderiza quando a pessoa aceita ou revoga.
+  useConsent();
   const mode = useSyncExternalStore(
     (onChange) => subscribe(onChange, storageKey),
-    () => (window.localStorage.getItem(storageKey) === "list" ? "list" : "cards"),
+    () => readMode(storageKey),
     () => "cards" as ViewMode,
   );
 
   function setMode(next: ViewMode) {
-    window.localStorage.setItem(storageKey, next);
+    sessionModes.set(storageKey, next);
+    preferenceStorage.set(storageKey, next);
     // `storage` só dispara em outras abas; esta aqui avisamos na mão.
     listeners.forEach((onChange) => onChange());
   }

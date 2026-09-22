@@ -1649,6 +1649,31 @@ input:autofill {
   animation: dlLabelIn 0.4s ease forwards;
 }
 
+/*
+ * Variante estática (sem máquina de estados) usada em links diretos, como a
+ * folha de exercícios das tarefas — mesma pílula, sem os estados de
+ * carregamento porque o PDF já sai pronto de uma rota, sem signed URL.
+ */
+.dl-btn--accent {
+  border-color: var(--gold-300);
+}
+
+.dl-btn--accent .dl-btn__circle {
+  background: var(--gold-600);
+}
+
+.dl-btn--accent:hover {
+  border-color: var(--gold-500);
+}
+
+.dl-btn--accent:hover .dl-btn__circle {
+  background: var(--gold-700);
+}
+
+.dl-btn--accent .dl-btn__label {
+  color: var(--gold-700);
+}
+
 /* --- falha -------------------------------------------------------------- */
 .dl-btn[data-state="error"] {
   border-color: var(--destructive);

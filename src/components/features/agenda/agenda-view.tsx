@@ -27,6 +27,7 @@ import { ChevronRightIcon, PlusIcon } from "@/components/ui/icons";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import { cn } from "@/lib/utils";
 import type { AgendaData, AgendaItem } from "@/repositories/agenda";
+import { preferenceStorage } from "@/lib/consent/client";
 import styles from "./agenda.module.css";
 import { buildToneMap } from "./agenda-card";
 import { AgendaDetail } from "./agenda-detail";
@@ -119,7 +120,8 @@ export function AgendaView({
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      // Sem aceite de cookies de preferência volta `null`: a agenda abre no padrão.
+      const raw = preferenceStorage.get(STORAGE_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw) as StoredPreferences;
       if (saved.view) setView(saved.view);
@@ -133,17 +135,14 @@ export function AgendaView({
   }, []);
 
   useEffect(() => {
-    try {
-      const payload: StoredPreferences = {
-        view,
-        hiddenGroups: [...hiddenGroups],
-        hiddenKinds: [...hiddenKinds],
-        showSchoolWide,
-      };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch {
-      // Modo privado: a agenda funciona igual, só não lembra do filtro.
-    }
+    const payload: StoredPreferences = {
+      view,
+      hiddenGroups: [...hiddenGroups],
+      hiddenKinds: [...hiddenKinds],
+      showSchoolWide,
+    };
+    // Sem aceite (ou em modo privado) não grava: a agenda só não lembra do filtro.
+    preferenceStorage.set(STORAGE_KEY, JSON.stringify(payload));
   }, [view, hiddenGroups, hiddenKinds, showSchoolWide]);
 
   // ------------------------------------------------------------ janela ----

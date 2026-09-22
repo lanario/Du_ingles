@@ -126,7 +126,7 @@ function Content({
             <GroupOption
               key={group.id}
               name={group.name}
-              detail={`${group.level} · ${group.enrolledCount}/${group.maxStudents}`}
+              detail={`${group.level} · Prof. ${group.teacherName} · ${group.enrolledCount}/${group.maxStudents}`}
               current={currentGroupId === group.id}
               loading={saving === group.id}
               disabled={busy || group.enrolledCount >= group.maxStudents}

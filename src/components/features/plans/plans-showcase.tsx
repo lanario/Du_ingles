@@ -20,10 +20,12 @@
  */
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
+  cancelStudentTrialAction,
   openBillingPortalAction,
   startPlanCheckoutAction,
 } from "@/actions/student/subscriptions";
@@ -80,7 +82,7 @@ interface PlansShowcaseProps {
   /** `true` durante "ver como": nada é cobrável. */
   readOnly: boolean;
   /** Vindo de `?assinatura=` — o retorno do checkout da Stripe. */
-  outcome: "confirmada" | "cancelada" | null;
+  outcome: "confirmada" | "cancelada" | "experiencia" | "pendente" | null;
 }
 
 export function PlansShowcase({
@@ -89,8 +91,12 @@ export function PlansShowcase({
   readOnly,
   outcome,
 }: PlansShowcaseProps) {
+  const router = useRouter();
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cancelFeedback, setCancelFeedback] = useState<string | null>(null);
+  const [cancelPending, setCancelPending] = useState(false);
+  const [cancelledTrialId, setCancelledTrialId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const tierPlans = useMemo(() => plans.filter((plan) => plan.tier !== null), [plans]);
@@ -128,6 +134,27 @@ export function PlansShowcase({
     });
   }
 
+  async function cancelTrial() {
+    setCancelPending(true);
+    setCancelFeedback(null);
+    try {
+      const result = await cancelStudentTrialAction();
+      if (!result.success) {
+        setCancelFeedback(result.error.message);
+        return;
+      }
+      if (subscription) setCancelledTrialId(subscription.id);
+      setCancelFeedback(
+        "Cancelamento agendado. Você continuará com acesso até o fim dos 7 dias e não haverá cobrança.",
+      );
+      router.refresh();
+    } catch {
+      setCancelFeedback("Não foi possível cancelar agora. Tente novamente.");
+    } finally {
+      setCancelPending(false);
+    }
+  }
+
   return (
     <div className="pb-12">
       <header className="max-w-2xl">
@@ -144,13 +171,26 @@ export function PlansShowcase({
       <AnimatePresence>
         {outcome === "confirmada" && (
           <Banner tone="var(--success)" icon={CheckIcon}>
-            Pagamento recebido! A confirmação da Stripe pode levar alguns instantes —
-            assim que ela chegar, seu plano aparece aqui como ativo.
+            Assinatura confirmada. A confirmação da Stripe pode levar alguns instantes —
+            assim que chegar, seu plano aparece aqui como ativo.
+          </Banner>
+        )}
+        {outcome === "experiencia" && (
+          <Banner tone="var(--success)" icon={CheckIcon}>
+            Sua experiência gratuita começou. A primeira cobrança será feita após 7 dias;
+            você pode cancelar pela aba Planos antes disso.
           </Banner>
         )}
         {outcome === "cancelada" && (
           <Banner tone="var(--muted-foreground)" icon={ClockIcon}>
-            Checkout cancelado. Nada foi cobrado — seu plano continua como estava.
+            Checkout cancelado. Nada foi cobrado; você pode escolher um plano abaixo
+            quando quiser.
+          </Banner>
+        )}
+        {outcome === "pendente" && (
+          <Banner tone="var(--muted-foreground)" icon={ClockIcon}>
+            Sua conta está criada, mas não conseguimos abrir o checkout agora. Escolha seu
+            plano abaixo para cadastrar o pagamento; a cobrança começa após 7 dias.
           </Banner>
         )}
         {error && (
@@ -164,6 +204,12 @@ export function PlansShowcase({
         subscription={subscription}
         readOnly={readOnly}
         onManage={openPortal}
+        onCancelTrial={cancelTrial}
+        cancelPending={cancelPending}
+        cancelFeedback={cancelFeedback}
+        cancellationScheduled={Boolean(
+          subscription?.cancelAtPeriodEnd || subscription?.id === cancelledTrialId,
+        )}
       />
 
       {plans.length === 0 ? (
@@ -1149,10 +1195,18 @@ function CurrentPlan({
   subscription,
   readOnly,
   onManage,
+  onCancelTrial,
+  cancelPending,
+  cancelFeedback,
+  cancellationScheduled,
 }: {
   subscription: StudentSubscription | null;
   readOnly: boolean;
   onManage: () => void;
+  onCancelTrial: () => void;
+  cancelPending: boolean;
+  cancelFeedback: string | null;
+  cancellationScheduled: boolean;
 }) {
   const status = subscription
     ? (STATUS_TEXT[subscription.status] ?? {
@@ -1164,6 +1218,11 @@ function CurrentPlan({
   const renews = subscription?.currentPeriodEnd
     ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(
         new Date(subscription.currentPeriodEnd),
+      )
+    : null;
+  const trialEnds = subscription?.trialEnd
+    ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(
+        new Date(subscription.trialEnd),
       )
     : null;
 
@@ -1200,13 +1259,17 @@ function CurrentPlan({
               <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {subscription.amountCents !== null &&
                   `${formatMoney(subscription.amountCents, subscription.currency)} · `}
-                {subscription.cancelAtPeriodEnd
-                  ? renews
-                    ? `acesso até ${renews}`
-                    : "cancelamento agendado"
-                  : renews
-                    ? `próxima cobrança em ${renews}`
-                    : "aguardando confirmação"}
+                {subscription.status === "trialing" &&
+                trialEnds &&
+                !subscription.cancelAtPeriodEnd
+                  ? `experiência grátis até ${trialEnds}; primeira cobrança nessa data`
+                  : subscription.cancelAtPeriodEnd
+                    ? renews
+                      ? `acesso até ${renews}`
+                      : "cancelamento agendado"
+                    : renews
+                      ? `próxima cobrança em ${renews}`
+                      : "aguardando confirmação"}
               </p>
             </>
           ) : (
@@ -1215,8 +1278,8 @@ function CurrentPlan({
                 Nenhum plano contratado por aqui
               </p>
               <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
-                Se você já estuda com a gente, sua matrícula foi feita direto com a
-                coordenação — fale com ela para confirmar qual é o seu plano.
+                Quando a confirmação chegar, seu plano aparecerá aqui. Se sua matrícula
+                foi feita direto com a coordenação, fale com ela para confirmar os dados.
               </p>
             </>
           )}
@@ -1243,6 +1306,16 @@ function CurrentPlan({
               Gerenciar assinatura
             </button>
           )}
+          {subscription?.status === "trialing" && !cancellationScheduled && (
+            <button
+              type="button"
+              onClick={onCancelTrial}
+              disabled={readOnly || cancelPending}
+              className="rounded-lg border border-destructive/35 bg-background px-3 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            >
+              {cancelPending ? "Cancelando…" : "Cancelar experiência"}
+            </button>
+          )}
           <ContactCoordination
             variant={subscription ? "ghost" : "solid"}
             message={
@@ -1253,6 +1326,12 @@ function CurrentPlan({
           />
         </div>
       </div>
+
+      {cancelFeedback && (
+        <p role="status" className="mt-3 text-[12px] text-muted-foreground">
+          {cancelFeedback}
+        </p>
+      )}
 
       {subscription && (
         <p className="mt-3 border-t border-border/70 pt-3 text-[12px] leading-relaxed text-muted-foreground">

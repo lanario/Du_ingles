@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 
 /**
- * A criação direta (e-mail + senha provisória digitada pelo admin) saiu:
- * todo cadastro agora nasce de um convite por WhatsApp, preenchido pela
- * própria pessoa. A rota fica de pé só para não quebrar link antigo ou
- * favorito — manda para a lista já com o painel de convite aberto.
+ * O cadastro iniciado pela coordenação continua usando convites, preenchidos
+ * pela própria pessoa. Alunos novos também podem iniciar o autocadastro em
+ * /cadastro. Esta rota antiga fica para links salvos e abre o painel de convite.
  */
 export default function NovoUsuarioPage() {
   redirect("/admin/usuarios?convite=1");

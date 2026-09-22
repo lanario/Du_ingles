@@ -4,6 +4,13 @@ import { ADMIN_BASE, TEACHER_BASE } from "@/lib/areas";
 import * as audience from "@/lib/notifications/audience";
 import { dispatchNotifications, type Recipient } from "@/lib/notifications/dispatch";
 import type { AppRole, AttendanceStatus } from "@/types/domain";
+import {
+  KIND_LABEL,
+  STATUS_LABEL,
+  meusDadosPath,
+  type LgpdRequestKind,
+  type LgpdRequestStatus,
+} from "@/lib/lgpd/requests";
 
 /**
  * Catálogo de eventos do sino.
@@ -893,9 +900,15 @@ export function notifyLgpdRequest(input: {
   organizationId: string;
   requesterId: string;
   requesterName: string;
+  kind: LgpdRequestKind;
+  protocol: string;
+  dueAt: string;
 }): void {
   schedule(async () => {
     const admins = await audience.orgAdmins(input.organizationId);
+    const due = new Date(input.dueAt).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
 
     await dispatchNotifications({
       organizationId: input.organizationId,
@@ -903,9 +916,37 @@ export function notifyLgpdRequest(input: {
       exclude: [input.requesterId],
       build: () => ({
         type: "lgpd_request",
-        title: "Solicitação de exclusão de dados (LGPD)",
-        body: `${input.requesterName} solicitou a exclusão dos próprios dados pessoais.`,
-        link: `${ADMIN_BASE}/usuarios/${input.requesterId}`,
+        title: `Pedido LGPD ${input.protocol}: ${KIND_LABEL[input.kind]}`,
+        body: `${input.requesterName} abriu um pedido de titular. Prazo legal de resposta: ${due}.`,
+        link: `${ADMIN_BASE}/lgpd`,
+      }),
+    });
+  });
+}
+
+/**
+ * Retorno ao titular quando o pedido muda de estado. Vai para quem pediu —
+ * mesmo que seja da coordenação, porque aqui ela é titular, não quem atende.
+ */
+export function notifyLgpdRequestUpdated(input: {
+  organizationId: string;
+  requesterId: string;
+  requesterRole: AppRole;
+  requesterName: string;
+  protocol: string;
+  status: LgpdRequestStatus;
+}): void {
+  schedule(async () => {
+    await dispatchNotifications({
+      organizationId: input.organizationId,
+      recipients: [
+        { id: input.requesterId, role: input.requesterRole, name: input.requesterName },
+      ],
+      build: () => ({
+        type: "lgpd_request",
+        title: `Seu pedido ${input.protocol}: ${STATUS_LABEL[input.status].toLowerCase()}`,
+        body: "Veja a resposta da coordenação em Meus dados.",
+        link: meusDadosPath(input.requesterRole),
       }),
     });
   });

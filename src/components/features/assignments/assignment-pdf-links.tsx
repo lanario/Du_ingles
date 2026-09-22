@@ -5,7 +5,9 @@ import { cn } from "@/lib/utils";
  * Atalhos para a folha de exercícios em PDF (`/api/assignments/[id]/pdf` ou
  * `/api/assignment-templates/[id]/pdf`). O PDF é gerado na hora pela rota,
  * que reaplica a permissão — aqui é só o link, aberto no visualizador do
- * navegador (de onde se imprime ou salva).
+ * navegador (de onde se imprime ou salva). Mesma pílula do botão de download
+ * da Biblioteca (`.dl-btn`, em `globals.css`), fixada em `data-state="idle"`
+ * porque aqui não há signed URL para esperar.
  *
  * `withAnswerKey` acrescenta a versão do professor; a rota ignora
  * `?gabarito=1` vindo de aluno, então esconder o botão é conforto, não tranca.
@@ -19,23 +21,22 @@ export function AssignmentPdfLinks({
   withAnswerKey?: boolean;
   className?: string;
 }) {
-  const base =
-    "inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500";
-
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+    <div className={cn("flex flex-wrap items-center gap-2.5", className)}>
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
         title="Folha de exercícios para imprimir"
-        className={cn(
-          base,
-          "border-navy-100 bg-navy-50 text-navy-800 hover:border-navy-300 hover:bg-navy-100",
-        )}
+        data-state="idle"
+        className="dl-btn"
       >
-        <DownloadIcon className="h-3.5 w-3.5" />
-        {withAnswerKey ? "Folha em PDF" : "Baixar PDF"}
+        <span className="dl-btn__circle">
+          <DownloadIcon className="dl-btn__icon" />
+        </span>
+        <span className="dl-btn__label">
+          {withAnswerKey ? "Folha em PDF" : "Baixar PDF"}
+        </span>
       </a>
       {withAnswerKey && (
         <a
@@ -43,13 +44,13 @@ export function AssignmentPdfLinks({
           target="_blank"
           rel="noopener noreferrer"
           title="Versão do professor, com as respostas destacadas"
-          className={cn(
-            base,
-            "border-gold-300 bg-gold-50 text-gold-700 hover:border-gold-400 hover:bg-gold-100",
-          )}
+          data-state="idle"
+          className="dl-btn dl-btn--accent"
         >
-          <CheckIcon className="h-3.5 w-3.5" />
-          Gabarito
+          <span className="dl-btn__circle">
+            <CheckIcon className="dl-btn__icon" />
+          </span>
+          <span className="dl-btn__label">Gabarito</span>
         </a>
       )}
     </div>

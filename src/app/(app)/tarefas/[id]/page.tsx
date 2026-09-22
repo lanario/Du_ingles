@@ -103,7 +103,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
     ]);
 
     return (
-      <div className="max-w-3xl space-y-8 xl:max-w-5xl">
+      <div className="mx-auto max-w-3xl space-y-8 xl:max-w-5xl">
         {header}
         <section className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -129,7 +129,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
   const sent = mine?.status === "submitted" || mine?.status === "graded";
 
   return (
-    <div className="max-w-3xl space-y-8 xl:max-w-5xl">
+    <div className="mx-auto max-w-3xl space-y-8 xl:max-w-5xl">
       {header}
 
       <section className="space-y-4">
@@ -164,6 +164,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
             <StudentAnswersView
               questions={assignment.questions}
               answers={mine?.answers ?? {}}
+              manualNotes={mine?.manualNotes}
             />
           ) : (
             <ExercisePlayer

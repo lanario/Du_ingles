@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { CREATE_LEAD_FIELDS, createLeadSchema } from "@/schemas/leads";
 import { describeInvalidFields } from "@/lib/form-errors";
 import { notifyLeadReceived } from "@/lib/notifications/events";
+import { PRIVACY_POLICY_VERSION, recordConsent } from "@/lib/consent/record";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
 export async function createLeadAction(
@@ -17,6 +18,7 @@ export async function createLeadAction(
     email: formData.get("email"),
     phone: formData.get("phone") || undefined,
     message: formData.get("message") || undefined,
+    consent: formData.get("consent"),
   });
   if (!parsed.success) {
     const fields = parsed.error.flatten().fieldErrors as Record<string, string[]>;
@@ -49,6 +51,14 @@ export async function createLeadAction(
       "Não foi possível enviar. Tente novamente em instantes.",
     );
   }
+
+  await recordConsent({
+    organizationId,
+    purpose: "contact_form",
+    granted: true,
+    documentVersion: PRIVACY_POLICY_VERSION,
+    subjectEmail: parsed.data.email,
+  });
 
   notifyLeadReceived({
     organizationId,

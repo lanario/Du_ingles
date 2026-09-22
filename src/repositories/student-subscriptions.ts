@@ -102,7 +102,14 @@ export async function findStripeCustomerId(studentId: string): Promise<string | 
     .limit(1)
     .maybeSingle();
 
-  return data?.stripe_customer_id ?? null;
+  if (data?.stripe_customer_id) return data.stripe_customer_id;
+
+  const { data: registration } = await admin
+    .from("student_registrations")
+    .select("stripe_customer_id")
+    .eq("profile_id", studentId)
+    .maybeSingle();
+  return registration?.stripe_customer_id ?? null;
 }
 
 export interface UpsertSubscriptionInput {

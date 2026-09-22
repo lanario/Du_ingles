@@ -54,6 +54,27 @@ export interface SelectProps {
   required?: boolean;
   /** Paleta do chrome onde o campo vive. */
   tone?: SelectTone;
+  /**
+   * Cor de destaque (foco, borda aberta, opção em realce). `gold` é o padrão
+   * histórico do campo; `primary` é o azul do sistema, para quando o próprio
+   * seletor é a decisão principal da tela e não deveria emprestar a cor de
+   * outra área (ex.: alternador Ateliê/Agenda/Tarefas do planejador).
+   */
+  accent?: "gold" | "primary";
+  /**
+   * Gatilho como pílula sólida (fundo `accent`, texto claro, uppercase) em vez
+   * de campo contornado — para quando o seletor é a própria decisão da tela,
+   * não um campo de formulário. Só combina com `accent="primary"`.
+   */
+  filled?: boolean;
+  /**
+   * O campo assume a largura do rótulo atual em vez de 100% do container, e
+   * nem ele nem o menu truncam com reticências — o menu nunca fica mais
+   * estreito que o gatilho, mas cresce para caber a opção mais longa. Bom
+   * para um seletor solto num cabeçalho; dentro de uma coluna de formulário o
+   * padrão (`w-full` + truncar) continua sendo o certo.
+   */
+  fit?: boolean;
   invalid?: boolean;
   className?: string;
   "aria-label"?: string;
@@ -96,11 +117,16 @@ export function Select({
   disabled = false,
   required = false,
   tone = "app",
+  accent = "gold",
+  filled = false,
+  fit = false,
   invalid = false,
   className,
   "aria-label": ariaLabel,
   "aria-describedby": describedBy,
 }: SelectProps) {
+  const isPrimary = accent === "primary";
+  const isFilled = isPrimary && filled;
   const options = useMemo(() => extractOptions(children), [children]);
   const controlled = value !== undefined;
   const [internal, setInternal] = useState(defaultValue ?? "");
@@ -258,7 +284,10 @@ export function Select({
       style={{
         top: position?.top ?? 0,
         left: position?.left ?? 0,
-        width: position?.width,
+        // `fit`: o menu nunca fica mais estreito que o gatilho, mas cresce
+        // para caber a opção mais longa — em vez de herdar a largura exata
+        // do gatilho e truncar quem não coube.
+        ...(fit ? { minWidth: position?.width } : { width: position?.width }),
         visibility: position ? "visible" : "hidden",
       }}
       className={cn(
@@ -293,18 +322,31 @@ export function Select({
               className={cn(
                 "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors",
                 option.disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer",
-                !option.disabled && active && (admin ? "bg-admin-muted" : "bg-gold-50"),
+                !option.disabled &&
+                  active &&
+                  (isPrimary ? "bg-primary/10" : admin ? "bg-admin-muted" : "bg-gold-50"),
                 selected
                   ? admin
                     ? "font-semibold text-admin-foreground"
-                    : "font-semibold text-navy-900"
+                    : isPrimary
+                      ? "font-semibold text-primary"
+                      : "font-semibold text-navy-900"
                   : admin
                     ? "text-admin-foreground/80"
                     : "text-foreground",
               )}
             >
-              <span className="flex-1 truncate">{option.label}</span>
-              {selected && <CheckIcon className="h-3.5 w-3.5 flex-none text-gold-600" />}
+              <span className={cn("flex-1", fit ? "whitespace-nowrap" : "truncate")}>
+                {option.label}
+              </span>
+              {selected && (
+                <CheckIcon
+                  className={cn(
+                    "h-3.5 w-3.5 flex-none",
+                    isPrimary ? "text-primary" : "text-gold-600",
+                  )}
+                />
+              )}
             </li>
           );
         })}
@@ -334,12 +376,32 @@ export function Select({
         onClick={() => (open ? closeList(false) : openList())}
         onKeyDown={onTriggerKeyDown}
         className={cn(
-          "flex h-10 w-full items-center gap-2 rounded-xl border px-3 text-left text-sm transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
-          admin
-            ? "border-admin-border bg-admin-background text-admin-foreground hover:border-gold-300"
-            : "border-border bg-background text-foreground hover:border-gold-300",
-          open && "border-gold-500 ring-2 ring-gold-500/25",
+          "flex h-10 items-center gap-2 rounded-xl border text-left transition-colors",
+          fit ? "w-fit" : "w-full",
+          isFilled ? "px-4 text-xs font-semibold uppercase tracking-[0.08em]" : "px-3 text-sm",
+          "focus:outline-none focus-visible:ring-2",
+          isFilled
+            ? "focus-visible:ring-primary/50"
+            : isPrimary
+              ? "focus-visible:ring-primary/40"
+              : "focus-visible:ring-gold-500",
+          isFilled
+            ? "border-primary bg-primary text-primary-foreground hover:opacity-90"
+            : admin
+              ? cn(
+                  "border-admin-border bg-admin-background text-admin-foreground",
+                  isPrimary ? "hover:border-primary/50" : "hover:border-gold-300",
+                )
+              : cn(
+                  "border-border bg-background text-foreground",
+                  isPrimary ? "hover:border-primary/50" : "hover:border-gold-300",
+                ),
+          open &&
+            (isFilled
+              ? "ring-2 ring-primary/30"
+              : isPrimary
+                ? "border-primary ring-2 ring-primary/20"
+                : "border-gold-500 ring-2 ring-gold-500/25"),
           invalid && "border-destructive",
           disabled && "cursor-not-allowed opacity-50",
           className,
@@ -347,9 +409,14 @@ export function Select({
       >
         <span
           className={cn(
-            "flex-1 truncate",
+            "flex-1",
+            fit ? "whitespace-nowrap" : "truncate",
             !selectedOption &&
-              (admin ? "text-admin-foreground/45" : "text-muted-foreground"),
+              (isFilled
+                ? "text-primary-foreground/70"
+                : admin
+                  ? "text-admin-foreground/45"
+                  : "text-muted-foreground"),
           )}
         >
           {selectedOption ? selectedOption.label : placeholder}
@@ -357,7 +424,11 @@ export function Select({
         <ChevronIcon
           className={cn(
             "h-4 w-4 flex-none transition-transform",
-            admin ? "text-admin-foreground/40" : "text-muted-foreground",
+            isFilled
+              ? "text-primary-foreground/80"
+              : admin
+                ? "text-admin-foreground/40"
+                : "text-muted-foreground",
             open ? "-rotate-90" : "rotate-90",
           )}
         />

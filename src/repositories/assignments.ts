@@ -11,9 +11,11 @@ import {
   readAnswers,
   readInstructionsText,
   readManualGrades,
+  readManualNotes,
   readQuestions,
   type AnswerKey,
   type ManualGrades,
+  type ManualNotes,
   type Question,
   type StudentAnswers,
 } from "@/lib/assignments/exercises";
@@ -50,6 +52,8 @@ export interface SubmissionRow {
   autoMax: number | null;
   /** Pontos dados pelo professor em cada questão dissertativa. */
   manualGrades: ManualGrades;
+  /** Comentário do professor por questão dissertativa — o aluno lê depois de corrigido. */
+  manualNotes: ManualNotes;
 }
 
 /**
@@ -219,7 +223,7 @@ export async function getAssignmentSubmissions(
   const { data, error } = await admin
     .from("assignment_submissions")
     .select(
-      "student_id, content, answers, status, score, feedback, submitted_at, auto_score, auto_max, manual_grades, student:student_id(full_name)",
+      "student_id, content, answers, status, score, feedback, submitted_at, auto_score, auto_max, manual_grades, manual_notes, student:student_id(full_name)",
     )
     .eq("assignment_id", assignmentId);
 
@@ -236,6 +240,7 @@ export async function getAssignmentSubmissions(
     autoScore: row.auto_score,
     autoMax: row.auto_max,
     manualGrades: readManualGrades(row.manual_grades),
+    manualNotes: readManualNotes(row.manual_notes),
   }));
 }
 
@@ -246,12 +251,16 @@ export interface MySubmission {
   score: number | null;
   feedback: string | null;
   submittedAt: string | null;
+  /** Comentário do professor por questão dissertativa — só chega preenchido depois de corrigida. */
+  manualNotes: ManualNotes;
 }
 
 /**
  * A entrega do próprio aluno, pelo client normal — `submissions_select_own`
  * garante que só a linha dele volta, e as colunas de correção automática nem
- * existem para este papel.
+ * existem para este papel. `manual_notes` é a exceção deliberada: o aluno tem
+ * grant de SELECT nela (20260922) porque é o comentário que o professor
+ * escreveu para ele ler, não gabarito nem rascunho de correção.
  */
 export async function getMySubmission(
   assignmentId: string,
@@ -260,7 +269,7 @@ export async function getMySubmission(
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("assignment_submissions")
-    .select("content, answers, status, score, feedback, submitted_at")
+    .select("content, answers, status, score, feedback, submitted_at, manual_notes")
     .eq("assignment_id", assignmentId)
     .eq("student_id", studentId)
     .maybeSingle();
@@ -273,6 +282,7 @@ export async function getMySubmission(
     score: data.score,
     feedback: data.feedback,
     submittedAt: data.submitted_at,
+    manualNotes: readManualNotes(data.manual_notes),
   };
 }
 
@@ -895,6 +905,7 @@ export async function gradeSubmission(
   score: number,
   feedback: string | undefined,
   manualGrades?: ManualGrades,
+  manualNotes?: ManualNotes,
 ): Promise<boolean> {
   const admin = createAdminSupabaseClient();
   const { error } = await admin
@@ -910,6 +921,14 @@ export async function gradeSubmission(
             manual_grades:
               Object.keys(manualGrades).length > 0
                 ? (manualGrades as unknown as Json)
+                : null,
+          }
+        : {}),
+      ...(manualNotes !== undefined
+        ? {
+            manual_notes:
+              Object.keys(manualNotes).length > 0
+                ? (manualNotes as unknown as Json)
                 : null,
           }
         : {}),

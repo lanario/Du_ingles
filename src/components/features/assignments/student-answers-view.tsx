@@ -6,10 +6,16 @@
  * quando o professor fecha a nota, junto do comentário dele. O gabarito nem
  * chega a este processo (`answer_key` está fora do SELECT do aluno), então não
  * há como esta tela vazar resposta certa nem por engano.
+ *
+ * Exceção deliberada: `manualNotes` — o comentário que o professor escreveu à
+ * mão por questão dissertativa (ver `manual_notes`, 20260922). Isso não é
+ * gabarito, é o professor explicando para este aluno, então aparece aqui
+ * assim que a entrega é corrigida.
  */
 
 import {
   optionLabel,
+  type ManualNotes,
   type Question,
   type StudentAnswers,
 } from "@/lib/assignments/exercises";
@@ -18,14 +24,17 @@ import { cn } from "@/lib/utils";
 export function StudentAnswersView({
   questions,
   answers,
+  manualNotes = {},
 }: {
   questions: Question[];
   answers: StudentAnswers;
+  manualNotes?: ManualNotes;
 }) {
   return (
     <ol className="space-y-3">
       {questions.map((question, index) => {
         const raw = answers[question.id] ?? "";
+        const note = manualNotes[question.id];
         return (
           <li
             key={question.id}
@@ -40,6 +49,12 @@ export function StudentAnswersView({
                   {question.prompt}
                 </p>
                 <AnswerText question={question} raw={raw} />
+                {note && (
+                  <p className="mt-2 whitespace-pre-wrap rounded-xl bg-gold-50 px-3 py-2 text-sm text-gold-700">
+                    <span className="font-medium">Comentário do professor: </span>
+                    {note}
+                  </p>
+                )}
               </div>
               <span className="flex-none text-xs text-muted-foreground">
                 {question.points} pt
@@ -52,7 +67,16 @@ export function StudentAnswersView({
   );
 }
 
-export function AnswerText({ question, raw }: { question: Question; raw: string }) {
+export function AnswerText({
+  question,
+  raw,
+  verdict,
+}: {
+  question: Question;
+  raw: string;
+  /** Certo/errado da correção automática, quando disponível (visão do professor). */
+  verdict?: boolean | null;
+}) {
   let shown = raw;
 
   if (question.type === "multiple_choice") {
@@ -72,7 +96,11 @@ export function AnswerText({ question, raw }: { question: Question; raw: string 
         "mt-2 whitespace-pre-wrap rounded-xl px-3 py-2 text-sm",
         empty
           ? "bg-muted/50 italic text-muted-foreground"
-          : "bg-navy-50/70 text-navy-900",
+          : verdict === true
+            ? "bg-success/10 text-success"
+            : verdict === false
+              ? "bg-destructive/10 text-destructive"
+              : "bg-navy-50/70 text-navy-900",
       )}
     >
       {empty ? "Sem resposta" : shown}

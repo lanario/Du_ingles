@@ -15,6 +15,7 @@ import {
 import { whatsappUrl } from "@/lib/phone";
 import { MailIcon, MessageIcon, PhoneIcon, type IconProps } from "@/components/ui/icons";
 import { isLiteMode } from "@/lib/perf";
+import { CookiePreferencesLink } from "@/components/features/consent/cookie-consent";
 
 const NAV_LINKS = [
   { href: "#metodologia", label: "Metodologia" },
@@ -26,6 +27,7 @@ const NAV_LINKS = [
 const LEGAL_LINKS: { href: Route; label: string }[] = [
   { href: "/privacidade", label: "Política de privacidade" },
   { href: "/termos", label: "Termos de uso" },
+  { href: "/cookies", label: "Política de cookies" },
 ];
 
 const WHATSAPP_MESSAGE =
@@ -168,6 +170,9 @@ export function MarketingFooter() {
             <FooterLink href="/login" route className="mt-5">
               Já sou aluno
             </FooterLink>
+            <FooterLink href="/cadastro" route className="mt-3">
+              Cadastre-se
+            </FooterLink>
           </div>
 
           <div data-footer-col>
@@ -216,6 +221,11 @@ export function MarketingFooter() {
                   </FooterLink>
                 </li>
               ))}
+              <li>
+                <CookiePreferencesLink className="group relative inline-flex w-fit items-center py-1 text-[13px] font-medium text-navy-300 transition-colors duration-200 hover:text-white focus-visible:text-white focus-visible:outline-none">
+                  Preferências de cookies
+                </CookiePreferencesLink>
+              </li>
             </ul>
           </div>
         </div>
@@ -240,13 +250,13 @@ export function MarketingFooter() {
 function FooterCta() {
   return (
     <motion.a
-      href="#faq"
+      href="/cadastro"
       whileHover={{ y: -3, boxShadow: "0 16px 40px -10px rgba(201,162,39,0.55)" }}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 340, damping: 26 }}
       className="inline-flex min-h-13 shrink-0 items-center justify-center rounded-full bg-gold-500 px-7 text-sm font-bold uppercase tracking-[0.06em] text-navy-950 shadow-[0_10px_28px_-8px_rgba(201,162,39,0.5)]"
     >
-      Agendar aula grátis
+      Experimente por 7 dias
     </motion.a>
   );
 }

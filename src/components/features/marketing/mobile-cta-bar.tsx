@@ -5,15 +5,11 @@ import { useEffect, useState } from "react";
 /**
  * Barra de ação fixa no rodapé, só no celular.
  *
- * No desktop o CTA do hero fica visível quase o tempo todo e ainda existe o
- * formulário fixo (`lg:sticky`) na coluna da direita. No celular nada disso
- * sobrevive à rolagem: passada a primeira tela, o visitante fica sem nenhum
- * caminho para pedir a aula até chegar ao fim da página. A barra devolve esse
- * caminho — e some justamente quando ele não é mais necessário:
+ * No celular a barra mantém um caminho direto para o cadastro depois da
+ * primeira dobra e some quando a seção final de conversão já está visível:
  *
  * - antes de sair da primeira dobra (o CTA do hero ainda está na tela);
- * - quando a seção do formulário aparece (apontar para o que já está visível
- *   só rouba espaço do próprio formulário).
+ * - quando a seção de conversão aparece (o cadastro já está a um clique dali).
  */
 export function MobileCtaBar() {
   const [visible, setVisible] = useState(false);
@@ -63,18 +59,18 @@ export function MobileCtaBar() {
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold text-navy-900">
-            Aula experimental gratuita
+            Experimente por 7 dias
           </p>
           <p className="truncate text-[11px] text-muted-foreground">
-            30 min ao vivo, sem cartão e sem compromisso
+            Primeira cobrança só depois desse período
           </p>
         </div>
         <a
-          href="#faq"
+          href="/cadastro"
           tabIndex={visible ? 0 : -1}
           className="inline-flex min-h-12 flex-none items-center justify-center rounded-full bg-navy-800 px-5 text-[13px] font-bold uppercase tracking-[0.06em] text-white shadow-[0_8px_20px_-6px_rgba(10,31,68,0.5)] active:bg-gold-500 active:text-navy-950"
         >
-          Agendar
+          Cadastrar-se
         </a>
       </div>
     </div>

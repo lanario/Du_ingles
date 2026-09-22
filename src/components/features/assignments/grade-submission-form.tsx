@@ -10,7 +10,9 @@ import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import {
   manualGradeFieldName,
+  manualNoteFieldName,
   type ManualGrades,
+  type ManualNotes,
   type Question,
 } from "@/lib/assignments/exercises";
 
@@ -28,6 +30,7 @@ export function GradeSubmissionForm({
   /** Questões dissertativas (ou sem gabarito) — o professor pontua uma a uma aqui. */
   openQuestions = [],
   initialManualGrades = {},
+  initialManualNotes = {},
   autoScore = 0,
   autoMax = 0,
 }: {
@@ -40,6 +43,8 @@ export function GradeSubmissionForm({
   variant?: "teacher" | "admin";
   openQuestions?: Question[];
   initialManualGrades?: ManualGrades;
+  /** Comentário/resposta certa que o professor já escreveu por questão — o aluno lê isto. */
+  initialManualNotes?: ManualNotes;
   autoScore?: number;
   autoMax?: number;
 }) {
@@ -103,28 +108,39 @@ export function GradeSubmissionForm({
           </p>
           {openQuestions.map((question, index) => {
             const fieldId = `${manualGradeFieldName(question.id)}-${studentId}`;
+            const noteFieldId = `${manualNoteFieldName(question.id)}-${studentId}`;
             return (
-              <div key={question.id} className="flex items-center gap-2">
-                <Label htmlFor={fieldId} className="flex-1 text-xs font-normal">
-                  Questão {index + 1}
-                </Label>
-                <Input
-                  id={fieldId}
-                  name={manualGradeFieldName(question.id)}
-                  type="number"
-                  min={0}
-                  max={question.points}
-                  step="0.5"
-                  value={manualGrades[question.id] ?? ""}
-                  onChange={(e) =>
-                    handleManualGradeChange(question.id, e.target.value, question.points)
-                  }
-                  placeholder="0"
-                  className="w-20"
+              <div key={question.id} className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor={fieldId} className="flex-1 text-xs font-normal">
+                    Questão {index + 1}
+                  </Label>
+                  <Input
+                    id={fieldId}
+                    name={manualGradeFieldName(question.id)}
+                    type="number"
+                    min={0}
+                    max={question.points}
+                    step="0.5"
+                    value={manualGrades[question.id] ?? ""}
+                    onChange={(e) =>
+                      handleManualGradeChange(question.id, e.target.value, question.points)
+                    }
+                    placeholder="0"
+                    className="w-20"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    / {question.points} pt
+                  </span>
+                </div>
+                <textarea
+                  id={noteFieldId}
+                  name={manualNoteFieldName(question.id)}
+                  rows={2}
+                  defaultValue={initialManualNotes[question.id] ?? ""}
+                  placeholder="Resposta certa e/ou explicação para o aluno (opcional)"
+                  className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <span className="text-xs text-muted-foreground">
-                  / {question.points} pt
-                </span>
               </div>
             );
           })}

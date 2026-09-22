@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { preferenceStorage } from "@/lib/consent/client";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined"
@@ -17,6 +18,9 @@ const useIsomorphicLayoutEffect =
  * `explicitValue` é para quando outra fonte manda mais que a lembrança — um
  * link com `?tab=agenda`, ou um chat aberto por `?c=`. Presente, ele decide
  * a abertura E vira a nova lembrança; ausente, o hook lê o `localStorage`.
+ *
+ * Lembrar só com aceite de cookies de "preferências" (`preferenceStorage`):
+ * sem ele o hook se comporta como `useState` puro.
  *
  * A restauração roda em `useLayoutEffect` (antes da pintura), não em
  * `useEffect`: o primeiro render do cliente tem que bater com o do servidor
@@ -40,33 +44,19 @@ export function usePersistedChoice<T extends string>(
     if (explicitValue !== undefined) {
       // A URL (ou outra prop explícita) já decidiu; ela também passa a ser
       // o que a próxima visita sem essa pista vai lembrar.
-      try {
-        window.localStorage.setItem(storageKey, explicitValue);
-      } catch {
-        // Modo privado ou cota cheia: a escolha explícita já valeu, só não
-        // sobrevive à próxima visita.
-      }
+      // Sem aceite de cookies de preferência, a escolha vale só nesta visita.
+      preferenceStorage.set(storageKey, explicitValue);
       return;
     }
 
-    let stored: string | null = null;
-    try {
-      stored = window.localStorage.getItem(storageKey);
-    } catch {
-      // Sem storage — a tela segue no padrão, como se nunca tivesse memória.
-    }
-
-    const restoredValue = normalize(stored);
+    // Sem aceite (ou sem storage) volta `null` e a tela segue no padrão.
+    const restoredValue = normalize(preferenceStorage.get(storageKey));
     setValueState((current) => (current === restoredValue ? current : restoredValue));
   }, []);
 
   function setValue(next: T) {
     setValueState(next);
-    try {
-      window.localStorage.setItem(storageKey, next);
-    } catch {
-      // Sem persistência, mas a troca em si funciona normalmente.
-    }
+    preferenceStorage.set(storageKey, next);
   }
 
   return [value, setValue];

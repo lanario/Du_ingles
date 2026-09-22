@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { getRequestMeta } from "@/lib/request-meta";
 import type { AppRole } from "@/types/domain";
 import type { Json } from "@/types/database.types";
 
@@ -17,8 +18,12 @@ interface AuditLogInput {
  * `audit_logs` não tem policy de insert para `authenticated` (§5.3) — a
  * escrita é sempre via service-role, o que também impede um cliente
  * comprometido de forjar ou apagar o próprio rastro de auditoria.
+ *
+ * IP e user-agent vão junto: sem eles a trilha não serve para investigar um
+ * incidente (LGPD art. 48) nem para demonstrar diligência (art. 37).
  */
 export async function auditLog(input: AuditLogInput): Promise<void> {
+  const meta = await getRequestMeta();
   const admin = createAdminSupabaseClient();
   const { error } = await admin.from("audit_logs").insert({
     organization_id: input.organizationId,
@@ -28,6 +33,8 @@ export async function auditLog(input: AuditLogInput): Promise<void> {
     entity_type: input.entityType ?? null,
     entity_id: input.entityId ?? null,
     metadata: input.metadata ?? {},
+    ip_address: meta.ip,
+    user_agent: meta.userAgent,
   });
   if (error) {
     console.error(`[audit] falha ao registrar "${input.action}":`, error.message);

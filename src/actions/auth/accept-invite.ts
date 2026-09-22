@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit";
+import {
+  PRIVACY_POLICY_VERSION,
+  TERMS_VERSION,
+  recordConsent,
+} from "@/lib/consent/record";
 import { notifyInviteAccepted } from "@/lib/notifications/events";
 import * as invitesService from "@/services/invites";
 import { ACCEPT_INVITE_FIELDS, acceptInviteSchema } from "@/schemas/invites";
@@ -11,10 +16,10 @@ import { describeInvalidFields } from "@/lib/form-errors";
 import { fail, type ActionResult } from "@/types/action-result";
 
 /**
- * Aceite do convite: é a única rota da aplicação que cria conta sem sessão,
- * então a defesa está toda aqui — token de uso único com validade
- * (`repositories/invites.ts`), rate limit por IP e validação integral do
- * cadastro. O papel vem do convite, nunca do formulário.
+ * Aceite de convite para contas provisionadas pela equipe. Esta rota cria a
+ * conta sem sessão com token de uso único e validade (`repositories/invites.ts`),
+ * rate limit por IP e validação integral do cadastro. O papel vem do convite,
+ * nunca do formulário.
  *
  * Termina logando a pessoa: ela acabou de escolher a senha e o próximo
  * passo é usar o sistema — mandar para o login seria pedir a mesma senha
@@ -32,6 +37,7 @@ export async function acceptInviteAction(
     cpf: formData.get("cpf"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
+    acceptTerms: formData.get("acceptTerms"),
   });
   if (!parsed.success) {
     const fields = parsed.error.flatten().fieldErrors as Record<string, string[]>;
@@ -80,6 +86,15 @@ export async function acceptInviteAction(
     action: "USER_INVITE_ACCEPT",
     entityType: "profile",
     entityId: result.userId,
+  });
+
+  await recordConsent({
+    organizationId: result.organizationId,
+    purpose: "terms_and_privacy",
+    granted: true,
+    documentVersion: `termos:${TERMS_VERSION};privacidade:${PRIVACY_POLICY_VERSION}`,
+    subjectId: result.userId,
+    subjectEmail: parsed.data.email,
   });
 
   // A coordenação convidou por WhatsApp e não tem como saber quando a pessoa

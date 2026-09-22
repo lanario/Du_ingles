@@ -2,23 +2,31 @@
 
 /**
  * Marcar ou editar o que não é aula: reunião, evento, prova, recesso,
- * lembrete.
+ * lembrete — mais "Aula ao vivo", que é o mesmo formulário mas grava
+ * diferente.
  *
- * Aula não passa por aqui. Ela nasce da grade da turma e carrega plano,
- * chamada e registro — mexer nela é trabalho do planejador, e a agenda só
- * remarca (`moveSessionAction`). Misturar as duas coisas neste formulário
- * daria a impressão de que dá para criar uma aula solta, sem turma.
+ * Editar aula continua não passando por aqui: ela nasce da grade da turma e
+ * carrega plano, chamada e registro — mexer nela é trabalho do planejador, e
+ * a agenda só remarca (`moveSessionAction`). Criar é outra história: "Aula ao
+ * vivo" é a mesma operação do painel "Agendar aula" do planejador
+ * (`scheduleSessionAction`, grava em `class_sessions`), só que disparada
+ * daqui, porque marcar a aula não deveria exigir trocar de tela. Por isso a
+ * turma vira obrigatória quando esse tipo está selecionado — sem turma não
+ * existe `class_sessions`, e criar "solta" era exatamente o que este
+ * formulário evitava antes.
  *
  * O corte de permissão do formulário é o mesmo da action: o professor tem
  * que escolher uma das turmas dele, a coordenação pode marcar para a escola
- * inteira. Esconder a opção não autoriza nada — quem barra é
- * `authorizeScope` no servidor —, mas oferecer um campo que vai ser recusado
- * é pior do que não oferecer.
+ * inteira (exceto aula, que sempre pertence a uma turma). Esconder a opção
+ * não autoriza nada — quem barra é `authorizeScope`/`canTouchGroup` no
+ * servidor —, mas oferecer um campo que vai ser recusado é pior do que não
+ * oferecer.
  */
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createAgendaEventAction, updateAgendaEventAction } from "@/actions/admin/agenda";
+import { scheduleSessionAction } from "@/actions/admin/lesson-planner";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,12 +98,17 @@ function EventForm({
   const router = useRouter();
   const editing = draft.item;
 
+  const [kind, setKind] = useState<string>(editing?.eventKind ?? "meeting");
+  const isLiveClass = !editing && kind === "live_class";
+
   const action = useMemo(
     () =>
       editing?.id
         ? updateAgendaEventAction.bind(null, editing.id)
-        : createAgendaEventAction,
-    [editing?.id],
+        : isLiveClass
+          ? scheduleSessionAction
+          : createAgendaEventAction,
+    [editing?.id, isLiveClass],
   );
   const [state, formAction, isPending] = useActionState(action, null);
 
@@ -103,6 +116,9 @@ function EventForm({
   const [duration, setDuration] = useState(
     editing && !editing.allDay ? editing.durationMinutes : 60,
   );
+  // Aula não tem "dia inteiro" — trocar para esse tipo esquece o que estava
+  // marcado, senão a duração some da tela sem ninguém ter pedido.
+  const effectiveAllDay = isLiveClass ? false : allDay;
 
   const fields = state && !state.success ? state.error.fields : undefined;
 
@@ -118,11 +134,15 @@ function EventForm({
       open
       onClose={onClose}
       size="lg"
-      title={editing ? "Editar compromisso" : "Novo compromisso"}
+      title={
+        editing ? "Editar compromisso" : isLiveClass ? "Agendar aula" : "Novo compromisso"
+      }
       description={
-        canCreateSchoolWide
-          ? "Sem turma, o compromisso vale para a escola inteira."
-          : "O compromisso fica visível para a turma escolhida."
+        isLiveClass
+          ? "A aula entra na agenda de todo mundo e no planejador, pronta para ser dada."
+          : canCreateSchoolWide
+            ? "Sem turma, o compromisso vale para a escola inteira."
+            : "O compromisso fica visível para a turma escolhida."
       }
     >
       <form action={formAction} className="space-y-5" noValidate>
@@ -144,54 +164,70 @@ function EventForm({
           <FieldError messages={fields?.["title"]} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={cn("grid gap-4", !isLiveClass && "sm:grid-cols-2")}>
           <div className="space-y-1.5">
             <Label htmlFor="agenda-kind">Tipo</Label>
             <Select
               id="agenda-kind"
-              name="kind"
+              name={isLiveClass ? undefined : "kind"}
               tone={tone}
               defaultValue={editing?.eventKind ?? "meeting"}
+              onChange={setKind}
             >
-              {AGENDA_EVENT_KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {EVENT_KIND_LABEL[kind]}
+              {!editing && <option value="live_class">Aula ao vivo</option>}
+              {AGENDA_EVENT_KINDS.map((option) => (
+                <option key={option} value={option}>
+                  {EVENT_KIND_LABEL[option]}
                 </option>
               ))}
             </Select>
             <FieldError messages={fields?.["kind"]} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="agenda-audience">Quem vê</Label>
-            <Select
-              id="agenda-audience"
-              name="audience"
-              tone={tone}
-              defaultValue={editing?.audience ?? "all"}
-            >
-              {AGENDA_AUDIENCES.map((audience) => (
-                <option key={audience} value={audience}>
-                  {AUDIENCE_LABEL[audience]}
-                </option>
-              ))}
-            </Select>
-            <FieldError messages={fields?.["audience"]} />
-          </div>
+          {!isLiveClass && (
+            <div className="space-y-1.5">
+              <Label htmlFor="agenda-audience">Quem vê</Label>
+              <Select
+                id="agenda-audience"
+                name="audience"
+                tone={tone}
+                defaultValue={editing?.audience ?? "all"}
+              >
+                {AGENDA_AUDIENCES.map((audience) => (
+                  <option key={audience} value={audience}>
+                    {AUDIENCE_LABEL[audience]}
+                  </option>
+                ))}
+              </Select>
+              <FieldError messages={fields?.["audience"]} />
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="agenda-group">
-            Turma {!canCreateSchoolWide && <span className="text-primary">*</span>}
+            Turma{" "}
+            {(isLiveClass || !canCreateSchoolWide) && (
+              <span className="text-primary">*</span>
+            )}
           </Label>
           <Select
             id="agenda-group"
             name="groupId"
             tone={tone}
             defaultValue={editing?.groupId ?? draft.groupId ?? ""}
-            placeholder={canCreateSchoolWide ? "Escola inteira" : "Escolha a turma"}
+            required={isLiveClass}
+            placeholder={
+              isLiveClass
+                ? "Escolha a turma"
+                : canCreateSchoolWide
+                  ? "Escola inteira"
+                  : "Escolha a turma"
+            }
           >
-            {canCreateSchoolWide && <option value="">Escola inteira</option>}
+            {!isLiveClass && canCreateSchoolWide && (
+              <option value="">Escola inteira</option>
+            )}
             {groups.map((group) => (
               <option key={group.id} value={group.id}>
                 {group.name} · {group.level}
@@ -201,17 +237,19 @@ function EventForm({
           <FieldError messages={fields?.["groupId"]} />
         </div>
 
-        <label className="flex items-center gap-2.5 text-sm font-medium">
-          <input
-            type="checkbox"
-            name="allDay"
-            value="true"
-            checked={allDay}
-            onChange={(event) => setAllDay(event.target.checked)}
-            className="h-4 w-4 rounded border-border accent-[var(--primary)]"
-          />
-          Dia inteiro
-        </label>
+        {!isLiveClass && (
+          <label className="flex items-center gap-2.5 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="allDay"
+              value="true"
+              checked={allDay}
+              onChange={(event) => setAllDay(event.target.checked)}
+              className="h-4 w-4 rounded border-border accent-[var(--primary)]"
+            />
+            Dia inteiro
+          </label>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -229,8 +267,9 @@ function EventForm({
           </div>
 
           {/* Dia inteiro não tem hora útil: o schema normaliza para 00:00 e
-              1440 minutos, então o campo desaparece em vez de mentir. */}
-          <div className={cn("space-y-1.5", allDay && "hidden")}>
+              1440 minutos, então o campo desaparece em vez de mentir. Aula
+              nunca é dia inteiro. */}
+          <div className={cn("space-y-1.5", effectiveAllDay && "hidden")}>
             <Label htmlFor="agenda-time">
               Horário <span className="text-primary">*</span>
             </Label>
@@ -239,15 +278,19 @@ function EventForm({
               name="time"
               tone={tone}
               defaultValue={draft.time}
-              required={!allDay}
+              required={!effectiveAllDay}
             />
             <FieldError messages={fields?.["time"]} />
           </div>
         </div>
 
-        <fieldset className={cn("space-y-2", allDay && "hidden")}>
+        <fieldset className={cn("space-y-2", effectiveAllDay && "hidden")}>
           <legend className="text-sm font-medium">Duração</legend>
-          <input type="hidden" name="durationMinutes" value={allDay ? 1440 : duration} />
+          <input
+            type="hidden"
+            name="durationMinutes"
+            value={effectiveAllDay ? 1440 : duration}
+          />
           <div className="flex flex-wrap gap-2">
             {DURATIONS.map((minutes) => (
               <button
@@ -269,29 +312,33 @@ function EventForm({
           <FieldError messages={fields?.["durationMinutes"]} />
         </fieldset>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="agenda-location">Local</Label>
-          <Input
-            id="agenda-location"
-            name="location"
-            defaultValue={editing?.location ?? ""}
-            placeholder="Sala 2, online, auditório…"
-          />
-          <FieldError messages={fields?.["location"]} />
-        </div>
+        {!isLiveClass && (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="agenda-location">Local</Label>
+              <Input
+                id="agenda-location"
+                name="location"
+                defaultValue={editing?.location ?? ""}
+                placeholder="Sala 2, online, auditório…"
+              />
+              <FieldError messages={fields?.["location"]} />
+            </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="agenda-description">Descrição</Label>
-          <textarea
-            id="agenda-description"
-            name="description"
-            rows={3}
-            defaultValue={editing?.description ?? ""}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            placeholder="Pauta, material necessário, observações…"
-          />
-          <FieldError messages={fields?.["description"]} />
-        </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="agenda-description">Descrição</Label>
+              <textarea
+                id="agenda-description"
+                name="description"
+                rows={3}
+                defaultValue={editing?.description ?? ""}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Pauta, material necessário, observações…"
+              />
+              <FieldError messages={fields?.["description"]} />
+            </div>
+          </>
+        )}
 
         <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
           <button
@@ -309,10 +356,12 @@ function EventForm({
             {isPending ? (
               <>
                 <LogoLoader size={16} label={null} />
-                Salvando…
+                {isLiveClass ? "Agendando…" : "Salvando…"}
               </>
             ) : editing ? (
               "Salvar"
+            ) : isLiveClass ? (
+              "Agendar aula"
             ) : (
               "Marcar"
             )}

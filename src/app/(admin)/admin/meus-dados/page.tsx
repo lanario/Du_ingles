@@ -4,13 +4,17 @@ import { getMyProfile } from "@/repositories/users";
 import { AvatarUploader } from "@/components/features/account/avatar-uploader";
 import { ProfileForm } from "@/components/features/account/profile-form";
 import { LgpdPanel } from "@/components/features/lgpd/lgpd-panel";
+import { listMyLgpdRequests } from "@/repositories/lgpd-requests";
 import { PerformancePanel } from "@/components/features/account/performance-panel";
 
 export const metadata: Metadata = { title: "Meu Perfil" };
 
 export default async function MeuPerfilPage() {
   const ctx = await requireRole(["admin"]);
-  const profile = await getMyProfile(ctx.userId);
+  const [profile, lgpdRequests] = await Promise.all([
+    getMyProfile(ctx.userId),
+    listMyLgpdRequests(ctx.userId),
+  ]);
 
   return (
     <div>
@@ -31,7 +35,7 @@ export default async function MeuPerfilPage() {
       ) : null}
       <div className="mt-6 space-y-6">
         <PerformancePanel theme="admin" />
-        <LgpdPanel theme="admin" />
+        <LgpdPanel theme="admin" requests={lgpdRequests} />
       </div>
     </div>
   );

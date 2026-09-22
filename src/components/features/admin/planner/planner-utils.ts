@@ -63,6 +63,18 @@ const dayKeyFormatter = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+const monthKeyFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TZ,
+  year: "numeric",
+  month: "2-digit",
+});
+
+const monthLabelFormatter = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: TZ,
+  month: "long",
+  year: "numeric",
+});
+
 export function formatTime(iso: string): string {
   return timeFormatter.format(new Date(iso));
 }
@@ -82,6 +94,21 @@ export function dayKey(iso: string): string {
 
 export function todayKey(): string {
   return dayKeyFormatter.format(new Date());
+}
+
+/** `YYYY-MM` no fuso da escola — chave de agrupamento por mês. */
+export function monthKey(iso: string): string {
+  return monthKeyFormatter.format(new Date(iso));
+}
+
+export function todayMonthKey(): string {
+  return monthKeyFormatter.format(new Date());
+}
+
+/** "Setembro de 2026" — cabeçalho do grupo mensal. */
+export function formatMonthLabel(iso: string): string {
+  const label = monthLabelFormatter.format(new Date(iso));
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 /** "há 2 dias", "em 3 h" — leitura rápida na lista de planos. */
@@ -150,7 +177,8 @@ export function folderKeyFromParam(
 }
 
 /** Mesmo recorte de `AtelieKey`, para o ateliê de tarefas. */
-export type TaskAtelieKey = "todas" | "compartilhadas" | "privadas" | "sem-pasta" | string;
+export type TaskAtelieKey =
+  "todas" | "compartilhadas" | "privadas" | "sem-pasta" | string;
 
 export const TASK_ATELIE_LIBRARY_KEYS = ATELIE_LIBRARY_KEYS;
 

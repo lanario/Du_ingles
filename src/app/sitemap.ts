@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["", "/privacidade", "/termos"];
+  const routes = ["", "/privacidade", "/termos", "/cookies"];
   return routes.map((route) => ({
     url: `${env.NEXT_PUBLIC_SITE_URL}${route}`,
     lastModified: new Date(),

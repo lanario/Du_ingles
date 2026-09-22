@@ -14,6 +14,8 @@
  * no `<html>` — daí o CSS resolve quase tudo sozinho, sem custo de runtime.
  */
 
+import { CONSENT_INLINE_CHECK } from "@/lib/consent/config";
+
 export const PERF_STORAGE_KEY = "du:perf";
 export type PerfMode = "lite" | "full";
 
@@ -22,7 +24,9 @@ export type PerfMode = "lite" | "full";
  * um módulo: precisa executar antes do React existir, senão a tela pisca com
  * os efeitos ligados antes de desligá-los.
  *
- * A escolha explícita do usuário sempre ganha. Sem ela, vale a heurística:
+ * A escolha explícita do usuário sempre ganha — desde que ele tenha aceito
+ * cookies de "preferências" (sem aceite, o `localStorage` nem é lido). Sem
+ * ela, vale a heurística:
  *
  *   - `saveData`            — o usuário pediu economia ao navegador;
  *   - `deviceMemory <= 4`   — 4 GB ou menos de RAM;
@@ -35,8 +39,9 @@ export type PerfMode = "lite" | "full";
  */
 export const PERF_INIT_SCRIPT = `
 (function () {
+  ${CONSENT_INLINE_CHECK}
   try {
-    var saved = localStorage.getItem(${JSON.stringify(PERF_STORAGE_KEY)});
+    var saved = __duPrefsOk ? localStorage.getItem(${JSON.stringify(PERF_STORAGE_KEY)}) : null;
     var lite;
     if (saved === "lite" || saved === "full") {
       lite = saved === "lite";

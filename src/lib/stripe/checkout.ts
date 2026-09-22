@@ -14,13 +14,13 @@ import type { StudentPlan } from "@/repositories/student-plans";
  * que usa para entrar na plataforma.
  */
 
-function urls(planId: string) {
+function urls(planId: string, trialDays: number) {
   const base = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   return {
     // `{CHECKOUT_SESSION_ID}` é substituído pela Stripe no redirect. A tela de
     // sucesso não confirma nada sozinha — quem confirma é o webhook; ela só
     // mostra o estado enquanto o evento não chega.
-    success: `${base}/planos?assinatura=confirmada&session={CHECKOUT_SESSION_ID}`,
+    success: `${base}/planos?assinatura=${trialDays > 0 ? "experiencia" : "confirmada"}&session={CHECKOUT_SESSION_ID}`,
     cancel: `${base}/planos?assinatura=cancelada&plano=${planId}`,
   };
 }
@@ -57,11 +57,18 @@ export interface CheckoutInput {
   studentName: string;
   studentEmail: string;
   organizationId: string;
+  /** Sobrescreve o prazo do catálogo em fluxos especiais de matrícula. */
+  trialDaysOverride?: number;
+  /** Persiste o Customer para reutilizar depois de um checkout interrompido. */
+  onCustomerReady?: (customerId: string) => Promise<void>;
+  /** Persiste a sessão Stripe após sua criação. */
+  onSessionCreated?: (sessionId: string) => Promise<void>;
 }
 
 /** Cria a sessão de checkout e devolve a URL hospedada pela Stripe. */
 export async function createCheckoutSession(input: CheckoutInput): Promise<string> {
   const { plan } = input;
+  const trialDays = input.trialDaysOverride ?? plan.trialDays;
 
   if (!plan.stripePriceId) {
     throw new Error("Plano ainda não sincronizado com a Stripe.");
@@ -73,8 +80,9 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<strin
     input.studentEmail,
     input.organizationId,
   );
+  await input.onCustomerReady?.(customerId);
 
-  const { success, cancel } = urls(plan.id);
+  const { success, cancel } = urls(plan.id, trialDays);
   const isRecurring = plan.billingInterval !== "one_time";
 
   const metadata: Record<string, string> = {
@@ -98,14 +106,16 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<strin
   if (isRecurring) {
     params.subscription_data = {
       metadata,
-      ...(plan.trialDays > 0 ? { trial_period_days: plan.trialDays } : {}),
+      ...(trialDays > 0 ? { trial_period_days: trialDays } : {}),
     };
+    if (trialDays > 0) params.payment_method_collection = "always";
   } else {
     params.payment_intent_data = { metadata };
   }
 
   const session = await getStripe().checkout.sessions.create(params);
   if (!session.url) throw new Error("A Stripe não devolveu a URL do checkout.");
+  await input.onSessionCreated?.(session.id);
   return session.url;
 }
 

@@ -199,21 +199,40 @@ export function AcceptInviteForm({
         <FieldError id="confirmPassword-error" messages={fields?.["confirmPassword"]} />
       </div>
 
+      <div className="space-y-1.5">
+        <label className="flex items-start gap-2.5 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            name="acceptTerms"
+            id="acceptTerms"
+            aria-invalid={fields?.["acceptTerms"]?.length ? true : undefined}
+            aria-describedby={
+              fields?.["acceptTerms"]?.length ? "acceptTerms-error" : undefined
+            }
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
+          />
+          <span>
+            Li e aceito os{" "}
+            <a href="/termos" target="_blank" className="underline hover:text-foreground">
+              termos de uso
+            </a>{" "}
+            e a{" "}
+            <a
+              href="/privacidade"
+              target="_blank"
+              className="underline hover:text-foreground"
+            >
+              política de privacidade
+            </a>
+            .
+          </span>
+        </label>
+        <FieldError id="acceptTerms-error" messages={fields?.["acceptTerms"]} />
+      </div>
+
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Criando acesso…" : "Criar acesso e entrar"}
       </Button>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Ao concluir, você concorda com os{" "}
-        <a href="/termos" className="underline hover:text-foreground">
-          termos de uso
-        </a>{" "}
-        e a{" "}
-        <a href="/privacidade" className="underline hover:text-foreground">
-          política de privacidade
-        </a>
-        .
-      </p>
     </form>
   );
 }

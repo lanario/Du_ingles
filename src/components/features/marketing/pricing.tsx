@@ -40,7 +40,7 @@ if (typeof window !== "undefined") {
  * compromisso" da vitrine do aluno (`/planos`), só que pública e sem banco:
  * o resultado vem direto da tabela comercial (`tier-catalog`), não de um
  * `StudentPlan` carregado por sessão. Sem conta, sem checkout — o CTA leva ao
- * formulário da aula experimental em `#faq`, como antes.
+ * cadastro em `/cadastro`.
  *
  * Os três passos ficam sempre visíveis e editáveis assim que resolvidos —
  * escolher de novo o nível não reseta o ritmo já escolhido — e o cartão de
@@ -81,8 +81,8 @@ export function Pricing() {
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Planos</h2>
         <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground sm:text-base">
           Três passos: o nível de acompanhamento, o ritmo das aulas em grupo e o
-          compromisso que faz mais sentido pra você. Escolha e já veja todos os
-          benefícios do plano montado.
+          compromisso que faz mais sentido pra você. Escolha e já veja todos os benefícios
+          do plano montado.
         </p>
 
         <div ref={rootRef} className="mt-8 space-y-8 sm:mt-10">
@@ -152,7 +152,9 @@ export function Pricing() {
 
           <AnimatePresence initial={false} mode="wait">
             {matched && (
-              <RevealSection key={`result-${matched.tier}-${matched.frequency}-${matched.interval}`}>
+              <RevealSection
+                key={`result-${matched.tier}-${matched.frequency}-${matched.interval}`}
+              >
                 <ResultCard
                   tier={matched.tier}
                   frequency={matched.frequency}
@@ -431,7 +433,9 @@ function ResultCard({
   const priceCents = commitmentPriceCents(tier, frequency, interval);
   const { symbol, whole, fraction } = splitMoney(priceCents);
   const monthly =
-    interval === "month" ? null : Math.round(priceCents / (interval === "semester" ? 6 : 12));
+    interval === "month"
+      ? null
+      : Math.round(priceCents / (interval === "semester" ? 6 : 12));
   const savings = commitmentSavingsCents(tier, frequency, interval);
   const features = tierFeatures(tier);
 
@@ -481,7 +485,9 @@ function ResultCard({
             <span className="text-sm font-medium" style={{ color: "var(--navy-300)" }}>
               {symbol}
             </span>
-            <span className="text-[46px] font-bold tracking-tight text-white">{whole}</span>
+            <span className="text-[46px] font-bold tracking-tight text-white">
+              {whole}
+            </span>
             <span
               className="text-lg font-semibold tabular"
               style={{ color: "var(--navy-300)" }}
@@ -513,7 +519,10 @@ function ResultCard({
 
         <ul className="relative grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
           {features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2.5 text-[13px] leading-snug">
+            <li
+              key={feature}
+              className="flex items-start gap-2.5 text-[13px] leading-snug"
+            >
               <CheckIcon
                 aria-hidden
                 className="mt-0.5 h-4 w-4 shrink-0"
@@ -527,9 +536,13 @@ function ResultCard({
 
         <div className="relative mt-auto pt-6">
           <a
-            href="#faq"
+            href="/cadastro"
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 sm:w-auto"
-            style={{ background: tone, color: "var(--navy-950)", border: `1px solid ${tone}` }}
+            style={{
+              background: tone,
+              color: "var(--navy-950)",
+              border: `1px solid ${tone}`,
+            }}
           >
             Começar agora
           </a>

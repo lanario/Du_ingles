@@ -4,6 +4,7 @@ import { Hero } from "@/components/features/marketing/hero";
 import { Methodology } from "@/components/features/marketing/methodology";
 import { CefrLevels } from "@/components/features/marketing/cefr-levels";
 import { Pricing } from "@/components/features/marketing/pricing";
+import { PlanComparison } from "@/components/features/marketing/plan-comparison";
 import { Faq } from "@/components/features/marketing/faq";
 import { env } from "@/lib/env";
 
@@ -13,11 +14,11 @@ import { env } from "@/lib/env";
 export const metadata: Metadata = {
   title: { absolute: "Du Inglês — Aulas de inglês ao vivo, do A1 ao C2" },
   description:
-    "Escola de inglês com aulas 100% ao vivo, nivelamento pelo padrão CEFR e material de estudo gerado a cada aula. Agende sua aula experimental gratuita de 30 minutos.",
+    "Escola de inglês com aulas 100% ao vivo, nivelamento pelo padrão CEFR e material de estudo gerado a cada aula. Crie sua conta e experimente por 7 dias; a primeira cobrança acontece depois desse período.",
   openGraph: {
     title: "Du Inglês — Aulas de inglês ao vivo, do A1 ao C2",
     description:
-      "Aulas 100% ao vivo, progresso mensurável e professores certificados. Agende sua aula experimental.",
+      "Aulas 100% ao vivo, progresso mensurável e professores certificados. Experimente por 7 dias antes da primeira cobrança.",
     url: env.NEXT_PUBLIC_SITE_URL,
     siteName: "Du Inglês",
     locale: "pt_BR",
@@ -52,6 +53,7 @@ export default function MarketingHomePage() {
       <Methodology />
       <CefrLevels />
       <Pricing />
+      <PlanComparison />
       <Faq />
     </>
   );

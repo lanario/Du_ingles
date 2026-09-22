@@ -110,6 +110,7 @@ export type Database = {
           graded_by: string | null
           id: string
           manual_grades: Json | null
+          manual_notes: Json | null
           organization_id: string
           score: number | null
           status: Database["public"]["Enums"]["assignment_status"]
@@ -128,6 +129,7 @@ export type Database = {
           graded_by?: string | null
           id?: string
           manual_grades?: Json | null
+          manual_notes?: Json | null
           organization_id: string
           score?: number | null
           status?: Database["public"]["Enums"]["assignment_status"]
@@ -146,6 +148,7 @@ export type Database = {
           graded_by?: string | null
           id?: string
           manual_grades?: Json | null
+          manual_notes?: Json | null
           organization_id?: string
           score?: number | null
           status?: Database["public"]["Enums"]["assignment_status"]
@@ -676,6 +679,51 @@ export type Database = {
           },
         ]
       }
+      consent_records: {
+        Row: {
+          choices: Json
+          consent_id: string | null
+          created_at: string
+          document_version: string
+          granted: boolean
+          id: number
+          ip_address: unknown
+          organization_id: string
+          purpose: string
+          subject_email: string | null
+          subject_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          choices?: Json
+          consent_id?: string | null
+          created_at?: string
+          document_version: string
+          granted: boolean
+          id?: never
+          ip_address?: unknown
+          organization_id: string
+          purpose: string
+          subject_email?: string | null
+          subject_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          choices?: Json
+          consent_id?: string | null
+          created_at?: string
+          document_version?: string
+          granted?: boolean
+          id?: never
+          ip_address?: unknown
+          organization_id?: string
+          purpose?: string
+          subject_email?: string | null
+          subject_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -1062,6 +1110,60 @@ export type Database = {
           },
         ]
       }
+      lgpd_requests: {
+        Row: {
+          created_at: string
+          details: string | null
+          due_at: string
+          handled_by: string | null
+          id: string
+          kind: string
+          organization_id: string
+          protocol: string
+          requester_email: string
+          requester_id: string | null
+          requester_name: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          due_at?: string
+          handled_by?: string | null
+          id?: string
+          kind: string
+          organization_id: string
+          protocol?: string
+          requester_email: string
+          requester_id?: string | null
+          requester_name: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          due_at?: string
+          handled_by?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string
+          protocol?: string
+          requester_email?: string
+          requester_id?: string | null
+          requester_name?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       learning_objectives: {
         Row: {
           completed_at: string | null
@@ -1424,6 +1526,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          anonymized_at: string | null
           avatar_url: string | null
           birth_date: string | null
           cpf: string | null
@@ -1441,6 +1544,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anonymized_at?: string | null
           avatar_url?: string | null
           birth_date?: string | null
           cpf?: string | null
@@ -1458,6 +1562,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anonymized_at?: string | null
           avatar_url?: string | null
           birth_date?: string | null
           cpf?: string | null
@@ -1718,6 +1823,58 @@ export type Database = {
           },
         ]
       }
+      student_registrations: {
+        Row: {
+          answers: Json
+          organization_id: string
+          profile_id: string
+          requested_plan_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
+          submitted_at: string
+        }
+        Insert: {
+          answers?: Json
+          organization_id: string
+          profile_id: string
+          requested_plan_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          submitted_at?: string
+        }
+        Update: {
+          answers?: Json
+          organization_id?: string
+          profile_id?: string
+          requested_plan_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_registrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_registrations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_registrations_requested_plan_id_fkey"
+            columns: ["requested_plan_id"]
+            isOneToOne: false
+            referencedRelation: "student_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_subscriptions: {
         Row: {
           amount_cents: number | null
@@ -1923,6 +2080,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonymize_profile: {
+        Args: { p_profile_id: string }
+        Returns: {
+          old_avatar_path: string
+          old_email: string
+          teacher_note_sessions: number
+        }[]
+      }
       auth_org: { Args: never; Returns: string }
       auth_role: {
         Args: never

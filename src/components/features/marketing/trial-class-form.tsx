@@ -3,10 +3,10 @@
 /**
  * Formulário da aula experimental — o ponto de conversão da landing.
  *
- * São só cinco campos, e quatro deles obrigatórios, então o desenho aposta em
+ * São só cinco campos e a autorização de contato, então o desenho aposta em
  * feedback em vez de etapas: cada campo preenchido acende um trecho da barra
  * dourada no topo do cartão, e o botão só ganha o brilho de "pronto" quando os
- * quatro estão completos. Menos formulário, mais progresso visível.
+ * obrigatórios estão completos. Menos formulário, mais progresso visível.
  *
  * Divisão das duas bibliotecas de animação, como no resto do projeto:
  *
@@ -22,6 +22,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createTrialLeadAction } from "@/actions/leads/create-trial-lead";
@@ -435,6 +436,7 @@ export function TrialClassForm() {
   const [phone, setPhone] = useState("");
   const [isAdult, setIsAdult] = useState("");
   const [goal, setGoal] = useState("");
+  const [consent, setConsent] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLSpanElement>(null);
@@ -448,15 +450,18 @@ export function TrialClassForm() {
   );
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Progresso: só os quatro obrigatórios contam — o objetivo é opcional e
+  // Progresso: só os obrigatórios contam — o objetivo é opcional e
   // marcá-lo como pendente daria a impressão errada de formulário incompleto.
+  // Nome, e-mail, telefone, maioridade e a autorização de contato.
+  const REQUIRED_COUNT = 5;
   const filled = [
     name.trim().includes(" "),
     /.+@.+\..+/.test(email),
     phone.replace(/\D/g, "").length >= 10,
     isAdult !== "",
+    consent,
   ].filter(Boolean).length;
-  const ready = filled === 4;
+  const ready = filled === REQUIRED_COUNT;
 
   // Entrada por rolagem: o cartão sobe, os campos entram escalonados e os
   // halos do fundo começam a respirar.
@@ -500,7 +505,7 @@ export function TrialClassForm() {
   useEffect(() => {
     const bar = barRef.current;
     if (!bar) return;
-    const ratio = filled / 4;
+    const ratio = filled / REQUIRED_COUNT;
     if (prefersReducedMotion()) {
       gsap.set(bar, { scaleX: ratio });
       return;
@@ -573,7 +578,7 @@ export function TrialClassForm() {
             Aula experimental gratuita · 30 min
           </span>
           <span className="text-xs tabular-nums text-white/40">
-            {state?.success ? "concluído" : `${filled}/4`}
+            {state?.success ? "concluído" : `${filled}/${REQUIRED_COUNT}`}
           </span>
         </div>
 
@@ -690,6 +695,35 @@ export function TrialClassForm() {
                 errors={fieldErrors?.["goal"]}
               />
 
+              <div data-field>
+                <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-relaxed text-white/65">
+                  <input
+                    type="checkbox"
+                    name="consent"
+                    data-error-anchor="consent"
+                    checked={consent}
+                    onChange={(event) => setConsent(event.target.checked)}
+                    aria-invalid={fieldErrors?.["consent"]?.length ? true : undefined}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--gold-500)]"
+                  />
+                  <span>
+                    Li a{" "}
+                    <Link
+                      href="/privacidade"
+                      target="_blank"
+                      className="text-gold-300 underline underline-offset-2"
+                    >
+                      política de privacidade
+                    </Link>{" "}
+                    e autorizo o contato por e-mail e WhatsApp sobre esta aula. Se você
+                    tem menos de 18 anos, peça a um responsável para preencher.
+                  </span>
+                </label>
+                {fieldErrors?.["consent"]?.[0] && (
+                  <p className="mt-1 text-xs text-red-300">{fieldErrors["consent"][0]}</p>
+                )}
+              </div>
+
               <div data-field className="pt-1.5">
                 <motion.button
                   type="submit"
@@ -728,8 +762,8 @@ export function TrialClassForm() {
                 </motion.button>
 
                 <p className="mt-3 text-center text-[11px] leading-relaxed text-white/35">
-                  Seus dados são usados apenas para o contato desta solicitação, conforme
-                  a LGPD. Nada de spam.
+                  Seus dados são usados apenas para o contato desta solicitação. Nada de
+                  spam.
                 </p>
               </div>
             </form>

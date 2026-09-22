@@ -29,20 +29,17 @@ export function Hero() {
 
           <div className="mt-7 sm:mt-8">
             <a
-              href="#faq"
+              href="/cadastro"
               className="btn-cta-fill w-full px-6 py-4 text-center text-sm font-semibold uppercase leading-snug tracking-wide sm:h-12 sm:w-auto sm:py-0 sm:text-base"
             >
-              Comece a falar agora: agende sua aula grátis
+              Comece sua experiência de 7 dias
             </a>
           </div>
 
           {/* Selos de confiança: no celular são a única coisa entre o botão e
               a maquete, e respondem as três objeções imediatas. */}
           <ul className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground sm:mt-6 sm:text-[13px]">
-            {[
-              "Aula ao vivo de verdade",
-              "Professor certificado",
-            ].map((item) => (
+            {["Aula ao vivo de verdade", "Professor certificado"].map((item) => (
               <li key={item} className="inline-flex items-center gap-1.5">
                 <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold-500" />
                 {item}

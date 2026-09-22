@@ -1,6 +1,5 @@
 import { MarketingNav } from "@/components/features/marketing/nav";
 import { MarketingFooter } from "@/components/features/marketing/footer";
-import { CookieConsent } from "@/components/features/marketing/cookie-consent";
 import { BackToTop } from "@/components/features/marketing/back-to-top";
 import { MobileCtaBar } from "@/components/features/marketing/mobile-cta-bar";
 
@@ -15,7 +14,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       </div>
       <BackToTop />
       <MobileCtaBar />
-      <CookieConsent />
     </>
   );
 }

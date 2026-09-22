@@ -7,6 +7,8 @@ import {
   type AccountTheme,
 } from "@/components/features/account/account-theme";
 import { cn } from "@/lib/utils";
+import { preferenceStorage, useConsent } from "@/lib/consent/client";
+import { CookiePreferencesLink } from "@/components/features/consent/cookie-consent";
 
 /**
  * Chave do modo leve.
@@ -20,26 +22,30 @@ import { cn } from "@/lib/utils";
  * A preferência vale só neste aparelho (fica no `localStorage`): a mesma conta
  * pode ser usada no laptop da escola e no celular novo, e o que trava um não
  * trava o outro.
+ *
+ * Lembrar a escolha depende do aceite de cookies de "preferências". Sem ele
+ * o modo vale até recarregar a página, e o painel diz isso com um atalho
+ * para as preferências.
  */
 export function PerformancePanel({ theme = "app" }: { theme?: AccountTheme }) {
   const classes = accountClasses(theme);
   const [choice, setChoice] = useState<PerfMode | "auto">("auto");
   const [lite, setLite] = useState(false);
+  const consent = useConsent();
+  const canRemember = consent?.choices.preferences === true;
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(PERF_STORAGE_KEY);
+    const saved = preferenceStorage.get(PERF_STORAGE_KEY);
     setChoice(saved === "lite" || saved === "full" ? saved : "auto");
     setLite(document.documentElement.getAttribute("data-perf") === "lite");
   }, []);
 
   function apply(next: PerfMode | "auto") {
     setChoice(next);
-    try {
-      if (next === "auto") window.localStorage.removeItem(PERF_STORAGE_KEY);
-      else window.localStorage.setItem(PERF_STORAGE_KEY, next);
-    } catch {
-      // Modo privado: a escolha vale para esta visita e não é lembrada.
-    }
+    // Sem aceite de preferências (ou em modo privado) não grava: a escolha vale
+    // para esta visita e não é lembrada.
+    if (next === "auto") preferenceStorage.remove(PERF_STORAGE_KEY);
+    else preferenceStorage.set(PERF_STORAGE_KEY, next);
 
     // `data-perf` é o que o CSS e os componentes leem — escrever aqui aplica a
     // troca na hora, sem recarregar. No "automático" a detecção só volta a
@@ -106,8 +112,18 @@ export function PerformancePanel({ theme = "app" }: { theme?: AccountTheme }) {
       </div>
 
       <p className={cn("mt-3 text-xs", classes.muted)}>
-        Agora: <strong>{lite ? "modo leve" : "completo"}</strong>. A escolha vale só neste
-        aparelho.
+        Agora: <strong>{lite ? "modo leve" : "completo"}</strong>.{" "}
+        {canRemember ? (
+          "A escolha vale só neste aparelho."
+        ) : (
+          <>
+            Sem permissão para cookies de preferência, a escolha vale até recarregar a
+            página.{" "}
+            <CookiePreferencesLink className="underline">
+              Alterar permissão
+            </CookiePreferencesLink>
+          </>
+        )}
       </p>
     </section>
   );

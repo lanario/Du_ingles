@@ -90,6 +90,12 @@ export function MarketingNav() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <Link
+            href="/cadastro"
+            className="rounded-full bg-primary px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-primary-foreground transition hover:opacity-90"
+          >
+            Cadastre-se
+          </Link>
           <LettersLink href="/login" label="Já sou aluno" />
         </div>
 
@@ -165,13 +171,13 @@ export function MarketingNav() {
               </nav>
 
               <div className="shrink-0 space-y-2.5 border-t border-white/10 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-4">
-                <a
-                  href="#faq"
+                <Link
+                  href="/cadastro"
                   onClick={() => setOpen(false)}
                   className="flex min-h-13 w-full items-center justify-center rounded-2xl bg-gold-500 px-4 text-center text-sm font-bold uppercase tracking-[0.06em] text-navy-950 shadow-[0_0_28px_-6px_rgba(201,162,39,0.7)]"
                 >
-                  Agendar aula grátis
-                </a>
+                  Comece sua experiência
+                </Link>
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}

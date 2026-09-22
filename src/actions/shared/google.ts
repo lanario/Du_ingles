@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
+import { PRIVACY_POLICY_VERSION, recordConsent } from "@/lib/consent/record";
 import { disconnectAndCleanup } from "@/lib/google/sync";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
@@ -28,6 +29,14 @@ export async function disconnectGoogleAction(): Promise<ActionResult<never>> {
     action: "GOOGLE_CALENDAR_DISCONNECTED",
     entityType: "profile",
     entityId: ctx.userId,
+  });
+  await recordConsent({
+    organizationId: ctx.organizationId,
+    purpose: "google_calendar",
+    granted: false,
+    documentVersion: PRIVACY_POLICY_VERSION,
+    subjectId: ctx.userId,
+    subjectEmail: ctx.email,
   });
 
   revalidatePath("/", "layout");

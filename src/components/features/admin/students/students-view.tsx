@@ -35,6 +35,8 @@ import { useListProgress, useStickyBar } from "@/components/motion/list-motion";
 import { useNarrowScreen, useViewMode } from "@/components/motion/use-view-mode";
 import { cn } from "@/lib/utils";
 import type { GroupListItem } from "@/repositories/groups";
+import type { StudentRegistration } from "@/repositories/student-registrations";
+import { RegistrationsPanel } from "./registrations-panel";
 import { GroupsRail } from "./groups-rail";
 import { MoveToGroup } from "./move-to-group";
 import { StudentCard } from "./student-card";
@@ -50,6 +52,7 @@ import {
 interface StudentsViewProps {
   students: Student[];
   groups: GroupListItem[];
+  registrations?: StudentRegistration[];
 }
 
 /** Transferência aguardando a confirmação do aviso de "um aluno, uma turma". */
@@ -67,7 +70,11 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
 
 const VIEW_MODE_KEY = "du:alunos:modo";
 
-export function StudentsView({ students, groups }: StudentsViewProps) {
+export function StudentsView({
+  students,
+  groups,
+  registrations = [],
+}: StudentsViewProps) {
   const router = useRouter();
   // Na área do professor a tela é de consulta: ele acompanha quem está na
   // turma dele, mas cadastro, matrícula e ciclo de vida da conta continuam
@@ -76,6 +83,7 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
   const reduceMotion = useReducedMotion();
 
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"students" | "registrations">("students");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>({ type: "all" });
   const [viewMode, setViewMode] = useViewMode(VIEW_MODE_KEY);
@@ -273,254 +281,264 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
         </dl>
       </div>
 
-      <div ref={sentinelRef} aria-hidden className="mt-6 h-px" />
+      {canManage && (
+        <div
+          role="tablist"
+          aria-label="Seção de alunos"
+          className="mt-5 flex w-fit gap-1 rounded-xl border border-admin-border bg-admin-surface p-1"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "students"}
+            onClick={() => setActiveTab("students")}
+            className={cn(
+              "rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
+              activeTab === "students"
+                ? "bg-admin-muted text-admin-foreground"
+                : "text-admin-foreground/55 hover:text-admin-foreground",
+            )}
+          >
+            Alunos
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "registrations"}
+            onClick={() => setActiveTab("registrations")}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
+              activeTab === "registrations"
+                ? "bg-admin-muted text-admin-foreground"
+                : "text-admin-foreground/55 hover:text-admin-foreground",
+            )}
+          >
+            Cadastros
+            {registrations.length > 0 && (
+              <span className="rounded-full bg-gold-100 px-1.5 text-[10px] font-semibold text-gold-800">
+                {registrations.length}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
-      <div
-        ref={barRef}
-        data-stuck="false"
-        className={cn(
-          "sticky top-0 z-30 -mx-4 mb-4 md:top-16 md:-mx-6 flex flex-wrap items-center gap-2 border-b border-transparent px-4 py-3 md:px-6 sm:mb-5 sm:gap-3",
-          "bg-[color-mix(in_srgb,var(--admin-background)_88%,transparent)] backdrop-blur-md transition-[border-color,box-shadow] duration-300",
-          "data-[stuck=true]:border-admin-border data-[stuck=true]:shadow-[0_18px_30px_-28px_rgba(11,26,51,0.35)]",
-        )}
-      >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
+      <div className={activeTab === "students" ? "" : "hidden"}>
+        <div ref={sentinelRef} aria-hidden className="mt-6 h-px" />
+
+        <div
+          ref={barRef}
+          data-stuck="false"
+          className={cn(
+            "sticky top-0 z-30 -mx-4 mb-4 md:top-16 md:-mx-6 flex flex-wrap items-center gap-2 border-b border-transparent px-4 py-3 md:px-6 sm:mb-5 sm:gap-3",
+            "bg-[color-mix(in_srgb,var(--admin-background)_88%,transparent)] backdrop-blur-md transition-[border-color,box-shadow] duration-300",
+            "data-[stuck=true]:border-admin-border data-[stuck=true]:shadow-[0_18px_30px_-28px_rgba(11,26,51,0.35)]",
+          )}
         >
           <span
-            ref={lineRef}
-            className="block h-full w-full origin-left bg-gradient-to-r from-navy-700 to-gold-500"
-          />
-        </span>
-
-        <div
-          role="group"
-          aria-label="Filtrar por status"
-          className="flex max-w-full flex-wrap items-center gap-1 rounded-xl border border-admin-border bg-admin-surface p-1"
-        >
-          {STATUS_TABS.map((item) => {
-            const active = status === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setStatus(item.id)}
-                className={cn(
-                  "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
-                  active
-                    ? "text-admin-foreground"
-                    : "text-admin-foreground/50 hover:text-admin-foreground",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="du-alunos-tab"
-                    aria-hidden
-                    className="absolute inset-0 rounded-lg bg-admin-muted shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--gold-500)_30%,transparent)]"
-                    transition={
-                      reduceMotion
-                        ? { duration: 0 }
-                        : { type: "spring", stiffness: 480, damping: 38 }
-                    }
-                  />
-                )}
-                <span className="relative flex items-center gap-1.5">
-                  {item.label}
-                  <span
-                    className={cn(
-                      "rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
-                      active
-                        ? "bg-gold-100 text-gold-700"
-                        : "bg-admin-muted text-admin-foreground/50",
-                    )}
-                  >
-                    {statusCounts[item.id]}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="relative order-last w-full min-w-[12rem] flex-1 sm:order-none sm:w-auto">
-          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-foreground/40" />
-          <input
-            ref={searchRef}
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            aria-label="Buscar aluno"
-            placeholder="Buscar por nome, e-mail, responsável ou turma..."
-            className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-10 text-sm text-admin-foreground outline-none transition-colors placeholder:text-admin-foreground/40 hover:border-gold-300 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35 [&::-webkit-search-cancel-button]:hidden"
-          />
-          <AnimatePresence>
-            {search !== "" && (
-              <motion.button
-                type="button"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={() => {
-                  setSearch("");
-                  searchRef.current?.focus();
-                }}
-                aria-label="Limpar busca"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-admin-foreground/40 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
-              >
-                <CloseIcon className="h-3.5 w-3.5" />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div
-          role="group"
-          aria-label="Modo de visualização"
-          className="hidden items-center gap-1 rounded-xl border border-admin-border bg-admin-surface p-1 sm:flex"
-        >
-          <ViewModeButton
-            active={mode === "cards"}
-            label="Ver em cartões"
-            onClick={() => setViewMode("cards")}
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
           >
-            <GridIcon className="relative h-4 w-4" />
-          </ViewModeButton>
-          <ViewModeButton
-            active={mode === "list"}
-            label="Ver em lista"
-            onClick={() => setViewMode("list")}
+            <span
+              ref={lineRef}
+              className="block h-full w-full origin-left bg-gradient-to-r from-navy-700 to-gold-500"
+            />
+          </span>
+
+          <div
+            role="group"
+            aria-label="Filtrar por status"
+            className="flex max-w-full flex-wrap items-center gap-1 rounded-xl border border-admin-border bg-admin-surface p-1"
           >
-            <RowsIcon className="relative h-4 w-4" />
-          </ViewModeButton>
-        </div>
-
-        {canManage && (
-          <motion.div
-            whileHover={reduceMotion ? undefined : { scale: 1.03 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-          >
-            <Link
-              href="/admin/usuarios?convite=student"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
-            >
-              <PlusIcon className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Novo aluno</span>
-            </Link>
-          </motion.div>
-        )}
-      </div>
-
-      <GroupsRail
-        groups={groups}
-        filter={groupFilter}
-        onFilterChange={setGroupFilter}
-        unassigned={totals.unassigned}
-        total={totals.total}
-        dragging={canManage && draggingId !== null}
-        onDropOnGroup={canManage ? dropOnGroup : undefined}
-      />
-
-      <AnimatePresence>
-        {error && (
-          <motion.p
-            role="alert"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            className="mb-5 rounded-xl border border-destructive/40 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive"
-          >
-            {error}
-          </motion.p>
-        )}
-      </AnimatePresence>
-
-      <div ref={listRef}>
-        {filtered.length === 0 ? (
-          <EmptyState
-            title={
-              noStudentsAtAll
-                ? "Nenhum aluno cadastrado"
-                : groupEmpty
-                  ? "Turma vazia"
-                  : "Nada encontrado"
-            }
-            description={
-              noStudentsAtAll
-                ? canManage
-                  ? "Cadastre o primeiro aluno para começar."
-                  : "Nenhum aluno matriculado nas suas turmas ainda."
-                : groupEmpty
-                  ? canManage
-                    ? `Nenhum aluno em "${groupOpenName}". Arraste um aluno até a turma, ou use "Mover de turma" no menu dele.`
-                    : `Nenhum aluno matriculado em "${groupOpenName}".`
-                  : "Ajuste a busca ou troque os filtros."
-            }
-            action={
-              noStudentsAtAll && canManage ? (
-                <Link
-                  href="/admin/usuarios?convite=student"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-semibold text-admin-foreground transition-opacity hover:opacity-90"
+            {STATUS_TABS.map((item) => {
+              const active = status === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setStatus(item.id)}
+                  className={cn(
+                    "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
+                    active
+                      ? "text-admin-foreground"
+                      : "text-admin-foreground/50 hover:text-admin-foreground",
+                  )}
                 >
-                  <PlusIcon className="h-4 w-4" />
-                  Novo aluno
-                </Link>
-              ) : filtersActive ? (
-                <SecondaryButton
+                  {active && (
+                    <motion.span
+                      layoutId="du-alunos-tab"
+                      aria-hidden
+                      className="absolute inset-0 rounded-lg bg-admin-muted shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--gold-500)_30%,transparent)]"
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : { type: "spring", stiffness: 480, damping: 38 }
+                      }
+                    />
+                  )}
+                  <span className="relative flex items-center gap-1.5">
+                    {item.label}
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
+                        active
+                          ? "bg-gold-100 text-gold-700"
+                          : "bg-admin-muted text-admin-foreground/50",
+                      )}
+                    >
+                      {statusCounts[item.id]}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative order-last w-full min-w-[12rem] flex-1 sm:order-none sm:w-auto">
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-foreground/40" />
+            <input
+              ref={searchRef}
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label="Buscar aluno"
+              placeholder="Buscar por nome, e-mail, responsável ou turma..."
+              className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-10 text-sm text-admin-foreground outline-none transition-colors placeholder:text-admin-foreground/40 hover:border-gold-300 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35 [&::-webkit-search-cancel-button]:hidden"
+            />
+            <AnimatePresence>
+              {search !== "" && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
                   onClick={() => {
                     setSearch("");
-                    setStatus("all");
-                    setGroupFilter({ type: "all" });
+                    searchRef.current?.focus();
                   }}
+                  aria-label="Limpar busca"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-admin-foreground/40 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
                 >
-                  Limpar filtros
-                </SecondaryButton>
-              ) : null
-            }
-          />
-        ) : mode === "cards" ? (
-          <motion.div
-            layout
-            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-          >
-            <AnimatePresence mode="popLayout" initial={false}>
-              {filtered.map((student) => (
-                <StudentCard
-                  key={student.id}
-                  student={student}
-                  busy={busy === student.id}
-                  onOpen={() => openDetail(student)}
-                  onDeactivate={() => deactivate(student)}
-                  onReactivate={() => reactivate(student)}
-                  onMove={() => setMoveTarget(student)}
-                  onDragStart={() => setDraggingId(student.id)}
-                  onDragEnd={() => setDraggingId(null)}
-                  canManage={canManage}
-                />
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          <div className="rounded-2xl border border-admin-border">
-            <div
-              className={cn(
-                LIST_GRID,
-                "rounded-t-2xl border-b border-admin-border bg-admin-surface px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-admin-foreground/50",
+                  <CloseIcon className="h-3.5 w-3.5" />
+                </motion.button>
               )}
+            </AnimatePresence>
+          </div>
+
+          <div
+            role="group"
+            aria-label="Modo de visualização"
+            className="hidden items-center gap-1 rounded-xl border border-admin-border bg-admin-surface p-1 sm:flex"
+          >
+            <ViewModeButton
+              active={mode === "cards"}
+              label="Ver em cartões"
+              onClick={() => setViewMode("cards")}
             >
-              <span>Nome</span>
-              <span>Turma</span>
-              <span>Nível</span>
-              <span>Status</span>
-              <span>Cadastro</span>
-              <span className="text-right">Ações</span>
-            </div>
-            <motion.div layout className="[&>*:last-child]:rounded-b-2xl">
+              <GridIcon className="relative h-4 w-4" />
+            </ViewModeButton>
+            <ViewModeButton
+              active={mode === "list"}
+              label="Ver em lista"
+              onClick={() => setViewMode("list")}
+            >
+              <RowsIcon className="relative h-4 w-4" />
+            </ViewModeButton>
+          </div>
+
+          {canManage && (
+            <motion.div
+              whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+            >
+              <Link
+                href="/admin/usuarios?convite=student"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
+              >
+                <PlusIcon className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Novo aluno</span>
+              </Link>
+            </motion.div>
+          )}
+        </div>
+
+        <GroupsRail
+          groups={groups}
+          filter={groupFilter}
+          onFilterChange={setGroupFilter}
+          unassigned={totals.unassigned}
+          total={totals.total}
+          dragging={canManage && draggingId !== null}
+          onDropOnGroup={canManage ? dropOnGroup : undefined}
+        />
+
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              role="alert"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="mb-5 rounded-xl border border-destructive/40 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive"
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
+
+        <div ref={listRef}>
+          {filtered.length === 0 ? (
+            <EmptyState
+              title={
+                noStudentsAtAll
+                  ? "Nenhum aluno cadastrado"
+                  : groupEmpty
+                    ? "Turma vazia"
+                    : "Nada encontrado"
+              }
+              description={
+                noStudentsAtAll
+                  ? canManage
+                    ? "Cadastre o primeiro aluno para começar."
+                    : "Nenhum aluno matriculado nas suas turmas ainda."
+                  : groupEmpty
+                    ? canManage
+                      ? `Nenhum aluno em "${groupOpenName}". Arraste um aluno até a turma, ou use "Mover de turma" no menu dele.`
+                      : `Nenhum aluno matriculado em "${groupOpenName}".`
+                    : "Ajuste a busca ou troque os filtros."
+              }
+              action={
+                noStudentsAtAll && canManage ? (
+                  <Link
+                    href="/admin/usuarios?convite=student"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-semibold text-admin-foreground transition-opacity hover:opacity-90"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Novo aluno
+                  </Link>
+                ) : filtersActive ? (
+                  <SecondaryButton
+                    onClick={() => {
+                      setSearch("");
+                      setStatus("all");
+                      setGroupFilter({ type: "all" });
+                    }}
+                  >
+                    Limpar filtros
+                  </SecondaryButton>
+                ) : null
+              }
+            />
+          ) : mode === "cards" ? (
+            <motion.div
+              layout
+              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            >
               <AnimatePresence mode="popLayout" initial={false}>
                 {filtered.map((student) => (
-                  <StudentListItem
+                  <StudentCard
                     key={student.id}
                     student={student}
                     busy={busy === student.id}
@@ -535,15 +553,58 @@ export function StudentsView({ students, groups }: StudentsViewProps) {
                 ))}
               </AnimatePresence>
             </motion.div>
-          </div>
+          ) : (
+            <div className="rounded-2xl border border-admin-border">
+              <div
+                className={cn(
+                  LIST_GRID,
+                  "rounded-t-2xl border-b border-admin-border bg-admin-surface px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-admin-foreground/50",
+                )}
+              >
+                <span>Nome</span>
+                <span>Turma</span>
+                <span>Nível</span>
+                <span>Status</span>
+                <span>Cadastro</span>
+                <span className="text-right">Ações</span>
+              </div>
+              <motion.div layout className="[&>*:last-child]:rounded-b-2xl">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {filtered.map((student) => (
+                    <StudentListItem
+                      key={student.id}
+                      student={student}
+                      busy={busy === student.id}
+                      onOpen={() => openDetail(student)}
+                      onDeactivate={() => deactivate(student)}
+                      onReactivate={() => reactivate(student)}
+                      onMove={() => setMoveTarget(student)}
+                      onDragStart={() => setDraggingId(student.id)}
+                      onDragEnd={() => setDraggingId(null)}
+                      canManage={canManage}
+                    />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+        </div>
+
+        {filtered.length > 0 && (
+          <p className="mt-4 text-xs text-admin-foreground/50">
+            Exibindo {filtered.length} de {totals.total}{" "}
+            {totals.total === 1 ? "aluno" : "alunos"}.
+          </p>
         )}
       </div>
 
-      {filtered.length > 0 && (
-        <p className="mt-4 text-xs text-admin-foreground/50">
-          Exibindo {filtered.length} de {totals.total}{" "}
-          {totals.total === 1 ? "aluno" : "alunos"}.
-        </p>
+      {canManage && activeTab === "registrations" && (
+        <RegistrationsPanel
+          registrations={registrations}
+          students={students}
+          groups={groups}
+          onAssign={(student) => setMoveTarget(student)}
+        />
       )}
 
       <StudentFichaModal

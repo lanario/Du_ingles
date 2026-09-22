@@ -22,6 +22,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import type { NotificationItem } from "@/repositories/notifications";
 import { BellIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { preferenceStorage } from "@/lib/consent/client";
 import { relativeTime, visualFor } from "@/lib/notifications";
 import {
   NotificationPanel,
@@ -41,6 +42,8 @@ const MAX_ITEMS = 30;
  * outra até o próximo carregamento. */
 const SYNC_EVENT = "du:notifications-sync";
 const SEEN_EVENT = "du:notifications-seen";
+/** Marco "vi até aqui" desta visita, para quando o storage não pode ser usado. */
+const sessionSeenAt = new Map<string, number>();
 
 interface SyncDetail {
   origin: string;
@@ -179,11 +182,10 @@ export function NotificationBell({
 
   useEffect(() => {
     function read() {
-      try {
-        setSeenAt(Number(window.localStorage.getItem(seenKey)) || 0);
-      } catch {
-        /* storage indisponível: vale só o estado da sessão */
-      }
+      // Sem aceite de cookies de preferência o storage devolve `null` e vale o
+      // marco desta visita (compartilhado pelas duas instâncias do sino).
+      const stored = Number(preferenceStorage.get(seenKey)) || 0;
+      setSeenAt(Math.max(stored, sessionSeenAt.get(seenKey) ?? 0));
     }
     read();
     function onStorage(event: StorageEvent) {
@@ -200,11 +202,8 @@ export function NotificationBell({
   const markSeen = useCallback(() => {
     const now = Date.now();
     setSeenAt(now);
-    try {
-      window.localStorage.setItem(seenKey, String(now));
-    } catch {
-      /* idem */
-    }
+    sessionSeenAt.set(seenKey, now);
+    preferenceStorage.set(seenKey, String(now));
     window.dispatchEvent(new Event(SEEN_EVENT));
   }, [seenKey]);
 
@@ -510,9 +509,7 @@ export function NotificationBell({
   );
 
   const ariaLabel =
-    unseen > 0
-      ? `Notificações, ${unseen} nova${unseen > 1 ? "s" : ""}`
-      : "Notificações";
+    unseen > 0 ? `Notificações, ${unseen} nova${unseen > 1 ? "s" : ""}` : "Notificações";
 
   let trigger: React.ReactNode;
 
