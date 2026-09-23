@@ -50,6 +50,8 @@ interface ActionMenuProps {
    * enquanto ele está aberto — sem isso o vizinho da grade pinta por cima.
    */
   onOpenChange?: (open: boolean) => void;
+  /** Abre ao passar o ponteiro; clique e teclado continuam funcionando. */
+  openOnHover?: boolean;
 }
 
 export function ActionMenu({
@@ -57,6 +59,7 @@ export function ActionMenu({
   label,
   disabled = false,
   onOpenChange,
+  openOnHover = false,
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -64,6 +67,7 @@ export function ActionMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => setMounted(true), []);
@@ -75,6 +79,18 @@ export function ActionMenu({
     },
     [onOpenChange],
   );
+
+  const cancelScheduledClose = useCallback(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const scheduleClose = useCallback(() => {
+    cancelScheduledClose();
+    closeTimerRef.current = setTimeout(() => toggle(false), 140);
+  }, [cancelScheduledClose, toggle]);
+
+  useEffect(() => () => cancelScheduledClose(), [cancelScheduledClose]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -122,7 +138,17 @@ export function ActionMenu({
   }, [open, toggle]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div
+      ref={rootRef}
+      className="relative"
+      onPointerEnter={(event) => {
+        cancelScheduledClose();
+        if (openOnHover && event.pointerType === "mouse") toggle(true);
+      }}
+      onPointerLeave={(event) => {
+        if (openOnHover && event.pointerType === "mouse") scheduleClose();
+      }}
+    >
       <button
         ref={buttonRef}
         type="button"
@@ -148,6 +174,10 @@ export function ActionMenu({
             {open && coords && (
               <motion.div
                 ref={menuRef}
+                onPointerEnter={cancelScheduledClose}
+                onPointerLeave={(event) => {
+                  if (openOnHover && event.pointerType === "mouse") scheduleClose();
+                }}
                 role="menu"
                 initial={
                   reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.97 }

@@ -976,10 +976,9 @@ export function PlannerView({
                   if (folderKey === folder.id) setFolderKey("todas");
                   runPlanAction(folder.id, () => deletePlannerFolderAction(folder.id));
                 }}
-                dragging={draggingPlan !== null}
-                onDropPlan={(folderId) => {
-                  const plan = draggingPlan;
+                onDropPlan={(folderId, planId) => {
                   setDraggingPlan(null);
+                  const plan = plans.find((item) => item.id === planId);
                   if (!plan || plan.folderId === folderId) return;
                   runPlanAction(plan.id, () => movePlannerPlanAction(plan.id, folderId));
                 }}
@@ -1555,6 +1554,7 @@ function PlanCard({
 }) {
   const reduceMotion = useReducedMotion();
   const { base } = useArea();
+  const router = useRouter();
   const articleRef = useRef<HTMLElement>(null);
 
   /**
@@ -1570,6 +1570,8 @@ function PlanCard({
 
     function handleDragStart(event: DragEvent) {
       // O Firefox só começa o arrasto se algo for escrito aqui.
+      event.dataTransfer?.setData("application/x-du-ingles-lesson-plan", plan.id);
+      // Mantém um tipo simples para navegadores que não preservam MIME próprio.
       event.dataTransfer?.setData("text/plain", plan.id);
       if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
       onDragStart();
@@ -1678,45 +1680,43 @@ function PlanCard({
       </div>
 
       <div className="relative z-10 mt-4 flex items-center gap-1.5 border-t border-admin-border/70 pt-3">
-        <Link
-          href={`${base}/planejador/${plan.id}` as Route}
-          draggable={false}
-          className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-navy-900 px-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          Abrir canvas
-        </Link>
-        <IconAction label="Agendar" onClick={onSchedule} disabled={busy}>
-          <CalendarIcon className="h-4 w-4" />
-        </IconAction>
         {canEdit && (
           <IconAction label="Editar ficha" onClick={onEdit} disabled={busy}>
             <PencilIcon className="h-4 w-4" />
           </IconAction>
         )}
-        <IconAction
-          label="Baixar PDF"
-          onClick={() =>
-            window.open(
-              `/api/lesson-plans/${plan.id}/pdf`,
-              "_blank",
-              "noopener,noreferrer",
-            )
-          }
-        >
-          <DownloadIcon className="h-4 w-4" />
-        </IconAction>
-        <IconAction label="Duplicar" onClick={onDuplicate} disabled={busy}>
-          {busy ? (
-            <LogoLoader size={16} label={null} />
-          ) : (
-            <CopyIcon className="h-4 w-4" />
-          )}
-        </IconAction>
-        {canEdit && (
-          <IconAction label="Mover para pasta" onClick={onMove} disabled={busy}>
-            <FolderMoveIcon className="h-4 w-4" />
-          </IconAction>
-        )}
+        <ActionMenu
+          label={`Mais ações da aula "${plan.title}"`}
+          openOnHover
+          disabled={busy}
+          items={[
+            {
+              label: "Abrir canvas",
+              icon: ChevronRightIcon,
+              onSelect: () => router.push(`${base}/planejador/${plan.id}` as Route),
+            },
+            { label: "Agendar", icon: CalendarIcon, onSelect: onSchedule },
+            {
+              label: "Baixar PDF",
+              icon: DownloadIcon,
+              onSelect: () =>
+                window.open(
+                  `/api/lesson-plans/${plan.id}/pdf`,
+                  "_blank",
+                  "noopener,noreferrer",
+                ),
+            },
+            {
+              label: "Duplicar",
+              icon: CopyIcon,
+              onSelect: onDuplicate,
+              disabled: busy,
+            },
+            ...(canEdit
+              ? [{ label: "Mover para pasta", icon: FolderMoveIcon, onSelect: onMove }]
+              : []),
+          ]}
+        />
         {canEdit && (
           <IconAction label="Excluir" onClick={onDelete} disabled={busy} danger>
             <TrashIcon className="h-4 w-4" />

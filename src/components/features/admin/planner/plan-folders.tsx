@@ -76,7 +76,6 @@ export function FolderRail({
   onCreate,
   onEdit,
   onDelete,
-  dragging = false,
   onDropPlan,
 }: {
   folders: PlannerFolder[];
@@ -86,14 +85,12 @@ export function FolderRail({
   onCreate: () => void;
   onEdit: (folder: PlannerFolder) => void;
   onDelete: (folder: PlannerFolder) => void;
-  /** Uma aula está sendo arrastada agora — os lugares se acendem. */
-  dragging?: boolean;
   /** Aula solta num lugar. `null` é "sem pasta": limpa o `folder_id`. */
-  onDropPlan?: (folderId: string | null) => void;
+  onDropPlan?: (folderId: string | null, planId: string) => void;
 }) {
-  /** Só vira alvo se houver para onde soltar e alguém arrastando. */
+  /** Lugares aceitam o arrasto mesmo antes da atualização visual do cartão. */
   const dropOn = (folderId: string | null) =>
-    dragging && onDropPlan ? () => onDropPlan(folderId) : undefined;
+    onDropPlan ? (planId: string) => onDropPlan(folderId, planId) : undefined;
 
   return (
     <nav aria-label="Pastas do ateliê" className="lg:sticky lg:top-4">
@@ -212,8 +209,8 @@ function RailItem({
   active: boolean;
   onSelect: () => void;
   menu?: React.ReactNode;
-  /** Definido só enquanto há aula no ar e este item é um lugar de verdade. */
-  onDropPlan?: () => void;
+  /** Definido só em lugares que podem receber uma aula. */
+  onDropPlan?: (planId: string) => void;
 }) {
   /**
    * `dragenter`/`dragleave` disparam também ao passar pelos filhos, então um
@@ -226,16 +223,26 @@ function RailItem({
   // que a API de arrasto pergunta "este alvo aceita?".
   const dropProps = onDropPlan
     ? {
-        onDragEnter: () => setDepth((value) => value + 1),
+        onDragEnter: (event: React.DragEvent) => {
+          if (event.dataTransfer.types.includes("application/x-du-ingles-lesson-plan")) {
+            setDepth((value) => value + 1);
+          }
+        },
         onDragLeave: () => setDepth((value) => Math.max(0, value - 1)),
         onDragOver: (event: React.DragEvent) => {
+          if (!event.dataTransfer.types.includes("application/x-du-ingles-lesson-plan"))
+            return;
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
         },
         onDrop: (event: React.DragEvent) => {
+          const planId = event.dataTransfer.getData(
+            "application/x-du-ingles-lesson-plan",
+          );
+          if (!planId) return;
           event.preventDefault();
           setDepth(0);
-          onDropPlan();
+          onDropPlan(planId);
         },
       }
     : undefined;
