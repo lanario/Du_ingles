@@ -7,9 +7,8 @@
  * (`listStudentObjectivesAction` já traz os dois juntos), então quem edita
  * aqui vê o quadro completo, mesmo sem poder mexer no que é da turma.
  *
- * A ficha não pré-carrega isso (a lista de alunos inteira ficaria pesada por
- * um dado que a maioria dos cliques nunca abre) — busca sob demanda, do
- * mesmo jeito que `openDetail` já busca o resto da ficha em `students-view`.
+ * A ficha carrega o primeiro conjunto em paralelo com o perfil. Depois de
+ * alterações, esta seção atualiza os objetivos sob demanda.
  */
 
 import { useEffect, useState, useTransition } from "react";
@@ -32,19 +31,26 @@ export function StudentObjectives({
   studentId,
   session,
   canManage,
+  initialObjectives,
 }: {
   studentId: string;
-  /** Muda a cada abertura da ficha — refaz a busca mesmo trocando de aluno. */
-  session: number;
+  session?: number;
   canManage: boolean;
+  initialObjectives?: ObjectiveItem[];
 }) {
-  const [objectives, setObjectives] = useState<ObjectiveItem[] | null>(null);
+  const [objectives, setObjectives] = useState<ObjectiveItem[] | null>(
+    initialObjectives ?? null,
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isCreating, startCreate] = useTransition();
 
   useEffect(() => {
+    if (initialObjectives !== undefined) {
+      setObjectives(initialObjectives);
+      return;
+    }
     let cancelled = false;
     setObjectives(null);
     listStudentObjectivesAction(studentId).then((result) => {
@@ -53,7 +59,7 @@ export function StudentObjectives({
     return () => {
       cancelled = true;
     };
-  }, [studentId, session]);
+  }, [studentId, session, initialObjectives]);
 
   function reload() {
     listStudentObjectivesAction(studentId).then(setObjectives);

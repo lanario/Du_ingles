@@ -25,10 +25,12 @@ import { LogoLoader } from "@/components/ui/logo-loader";
 export function AssignmentPanel({
   open,
   onClose,
+  onSaved,
   groups,
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   groups: PlannerGroupOption[];
 }) {
   const [state, formAction, isPending] = useActionState(
@@ -52,8 +54,11 @@ export function AssignmentPanel({
   }, [open]);
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   function toggle(id: string) {
     setSelected((prev) => {

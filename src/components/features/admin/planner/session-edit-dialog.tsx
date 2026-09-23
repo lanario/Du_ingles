@@ -43,13 +43,20 @@ export interface EditableSession {
 export function EditSessionDialog({
   session,
   onClose,
+  onSaved,
 }: {
   /** `null` fecha o diálogo — a lista guarda qual aula está sendo editada. */
   session: EditableSession | null;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   return session ? (
-    <EditSessionForm key={session.id} session={session} onClose={onClose} />
+    <EditSessionForm
+      key={session.id}
+      session={session}
+      onClose={onClose}
+      onSaved={onSaved}
+    />
   ) : null;
 }
 
@@ -61,9 +68,11 @@ export function EditSessionDialog({
 function EditSessionForm({
   session,
   onClose,
+  onSaved,
 }: {
   session: EditableSession;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const action = useMemo(
@@ -86,9 +95,10 @@ function EditSessionForm({
   useEffect(() => {
     if (state?.success) {
       onClose();
-      router.refresh();
+      if (onSaved) onSaved();
+      else router.refresh();
     }
-  }, [state, onClose, router]);
+  }, [state, onClose, onSaved, router]);
 
   return (
     <Dialog

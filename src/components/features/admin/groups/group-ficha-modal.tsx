@@ -9,10 +9,7 @@
  * carregamento de página inteiro. A rota continua existindo (link direto,
  * favorito, aba nova) — este modal é o caminho de dentro da lista.
  *
- * A abertura é um movimento só, no modelo do sistema empresarial: o painel
- * nasce como o cartão "Abrindo turma" (cabeçalho + fio de progresso) e, quando
- * os dados chegam, o MESMO painel cresce para a ficha inteira. O cabeçalho
- * nunca é remontado, então ele viaja junto no crescimento em vez de piscar.
+ * A ficha abre imediatamente; os dados chegam dentro do painel.
  *
  * Divisão das libs, como no resto do painel: Framer Motion cuida do ciclo de
  * vida do React (crescimento do painel, abas, entrada e saída) e GSAP +
@@ -20,14 +17,7 @@
  * dos blocos, fio de progresso, cabeçalho que encolhe).
  */
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -73,7 +63,7 @@ if (typeof window !== "undefined") {
 }
 
 type FichaTab = "visao" | "matriculas" | "sessoes";
-/** `abrindo` = cartão compacto com o fio de progresso; `aberta` = ficha inteira. */
+/** Fase usada pelas animações da ficha aberta. */
 type Fase = "abrindo" | "aberta";
 
 const TABS: { id: FichaTab; label: string; icon: typeof GroupsIcon }[] = [
@@ -81,13 +71,6 @@ const TABS: { id: FichaTab; label: string; icon: typeof GroupsIcon }[] = [
   { id: "matriculas", label: "Matrículas", icon: UserIcon },
   { id: "sessoes", label: "Sessões", icon: CalendarIcon },
 ];
-
-/**
- * Piso de tempo do estágio "Abrindo turma". A leitura costuma voltar em
- * poucos centésimos e, sem esse piso, o cartão viraria ficha antes de ser
- * lido — o que se vê é um salto, não uma abertura.
- */
-const DURACAO_ABERTURA = 700;
 
 /** Mola compartilhada pelo crescimento do painel — cartão e ficha usam a mesma. */
 const MOLA = { type: "spring", stiffness: 260, damping: 32 } as const;
@@ -112,9 +95,7 @@ export function GroupFichaModal({
   const { canManageGroups } = useArea();
 
   const [tab, setTab] = useState<FichaTab>("visao");
-  const [fase, setFase] = useState<Fase>("abrindo");
-  const [tempoMinimoOk, setTempoMinimoOk] = useState(false);
-  const [carregando, setCarregando] = useState(true);
+  const [fase, setFase] = useState<Fase>("aberta");
   const [ficha, setFicha] = useState<GroupFicha | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [condensado, setCondensado] = useState(false);
@@ -140,50 +121,34 @@ export function GroupFichaModal({
   useEffect(() => {
     if (!groupId) return;
     setTab("visao");
-    setFase("abrindo");
-    setTempoMinimoOk(false);
+    setFase("aberta");
     setCondensado(false);
     setErro(null);
-    const timer = window.setTimeout(
-      () => setTempoMinimoOk(true),
-      reduceMotion ? 80 : DURACAO_ABERTURA,
-    );
-    return () => window.clearTimeout(timer);
-  }, [groupId, reduceMotion]);
-
-  const carregar = useCallback(async () => {
-    if (!groupId) return;
-    setCarregando(true);
-    try {
-      const dados = await getGroupFichaAction(groupId);
-      if (!dados) {
-        setErro("Turma não encontrada ou fora do seu alcance.");
-        setFicha(null);
-        return;
-      }
-      setErro(null);
-      setFicha(dados);
-    } catch {
-      setErro("Não foi possível carregar a turma.");
-      setFicha(null);
-    } finally {
-      setCarregando(false);
-    }
   }, [groupId]);
 
   // `revisao` entra de propósito na lista: é o sinal de que a lista trouxe
   // dado novo (matrícula, arquivamento, edição) e a ficha precisa reler.
   useEffect(() => {
     if (!groupId) return;
-    void carregar();
-  }, [groupId, revisao, carregar]);
-
-  // O painel só cresce quando as duas pontas estão prontas: o piso de tempo da
-  // animação e os dados carregados. Assim a ficha nunca abre vazia. A fase só
-  // anda para frente — uma releitura depois de matricular não volta ao cartão.
-  useEffect(() => {
-    if (tempoMinimoOk && !carregando) setFase("aberta");
-  }, [tempoMinimoOk, carregando]);
+    let cancelled = false;
+    setFicha(null);
+    setErro(null);
+    void getGroupFichaAction(groupId)
+      .then((data) => {
+        if (cancelled) return;
+        if (!data) {
+          setErro("Turma não encontrada ou fora do seu alcance.");
+          return;
+        }
+        setFicha(data);
+      })
+      .catch(() => {
+        if (!cancelled) setErro("Não foi possível carregar a turma.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId, revisao]);
 
   // Fecha no Esc e trava a rolagem do fundo enquanto a ficha está aberta.
   useEffect(() => {
@@ -323,9 +288,7 @@ export function GroupFichaModal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           onMouseDown={(event) => {
-            // Enquanto abre, o clique fora não fecha: o cartão está a meio
-            // caminho de virar ficha, e fechar ali parece engasgo, não escolha.
-            if (event.target === event.currentTarget && !abrindo) onClose();
+            if (event.target === event.currentTarget) onClose();
           }}
           className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-navy-950/50 p-3 backdrop-blur-[3px] sm:p-6"
         >
@@ -461,7 +424,7 @@ export function GroupFichaModal({
                       initial={{ width: "8%" }}
                       animate={{ width: "100%" }}
                       transition={{
-                        duration: reduceMotion ? 0.1 : DURACAO_ABERTURA / 1000,
+                        duration: reduceMotion ? 0.1 : 0.18,
                         ease: "easeInOut",
                       }}
                     />

@@ -26,12 +26,14 @@ const DURATIONS = [30, 45, 60, 90, 120];
 export function PlanFormPanel({
   open,
   onClose,
+  onSaved,
   plan,
   folders,
   defaultFolderId = null,
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   /** Presente = edição da ficha; ausente = criação. */
   plan?: PlannerPlan;
   /** Estante de quem está criando — vazia enquanto ninguém criou pasta. */
@@ -67,8 +69,11 @@ export function PlanFormPanel({
   // Criar redireciona para o canvas (a navegação fecha o painel sozinha);
   // editar volta `ok`, e aí quem fecha somos nós.
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   return (
     <SidePanel

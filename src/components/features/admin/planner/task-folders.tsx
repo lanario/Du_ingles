@@ -288,10 +288,12 @@ function RailItem({
 export function TaskFolderFormDialog({
   open,
   onClose,
+  onSaved,
   folder,
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   folder?: AssignmentTemplateFolder;
 }) {
   const action = folder
@@ -305,8 +307,11 @@ export function TaskFolderFormDialog({
   const fields = state && !state.success ? state.error.fields : undefined;
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   useEffect(() => {
     if (open) setColor(folder?.color ?? "gold");

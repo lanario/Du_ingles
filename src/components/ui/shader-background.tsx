@@ -67,9 +67,12 @@ function usePrefersReducedMotion() {
 export function ShaderBackground({
   className,
   fixed = true,
+  staticOnly = false,
 }: {
   className?: string;
   fixed?: boolean;
+  /** Mantém o degradê da marca sem montar animações WebGL. */
+  staticOnly?: boolean;
 }) {
   const reducedMotion = usePrefersReducedMotion();
   const { lite } = usePerfMode();
@@ -97,7 +100,7 @@ export function ShaderBackground({
         }}
       />
 
-      {mounted && !lite ? (
+      {mounted && !lite && !staticOnly ? (
         <>
           <MeshGradient
             className="absolute inset-0 h-full w-full"
@@ -125,7 +128,12 @@ export function ShaderBackground({
           o dourado e deixaria o modo leve com cara de página sem estilo. O
           ponto mais escuro do degradê estático é #e7cd8c, que contra o navy
           do texto passa folgado em AA mesmo com o véu fraco. */}
-      <div className={cn("absolute inset-0", lite ? "bg-white/20" : "bg-white/55")} />
+      <div
+        className={cn(
+          "absolute inset-0",
+          lite || staticOnly ? "bg-white/20" : "bg-white/55",
+        )}
+      />
     </div>
   );
 }

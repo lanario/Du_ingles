@@ -7,7 +7,7 @@
  * ou transfere o aluno para lá.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CalendarIcon,
@@ -34,6 +34,7 @@ interface StudentCardProps {
   student: Student;
   busy: boolean;
   onOpen: () => void;
+  onIntent?: () => void;
   onDeactivate: () => void;
   onReactivate: () => void;
   onMove: () => void;
@@ -47,6 +48,7 @@ export function StudentCard({
   student,
   busy,
   onOpen,
+  onIntent,
   onDeactivate,
   onReactivate,
   onMove,
@@ -57,6 +59,28 @@ export function StudentCard({
   const reduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const intentTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (intentTimer.current !== null) window.clearTimeout(intentTimer.current);
+    },
+    [],
+  );
+
+  function prefetchOnPointerEnter() {
+    if (!onIntent || intentTimer.current !== null) return;
+    intentTimer.current = window.setTimeout(() => {
+      intentTimer.current = null;
+      onIntent();
+    }, 120);
+  }
+
+  function prefetchOnFocus() {
+    if (intentTimer.current !== null) window.clearTimeout(intentTimer.current);
+    intentTimer.current = null;
+    onIntent?.();
+  }
 
   const actions: ActionMenuItem[] = canManage
     ? [
@@ -93,6 +117,12 @@ export function StudentCard({
       transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.8 }}
       whileHover={reduceMotion ? undefined : { y: -4 }}
       onClick={onOpenClick(onOpen)}
+      onPointerEnter={prefetchOnPointerEnter}
+      onPointerLeave={() => {
+        if (intentTimer.current !== null) window.clearTimeout(intentTimer.current);
+        intentTimer.current = null;
+      }}
+      onFocusCapture={prefetchOnFocus}
       // Arrastar o cartão para uma turma da barra. Os handlers `*Capture` usam
       // o DragEvent nativo — os do framer-motion são de outra gesture, que
       // aqui não está ligada.

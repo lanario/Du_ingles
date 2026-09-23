@@ -11,12 +11,16 @@
  * inteira, então filtrar em memória é imediato e não passa termo pela URL.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { deactivateUserAction, reactivateUserAction } from "@/actions/admin/users";
 import { moveStudentToGroupAction } from "@/actions/admin/students";
+import { listStudentRegistrationsAction } from "@/actions/admin/student-registrations";
+import {
+  getStudentFichaDataAction,
+  type StudentFichaData,
+} from "@/actions/admin/users-detail";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useArea } from "@/components/features/admin/area-context";
 import {
@@ -69,13 +73,13 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
 ];
 
 const VIEW_MODE_KEY = "du:alunos:modo";
+const DETAIL_CACHE_MS = 45_000;
 
 export function StudentsView({
   students,
   groups,
-  registrations = [],
+  registrations: initialRegistrations = [],
 }: StudentsViewProps) {
-  const router = useRouter();
   // Na área do professor a tela é de consulta: ele acompanha quem está na
   // turma dele, mas cadastro, matrícula e ciclo de vida da conta continuam
   // sendo coordenação.
@@ -84,6 +88,12 @@ export function StudentsView({
 
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"students" | "registrations">("students");
+  const [registrations, setRegistrations] = useState(initialRegistrations);
+  const [registrationsLoaded, setRegistrationsLoaded] = useState(
+    initialRegistrations.length > 0,
+  );
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
+  const [registrationsError, setRegistrationsError] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>({ type: "all" });
   const [viewMode, setViewMode] = useViewMode(VIEW_MODE_KEY);
@@ -91,6 +101,56 @@ export function StudentsView({
   const mode = narrow ? "cards" : viewMode;
 
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
+  const detailCache = useRef(
+    new Map<string, { data: StudentFichaData; expiresAt: number }>(),
+  );
+  const detailRequests = useRef(new Map<string, Promise<StudentFichaData | null>>());
+  const [, setDetailCacheVersion] = useState(0);
+
+  const loadStudentDetail = useCallback((studentId: string) => {
+    const cached = detailCache.current.get(studentId);
+    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.data);
+    if (cached) detailCache.current.delete(studentId);
+    const pending = detailRequests.current.get(studentId);
+    if (pending) return pending;
+
+    const request = getStudentFichaDataAction(studentId)
+      .then((data) => {
+        if (data) {
+          detailCache.current.set(studentId, {
+            data,
+            expiresAt: Date.now() + DETAIL_CACHE_MS,
+          });
+          setDetailCacheVersion((version) => version + 1);
+        }
+        return data;
+      })
+      .finally(() => detailRequests.current.delete(studentId));
+    detailRequests.current.set(studentId, request);
+    return request;
+  }, []);
+
+  const prefetchStudentDetail = useCallback(
+    (studentId: string) => {
+      void loadStudentDetail(studentId).catch(() => undefined);
+    },
+    [loadStudentDetail],
+  );
+
+  async function openRegistrations() {
+    setActiveTab("registrations");
+    if (registrationsLoaded || registrationsLoading) return;
+    setRegistrationsLoading(true);
+    setRegistrationsError(null);
+    try {
+      setRegistrations(await listStudentRegistrationsAction());
+      setRegistrationsLoaded(true);
+    } catch {
+      setRegistrationsError("Não foi possível carregar os cadastros. Tente novamente.");
+    } finally {
+      setRegistrationsLoading(false);
+    }
+  }
 
   const [moveTarget, setMoveTarget] = useState<Student | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
@@ -177,6 +237,8 @@ export function StudentsView({
    *   5. O modal detecta a mudança em `revisao` e relê a ficha em silêncio
    */
   useEffect(() => {
+    detailCache.current.clear();
+    setDetailCacheVersion((version) => version + 1);
     if (!detailStudent) return;
     const fresh = students.find((s) => s.id === detailStudent.id);
     if (fresh) setDetailStudent(fresh);
@@ -195,7 +257,7 @@ export function StudentsView({
     try {
       const result = await deactivateUserAction(student.id);
       if (!result.success) setError(result.error.message);
-      else router.refresh();
+      // A Server Action já revalida esta rota na resposta.
     } finally {
       setBusy(null);
     }
@@ -207,7 +269,7 @@ export function StudentsView({
     try {
       const result = await reactivateUserAction(student.id);
       if (!result.success) setError(result.error.message);
-      else router.refresh();
+      // A Server Action já revalida esta rota na resposta.
     } finally {
       setBusy(null);
     }
@@ -219,7 +281,7 @@ export function StudentsView({
     try {
       const result = await moveStudentToGroupAction(studentId, groupId);
       if (!result.success) setError(result.error.message);
-      else router.refresh();
+      // A Server Action já revalida esta rota na resposta.
     } finally {
       setBusy(null);
       setPendingMove(null);
@@ -305,7 +367,7 @@ export function StudentsView({
             type="button"
             role="tab"
             aria-selected={activeTab === "registrations"}
-            onClick={() => setActiveTab("registrations")}
+            onClick={() => void openRegistrations()}
             className={cn(
               "flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
               activeTab === "registrations"
@@ -314,7 +376,7 @@ export function StudentsView({
             )}
           >
             Cadastros
-            {registrations.length > 0 && (
+            {registrationsLoaded && registrations.length > 0 && (
               <span className="rounded-full bg-gold-100 px-1.5 text-[10px] font-semibold text-gold-800">
                 {registrations.length}
               </span>
@@ -543,6 +605,7 @@ export function StudentsView({
                     student={student}
                     busy={busy === student.id}
                     onOpen={() => openDetail(student)}
+                    onIntent={() => prefetchStudentDetail(student.id)}
                     onDeactivate={() => deactivate(student)}
                     onReactivate={() => reactivate(student)}
                     onMove={() => setMoveTarget(student)}
@@ -576,6 +639,7 @@ export function StudentsView({
                       student={student}
                       busy={busy === student.id}
                       onOpen={() => openDetail(student)}
+                      onIntent={() => prefetchStudentDetail(student.id)}
                       onDeactivate={() => deactivate(student)}
                       onReactivate={() => reactivate(student)}
                       onMove={() => setMoveTarget(student)}
@@ -598,17 +662,43 @@ export function StudentsView({
         )}
       </div>
 
-      {canManage && activeTab === "registrations" && (
-        <RegistrationsPanel
-          registrations={registrations}
-          students={students}
-          groups={groups}
-          onAssign={(student) => setMoveTarget(student)}
-        />
-      )}
+      {canManage &&
+        activeTab === "registrations" &&
+        (registrationsLoading ? (
+          <p role="status" className="mt-5 text-sm text-admin-foreground/55">
+            Carregando cadastros…
+          </p>
+        ) : registrationsError ? (
+          <div className="mt-5 flex items-center gap-3" role="alert">
+            <p className="text-sm text-destructive">{registrationsError}</p>
+            <button
+              type="button"
+              onClick={() => void openRegistrations()}
+              className="text-sm font-medium text-gold-700 underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
+          <RegistrationsPanel
+            registrations={registrations}
+            students={students}
+            groups={groups}
+            onAssign={(student) => setMoveTarget(student)}
+          />
+        ))}
 
       <StudentFichaModal
         student={detailStudent}
+        cachedDetail={
+          detailStudent
+            ? (() => {
+                const cached = detailCache.current.get(detailStudent.id);
+                return cached && cached.expiresAt > Date.now() ? cached.data : null;
+              })()
+            : null
+        }
+        loadDetail={loadStudentDetail}
         onClose={() => setDetailStudent(null)}
         onMove={() => detailStudent && setMoveTarget(detailStudent)}
         canManage={canManage}

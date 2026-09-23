@@ -4,10 +4,8 @@
  * Ficha do aluno em modal — espelho do `group-ficha-modal` para a área de
  * alunos do admin/professor.
  *
- * Segue o mesmo modelo de abertura em dois tempos:
- *  1. `abrindo` — painel compacto com cabeçalho do aluno e barra de progresso
- *     animada enquanto os dados chegam do servidor.
- *  2. `aberta` — ficha completa com todas as seções, que crescem em cascata.
+ * Abre a ficha imediatamente, preenche os detalhes sob demanda e reaproveita
+ * os dados recentes da lista para acelerar a reabertura.
  *
  * Divisão de libs idêntica ao modal de turmas:
  *  - Framer Motion → ciclo de vida React (crescimento do painel, entrada/saída)
@@ -15,17 +13,11 @@
  *    blocos, fio de progresso em scrub, cabeçalho que encolhe)
  */
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { getUserByIdAction } from "@/actions/admin/users-detail";
+import type { StudentFichaData } from "@/actions/admin/users-detail";
 import { useArea } from "@/components/features/admin/area-context";
 import { EditUserForm } from "@/components/features/admin/users/edit-user-form";
 import { SetPasswordForm } from "@/components/features/admin/users/set-password-form";
@@ -41,7 +33,6 @@ import {
 } from "@/components/ui/icons";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import { cn } from "@/lib/utils";
-import type { UserDetail as UserDetailData } from "@/repositories/users";
 import { StudentObjectives } from "./student-objectives";
 import {
   CopyButton,
@@ -57,14 +48,8 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-/** `abrindo` = cartão compacto com fio de progresso; `aberta` = ficha inteira. */
+/** Fase mantida para as animações de rolagem; a ficha abre diretamente. */
 type Fase = "abrindo" | "aberta";
-
-/**
- * Piso de tempo do estágio "Abrindo aluno". Evita o salto quando a resposta
- * chega antes de o cartão ter sido lido — sem ele a abertura parece um flash.
- */
-const DURACAO_ABERTURA = 650;
 
 /** Mola compartilhada pelo crescimento do painel (cartão e ficha usam a mesma). */
 const MOLA = { type: "spring", stiffness: 260, damping: 32 } as const;
@@ -72,6 +57,8 @@ const MOLA = { type: "spring", stiffness: 260, damping: 32 } as const;
 interface StudentFichaModalProps {
   /** Aluno aberto (linha básica); `null` fecha o modal. */
   student: Student | null;
+  cachedDetail: StudentFichaData | null;
+  loadDetail: (studentId: string) => Promise<StudentFichaData | null>;
   onClose: () => void;
   onMove?: () => void;
   canManage?: boolean;
@@ -79,6 +66,8 @@ interface StudentFichaModalProps {
 
 export function StudentFichaModal({
   student,
+  cachedDetail,
+  loadDetail,
   onClose,
   onMove,
   canManage = true,
@@ -87,14 +76,13 @@ export function StudentFichaModal({
   const { canManagePeople } = useArea();
   const podeGerenciar = canManage && canManagePeople;
 
-  const [fase, setFase] = useState<Fase>("abrindo");
-  const [tempoMinimoOk, setTempoMinimoOk] = useState(false);
-  const [carregando, setCarregando] = useState(true);
-  const [ficha, setFicha] = useState<UserDetailData | null>(null);
+  const [fase, setFase] = useState<Fase>("aberta");
+  const [ficha, setFicha] = useState<StudentFichaData | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [condensado, setCondensado] = useState(false);
   /** Muda a cada abertura para forçar remonte do conteúdo com novas animações. */
   const [session, setSession] = useState(0);
+  const temFicha = ficha !== null;
 
   const corpoRef = useRef<HTMLDivElement>(null);
   const internoRef = useRef<HTMLDivElement>(null);
@@ -113,55 +101,41 @@ export function StudentFichaModal({
     ? `${student.fullName}|${student.email}|${student.isActive}|${student.currentLevel}|${student.groupName ?? ""}|${student.guardianName ?? ""}`
     : "";
 
-  // Cada aluno recomeça a sequência: volta ao cartão e reabre o cronômetro.
+  // Cada aluno começa com o painel aberto; o conteúdo aparece assim que chega.
   useEffect(() => {
     if (!studentId) return;
-    setFase("abrindo");
-    setTempoMinimoOk(false);
+    setFase("aberta");
     setCondensado(false);
     setErro(null);
-    setFicha(null);
     setSession((n) => n + 1);
-    const timer = window.setTimeout(
-      () => setTempoMinimoOk(true),
-      reduceMotion ? 80 : DURACAO_ABERTURA,
-    );
-    return () => window.clearTimeout(timer);
-  }, [studentId, reduceMotion]);
-
-  const carregar = useCallback(async () => {
-    if (!studentId) return;
-    setCarregando(true);
-    try {
-      const dados = await getUserByIdAction(studentId);
-      if (!dados) {
-        setErro("Aluno não encontrado ou fora do seu alcance.");
-        setFicha(null);
-        return;
-      }
-      setErro(null);
-      setFicha(dados);
-    } catch {
-      setErro("Não foi possível carregar os dados do aluno.");
-      setFicha(null);
-    } finally {
-      setCarregando(false);
-    }
   }, [studentId]);
 
   useEffect(() => {
     if (!studentId) return;
-    void carregar();
-    // `revisao` entra de propósito: é o sinal de que o aluno (ou o admin)
-    // mudou algum dado e a ficha precisa reler — sem voltar ao cartão de
-    // abertura, porque o painel já está visível.
-  }, [studentId, revisao, carregar]);
-
-  // O painel só cresce quando as duas pontas estão prontas: piso de tempo e
-  // dados. Assim a ficha nunca abre vazia. A fase só anda para frente.
-  useEffect(() => {
-    if (tempoMinimoOk && !carregando) setFase("aberta");
-  }, [tempoMinimoOk, carregando]);
+    let cancelled = false;
+    setErro(null);
+    setFicha(cachedDetail);
+    if (cachedDetail)
+      return () => {
+        cancelled = true;
+      };
+    void loadDetail(studentId)
+      .then((data) => {
+        if (cancelled) return;
+        if (!data) {
+          setErro("Aluno não encontrado ou fora do seu alcance.");
+          return;
+        }
+        setFicha(data);
+      })
+      .catch(() => {
+        if (!cancelled) setErro("Não foi possível carregar os dados do aluno.");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `revisao` recarrega silenciosamente quando a lista entrega dados novos.
+  }, [studentId, revisao, cachedDetail, loadDetail]);
 
   // Fecha no Esc e trava a rolagem do fundo enquanto a ficha está aberta.
   useEffect(() => {
@@ -189,7 +163,7 @@ export function StudentFichaModal({
    *  - cabeçalho encolhe quando o corpo rola.
    */
   useLayoutEffect(() => {
-    if (fase !== "aberta" || reduceMotion) return;
+    if (fase !== "aberta" || reduceMotion || !temFicha) return;
     const scroller = corpoRef.current;
     const interno = internoRef.current;
     if (!scroller || !interno) return;
@@ -268,7 +242,7 @@ export function StudentFichaModal({
       window.clearTimeout(refresh);
       ctx.revert();
     };
-  }, [fase, reduceMotion]);
+  }, [fase, reduceMotion, temFicha]);
 
   const abrindo = fase === "abrindo";
 
@@ -433,7 +407,7 @@ export function StudentFichaModal({
                       initial={{ width: "8%" }}
                       animate={{ width: "100%" }}
                       transition={{
-                        duration: reduceMotion ? 0.1 : DURACAO_ABERTURA / 1000,
+                        duration: reduceMotion ? 0.1 : 0.18,
                         ease: "easeInOut",
                       }}
                     />
@@ -484,11 +458,11 @@ export function StudentFichaModal({
                       ) : (
                         <FichaConteudo
                           key={session}
-                          ficha={ficha}
+                          ficha={ficha.user}
+                          initialObjectives={ficha.objectives}
                           student={student}
                           podeGerenciar={podeGerenciar}
                           onMove={onMove}
-                          session={session}
                         />
                       )}
                     </div>
@@ -507,22 +481,20 @@ export function StudentFichaModal({
 
 function FichaConteudo({
   ficha,
+  initialObjectives,
   student,
   podeGerenciar,
   onMove,
-  session,
 }: {
-  ficha: UserDetailData;
+  ficha: import("@/repositories/users").UserDetail;
+  initialObjectives: import("@/repositories/objectives").ObjectiveItem[];
   student: Student;
   podeGerenciar: boolean;
   onMove?: () => void;
-  session: number;
 }) {
   const guardianEmail = ficha.studentProfile?.guardianEmail ?? null;
   const guardianPhone = ficha.studentProfile?.guardianPhone ?? null;
-  const hasGuardian = Boolean(
-    student.guardianName || guardianEmail || guardianPhone,
-  );
+  const hasGuardian = Boolean(student.guardianName || guardianEmail || guardianPhone);
 
   return (
     <div className="space-y-6">
@@ -555,7 +527,11 @@ function FichaConteudo({
       {/* Objetivos */}
       <section data-ficha-reveal>
         <BlocoTitulo titulo="Objetivos" />
-        <StudentObjectives studentId={ficha.id} session={session} canManage />
+        <StudentObjectives
+          studentId={ficha.id}
+          canManage
+          initialObjectives={initialObjectives}
+        />
       </section>
 
       {/* Responsável */}

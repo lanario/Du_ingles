@@ -70,6 +70,7 @@ export async function deactivateUserAction(userId: string): Promise<ActionResult
   });
 
   revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/alunos");
   revalidatePath(`/admin/usuarios/${userId}`);
   return ok(undefined as never);
 }
@@ -90,6 +91,7 @@ export async function reactivateUserAction(userId: string): Promise<ActionResult
   });
 
   revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/alunos");
   revalidatePath(`/admin/usuarios/${userId}`);
   return ok(undefined as never);
 }

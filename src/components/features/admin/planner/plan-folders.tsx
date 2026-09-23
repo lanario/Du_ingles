@@ -303,10 +303,12 @@ function RailItem({
 export function FolderFormDialog({
   open,
   onClose,
+  onSaved,
   folder,
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   folder?: PlannerFolder;
 }) {
   const action = folder
@@ -318,8 +320,11 @@ export function FolderFormDialog({
   const fields = state && !state.success ? state.error.fields : undefined;
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   // O diálogo continua montado entre aberturas; sem isto, editar a pasta B
   // logo depois da A mostraria a cor da A.

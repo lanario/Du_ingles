@@ -13,7 +13,7 @@
  * GSAP cuida do imperativo (abertura da tela, contadores, fio da lista).
  */
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -33,6 +33,7 @@ import {
   deletePlannerAssignmentAction,
   moveAssignmentTemplateAction,
 } from "@/actions/admin/assignments";
+import { loadAdminPlannerTabAction } from "@/actions/admin/planner-tab-data";
 import { CountUp } from "@/components/features/admin/dashboard/primitives";
 import { useListProgress } from "@/components/motion/list-motion";
 import { ActionMenu } from "@/components/ui/action-menu";
@@ -104,6 +105,7 @@ import type {
 import type { UserListItem } from "@/repositories/users";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import { usePersistedChoice } from "@/hooks/use-persisted-choice";
+import { preferenceStorage } from "@/lib/consent/client";
 
 type Tab = "atelie" | "agenda" | "tarefas";
 const TAB_VALUES: readonly Tab[] = ["atelie", "agenda", "tarefas"];
@@ -157,23 +159,26 @@ export interface PlannerViewProps {
   initialTaskFolderKey?: TaskAtelieKey;
   /** `?filtro=` na URL — qual recorte da agenda já vem aberto. */
   initialAgendaFilter?: AgendaFilter;
+  /** Carrega agenda e tarefas sob demanda, usado no painel administrativo. */
+  deferTabData?: boolean;
 }
 
 export function PlannerView({
   plans,
   folders,
-  sessions,
-  groups,
-  teachers,
-  assignments,
-  templates,
-  templateFolders,
+  sessions: initialSessions,
+  groups: initialGroups,
+  teachers: initialTeachers,
+  assignments: initialAssignments,
+  templates: initialTemplates,
+  templateFolders: initialTemplateFolders,
   editableAuthorId,
   openCreate = false,
   initialTab,
   initialFolderKey,
   initialTaskFolderKey,
   initialAgendaFilter,
+  deferTabData = false,
 }: PlannerViewProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -197,7 +202,72 @@ export function PlannerView({
     initialTab,
   );
 
+  const [sessions, setSessions] = useState(initialSessions);
+  const [groups, setGroups] = useState(initialGroups);
+  const [teachers, setTeachers] = useState(initialTeachers);
+  const [assignments, setAssignments] = useState(initialAssignments);
+  const [templates, setTemplates] = useState(initialTemplates);
+  const [templateFolders, setTemplateFolders] = useState(initialTemplateFolders);
+  const [loadingTab, setLoadingTab] = useState<Tab | null>(null);
+  const [tabLoadError, setTabLoadError] = useState<Tab | null>(null);
+  const loadedTabs = useRef(new Set<Tab>(deferTabData ? ["atelie"] : TAB_VALUES));
+  const pendingTabLoads = useRef(new Map<"agenda" | "tarefas", Promise<void>>());
+
+  const loadTabData = useCallback(
+    (next: Tab) => {
+      if (!deferTabData || next === "atelie" || loadedTabs.current.has(next))
+        return Promise.resolve();
+      const pending = pendingTabLoads.current.get(next);
+      if (pending) return pending;
+
+      setLoadingTab(next);
+      setTabLoadError(null);
+      const request = loadAdminPlannerTabAction(next)
+        .then((data) => {
+          if (data.tab === "agenda") {
+            setSessions(data.sessions);
+            setGroups(data.groups);
+            setTeachers(data.teachers);
+          } else {
+            setAssignments(data.assignments);
+            setTemplates(data.templates);
+            setGroups(data.groups);
+            setTemplateFolders(data.templateFolders);
+          }
+          loadedTabs.current.add(next);
+        })
+        .catch(() => setTabLoadError(next))
+        .finally(() => {
+          pendingTabLoads.current.delete(next);
+          setLoadingTab((current) => (current === next ? null : current));
+        });
+      pendingTabLoads.current.set(next, request);
+      return request;
+    },
+    [deferTabData],
+  );
+
+  useEffect(() => {
+    void loadTabData(tab);
+  }, [loadTabData, tab]);
+
+  const refreshTabData = useCallback(
+    (target: Tab) => {
+      if (target === "atelie") {
+        router.refresh();
+        return;
+      }
+      loadedTabs.current.delete(target);
+      void loadTabData(target);
+    },
+    [loadTabData, router],
+  );
+  const refreshAtelie = useCallback(() => refreshTabData("atelie"), [refreshTabData]);
+  const refreshAgenda = useCallback(() => refreshTabData("agenda"), [refreshTabData]);
+  const refreshTasks = useCallback(() => refreshTabData("tarefas"), [refreshTabData]);
+
   function setTab(next: Tab) {
+    void loadTabData(next);
     setStoredTab(next);
     const params = new URLSearchParams(window.location.search);
     if (next === "atelie") params.delete("tab");
@@ -283,6 +353,33 @@ export function PlannerView({
       scroll: false,
     });
   }
+
+  const restoredDeferredTaskFolder = useRef(false);
+  useEffect(() => {
+    if (
+      !deferTabData ||
+      !loadedTabs.current.has("tarefas") ||
+      restoredDeferredTaskFolder.current
+    )
+      return;
+    restoredDeferredTaskFolder.current = true;
+
+    const queryValue = new URLSearchParams(window.location.search).get("tpasta");
+    const remembered = preferenceStorage.get(`du:planejador:${role}:tarefa-pasta`);
+    const selected =
+      initialTaskFolderKey && initialTaskFolderKey !== "todas"
+        ? initialTaskFolderKey
+        : taskFolderKeyFromParam(queryValue ?? remembered ?? undefined, templateFolders);
+    if (selected !== taskFolderKey) setStoredTaskFolderKey(selected);
+  }, [
+    deferTabData,
+    initialTaskFolderKey,
+    role,
+    setStoredTaskFolderKey,
+    tab,
+    templateFolders,
+    taskFolderKey,
+  ]);
 
   const [taskFolderFormOpen, setTaskFolderFormOpen] = useState(false);
   const [editingTaskFolder, setEditingTaskFolder] = useState<
@@ -622,7 +719,7 @@ export function PlannerView({
       setBusyId(null);
       if (!result.success)
         setError(result.error?.message ?? "Não foi possível concluir.");
-      else router.refresh();
+      else refreshTabData(tab);
     });
   }
 
@@ -816,6 +913,29 @@ export function PlannerView({
       </AnimatePresence>
 
       <div className="relative mt-5">
+        {loadingTab === tab && (
+          <div
+            role="status"
+            className="absolute inset-0 z-20 grid min-h-64 place-items-center rounded-2xl bg-admin-background/85 text-sm text-admin-foreground/65 backdrop-blur-sm"
+          >
+            Carregando dados desta aba…
+          </div>
+        )}
+        {tabLoadError === tab && (
+          <div
+            role="alert"
+            className="mb-3 flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          >
+            Não foi possível carregar esta aba.
+            <button
+              type="button"
+              onClick={() => void loadTabData(tab)}
+              className="font-medium underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
         <span
           ref={lineRef}
           aria-hidden
@@ -1257,6 +1377,7 @@ export function PlannerView({
 
       <PlanFormPanel
         open={formOpen}
+        onSaved={refreshAtelie}
         onClose={() => {
           setFormOpen(false);
           setEditing(undefined);
@@ -1269,6 +1390,7 @@ export function PlannerView({
 
       <SchedulePanel
         open={scheduleOpen}
+        onSaved={refreshAgenda}
         onClose={() => setScheduleOpen(false)}
         groups={groups}
         plans={plans}
@@ -1278,12 +1400,14 @@ export function PlannerView({
 
       <AssignmentPanel
         open={assignmentOpen}
+        onSaved={refreshTasks}
         onClose={() => setAssignmentOpen(false)}
         groups={groups}
       />
 
       <TaskTemplateFormPanel
         open={templateFormOpen}
+        onSaved={refreshTasks}
         onClose={() => setTemplateFormOpen(false)}
         folders={templateFolders}
         /* Criar de dentro de uma pasta já nasce guardada nela. */
@@ -1292,6 +1416,7 @@ export function PlannerView({
 
       <AssignTemplatePanel
         open={assigningTemplate !== null}
+        onSaved={refreshTasks}
         onClose={() => setAssigningTemplate(null)}
         template={assigningTemplate}
         groups={groups}
@@ -1299,11 +1424,13 @@ export function PlannerView({
 
       <EditSessionDialog
         session={editingSession}
+        onSaved={refreshAgenda}
         onClose={() => setEditingSession(null)}
       />
 
       <FolderFormDialog
         open={folderFormOpen}
+        onSaved={refreshAtelie}
         onClose={() => {
           setFolderFormOpen(false);
           setEditingFolder(undefined);
@@ -1328,6 +1455,7 @@ export function PlannerView({
 
       <TaskFolderFormDialog
         open={taskFolderFormOpen}
+        onSaved={refreshTasks}
         onClose={() => {
           setTaskFolderFormOpen(false);
           setEditingTaskFolder(undefined);

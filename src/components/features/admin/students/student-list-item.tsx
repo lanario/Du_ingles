@@ -6,7 +6,7 @@
  * colunas (`LIST_GRID`) é compartilhada com o cabeçalho em `StudentsView`.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { CalendarIcon, PowerIcon, SwapIcon, UserIcon } from "@/components/ui/icons";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
@@ -23,6 +23,7 @@ interface StudentListItemProps {
   student: Student;
   busy: boolean;
   onOpen: () => void;
+  onIntent?: () => void;
   onDeactivate: () => void;
   onReactivate: () => void;
   onMove: () => void;
@@ -36,6 +37,7 @@ export function StudentListItem({
   student,
   busy,
   onOpen,
+  onIntent,
   onDeactivate,
   onReactivate,
   onMove,
@@ -46,6 +48,28 @@ export function StudentListItem({
   const reduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const intentTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (intentTimer.current !== null) window.clearTimeout(intentTimer.current);
+    },
+    [],
+  );
+
+  function prefetchOnPointerEnter() {
+    if (!onIntent || intentTimer.current !== null) return;
+    intentTimer.current = window.setTimeout(() => {
+      intentTimer.current = null;
+      onIntent();
+    }, 120);
+  }
+
+  function prefetchOnFocus() {
+    if (intentTimer.current !== null) window.clearTimeout(intentTimer.current);
+    intentTimer.current = null;
+    onIntent?.();
+  }
 
   const actions: ActionMenuItem[] = canManage
     ? [
@@ -93,6 +117,12 @@ export function StudentListItem({
         onDragEnd?.();
       }}
       onClick={onOpenClick(onOpen)}
+      onPointerEnter={prefetchOnPointerEnter}
+      onPointerLeave={() => {
+        if (intentTimer.current !== null) window.clearTimeout(intentTimer.current);
+        intentTimer.current = null;
+      }}
+      onFocusCapture={prefetchOnFocus}
       className={cn(
         LIST_GRID,
         canManage ? "cursor-grab" : "cursor-pointer",

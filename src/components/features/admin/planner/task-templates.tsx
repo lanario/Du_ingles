@@ -180,11 +180,13 @@ export function TaskTemplateCard({
 export function TaskTemplateFormPanel({
   open,
   onClose,
+  onSaved,
   folders,
   defaultFolderId = null,
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   /** Estante de quem está criando — vazia enquanto ninguém criou pasta. */
   folders: AssignmentTemplateFolder[];
   /** Pasta aberta no ateliê: é onde a tarefa padrão nova nasce. */
@@ -209,8 +211,11 @@ export function TaskTemplateFormPanel({
   }, [open, defaultFolderId]);
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   return (
     <SidePanel
@@ -348,11 +353,13 @@ export function TaskTemplateFormPanel({
 export function AssignTemplatePanel({
   open,
   onClose,
+  onSaved,
   template,
   groups,
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   template: AssignmentTemplateListItem | null;
   groups: PlannerGroupOption[];
 }) {
@@ -371,8 +378,11 @@ export function AssignTemplatePanel({
   }, [open, template]);
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   function toggle(id: string) {
     setSelected((prev) => {

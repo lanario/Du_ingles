@@ -1,17 +1,7 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
-import {
-  listPlannerFolders,
-  listPlannerGroups,
-  listPlannerPlans,
-  listPlannerSessions,
-} from "@/repositories/lesson-planner";
-import {
-  listAssignmentTemplateFolders,
-  listAssignmentTemplates,
-  listOrgAssignments,
-} from "@/repositories/assignments";
-import { listUsers } from "@/repositories/users";
+import { listAssignmentTemplateFolders } from "@/repositories/assignments";
+import { listPlannerFolders, listPlannerPlans } from "@/repositories/lesson-planner";
 import {
   folderKeyFromParam,
   taskFolderKeyFromParam,
@@ -33,46 +23,30 @@ interface PageProps {
   }>;
 }
 
-/**
- * Uma única carga alimenta as duas abas: a escola tem dezenas de planos e
- * algumas centenas de aulas na janela recente, então buscar tudo de uma vez
- * e filtrar em memória é mais barato (e mais rápido para quem usa) do que
- * refazer round-trip a cada filtro.
- */
+/** A aba inicial carrega primeiro; agenda e tarefas são buscadas ao abrir. */
 export default async function PlanejadorPage({ searchParams }: PageProps) {
   const ctx = await requireRole(["admin"]);
   const { nova, tab, pasta, tpasta, filtro } = await searchParams;
 
-  const [
-    plans,
-    sessions,
-    groups,
-    teachers,
-    assignments,
-    templates,
-    folders,
-    templateFolders,
-  ] = await Promise.all([
+  const [plans, folders, templateFolders] = await Promise.all([
     listPlannerPlans(ctx.organizationId),
-    listPlannerSessions(ctx.organizationId),
-    listPlannerGroups(ctx.organizationId),
-    listUsers(ctx.organizationId, { role: "teacher" }),
-    listOrgAssignments(ctx.organizationId),
-    listAssignmentTemplates(ctx.organizationId),
     listPlannerFolders(ctx.organizationId, ctx.userId),
-    listAssignmentTemplateFolders(ctx.organizationId, ctx.userId),
+    tpasta && !["todas", "compartilhadas", "privadas", "sem-pasta"].includes(tpasta)
+      ? listAssignmentTemplateFolders(ctx.organizationId, ctx.userId)
+      : Promise.resolve([]),
   ]);
 
   return (
     <PlannerView
       plans={plans}
       folders={folders}
-      sessions={sessions}
-      groups={groups}
-      teachers={teachers}
-      assignments={assignments}
-      templates={templates}
+      sessions={[]}
+      groups={[]}
+      teachers={[]}
+      assignments={[]}
+      templates={[]}
       templateFolders={templateFolders}
+      deferTabData
       openCreate={nova !== undefined}
       initialTab={
         tab && VALID_TABS.has(tab) ? (tab as "atelie" | "agenda" | "tarefas") : undefined

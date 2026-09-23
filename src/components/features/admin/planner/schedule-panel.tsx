@@ -29,6 +29,7 @@ const DURATIONS = [30, 45, 60, 90, 120];
 export function SchedulePanel({
   open,
   onClose,
+  onSaved,
   groups,
   plans,
   teachers,
@@ -36,6 +37,7 @@ export function SchedulePanel({
 }: {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
   groups: PlannerGroupOption[];
   plans: PlannerPlan[];
   teachers: UserListItem[];
@@ -67,8 +69,11 @@ export function SchedulePanel({
   }, [plan]);
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    if (state?.success) {
+      onSaved?.();
+      onClose();
+    }
+  }, [state, onClose, onSaved]);
 
   const noGroups = groups.length === 0;
 

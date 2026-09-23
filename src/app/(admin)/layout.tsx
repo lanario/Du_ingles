@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* No mobile a `AdminSidebar` renderiza um cabeçalho no fluxo (a gaveta
           é `fixed`), então esta coluna precisa ser `flex-col` até `md` —
           senão a barra vira uma coluna de 100vh ao lado do conteúdo. */}
-        <ShaderBackground />
+        <ShaderBackground staticOnly />
         <LiveRefresh userId={ctx.userId} />
         <LinkPrefetcher />
 
