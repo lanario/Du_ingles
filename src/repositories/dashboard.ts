@@ -1,6 +1,7 @@
 import "server-only";
 import { formatInTimeZone } from "date-fns-tz";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { measureDataQuery } from "@/lib/observability/performance";
 import type { CefrLevel } from "@/types/domain";
 import { CEFR_LEVELS } from "@/types/domain";
 
@@ -161,6 +162,85 @@ function buildMonthWindow(now: Date): { key: string; label: string }[] {
 export async function getAdminDashboard(organizationId: string): Promise<AdminDashboard> {
   const admin = createAdminSupabaseClient();
 
+  const results = await Promise.all([
+    measureDataQuery("adminDashboard.profiles", () =>
+      admin
+        .from("profiles")
+        .select("id, full_name, role, is_active, deleted_at, created_at")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.groups", () =>
+      admin
+        .from("groups")
+        .select("id, name, level, max_students, is_active, teacher_id, created_at")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.courses", () =>
+      admin.from("courses").select("id, is_active").eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.enrollments", () =>
+      admin
+        .from("enrollments")
+        .select("id, student_id, group_id, status, enrolled_at")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.sessions", () =>
+      admin
+        .from("class_sessions")
+        .select("id, group_id, teacher_id, status, scheduled_at, duration_minutes, title")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.attendance", () =>
+      admin
+        .from("attendance")
+        .select("status, student_id, session_id")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.assignments", () =>
+      admin
+        .from("assignments")
+        .select("id, group_id, max_score, created_at")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.submissions", () =>
+      admin
+        .from("assignment_submissions")
+        .select("assignment_id, student_id, status, score")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.studentProfiles", () =>
+      admin
+        .from("student_profiles")
+        .select("profile_id, current_level")
+        .eq("organization_id", organizationId),
+    ),
+    measureDataQuery("adminDashboard.leads", () =>
+      admin
+        .from("leads")
+        .select("id, source, created_at")
+        .eq("organization_id", organizationId),
+    ),
+  ]);
+
+  const queryNames = [
+    "profiles",
+    "groups",
+    "courses",
+    "enrollments",
+    "class_sessions",
+    "attendance",
+    "assignments",
+    "assignment_submissions",
+    "student_profiles",
+    "leads",
+  ];
+  for (const [index, result] of results.entries()) {
+    if (result.error) {
+      throw new Error(
+        `Falha ao carregar ${queryNames[index]} do painel admin (${result.error.code}).`,
+      );
+    }
+  }
   const [
     { data: profiles },
     { data: groups },
@@ -172,45 +252,7 @@ export async function getAdminDashboard(organizationId: string): Promise<AdminDa
     { data: submissions },
     { data: studentProfiles },
     { data: leads },
-  ] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("id, full_name, role, is_active, deleted_at, created_at")
-      .eq("organization_id", organizationId),
-    admin
-      .from("groups")
-      .select("id, name, level, max_students, is_active, teacher_id, created_at")
-      .eq("organization_id", organizationId),
-    admin.from("courses").select("id, is_active").eq("organization_id", organizationId),
-    admin
-      .from("enrollments")
-      .select("id, student_id, group_id, status, enrolled_at")
-      .eq("organization_id", organizationId),
-    admin
-      .from("class_sessions")
-      .select("id, group_id, teacher_id, status, scheduled_at, duration_minutes, title")
-      .eq("organization_id", organizationId),
-    admin
-      .from("attendance")
-      .select("status, student_id, session_id")
-      .eq("organization_id", organizationId),
-    admin
-      .from("assignments")
-      .select("id, group_id, max_score, created_at")
-      .eq("organization_id", organizationId),
-    admin
-      .from("assignment_submissions")
-      .select("assignment_id, student_id, status, score")
-      .eq("organization_id", organizationId),
-    admin
-      .from("student_profiles")
-      .select("profile_id, current_level")
-      .eq("organization_id", organizationId),
-    admin
-      .from("leads")
-      .select("id, source, created_at")
-      .eq("organization_id", organizationId),
-  ]);
+  ] = results;
 
   const now = new Date();
   const months = buildMonthWindow(now);

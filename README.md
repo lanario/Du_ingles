@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Testes
+
+Arquitetura, integração com PostgreSQL em Testcontainers, benchmark de validação
+e carga HTTP estão documentados em [docs/testing.md](docs/testing.md).
+
 ## Getting Started
 
 First, run the development server:

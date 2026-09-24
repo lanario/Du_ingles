@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/session";
 import { getAdminDashboard } from "@/repositories/dashboard";
 import { getFinanceOverview } from "@/repositories/finance";
 import { getOrganizationName } from "@/lib/organization";
+import { measureServer } from "@/lib/observability/performance";
 import { AdminDashboardView } from "@/components/features/admin/dashboard/dashboard-view";
 
 export const metadata: Metadata = { title: "Painel da escola" };
@@ -17,9 +18,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminHomePage() {
   const ctx = await requireRole(["admin"]);
   const [data, finance, organizationName] = await Promise.all([
-    getAdminDashboard(ctx.organizationId),
-    getFinanceOverview(ctx.organizationId),
-    getOrganizationName(ctx.organizationId),
+    measureServer("admin.dashboard", () => getAdminDashboard(ctx.organizationId)),
+    measureServer("admin.financeOverview", () => getFinanceOverview(ctx.organizationId)),
+    measureServer("admin.organizationName", () =>
+      getOrganizationName(ctx.organizationId),
+    ),
   ]);
 
   return (

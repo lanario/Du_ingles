@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { recordDataError } from "@/lib/observability/performance";
 
 export interface NotificationItem {
   id: string;
@@ -30,7 +31,8 @@ export async function listNotifications(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error || !data) return [];
+  if (error) recordDataError("notifications.list", error.code);
+  if (!data) return [];
 
   return data.map((row) => ({
     id: row.id,
@@ -45,11 +47,12 @@ export async function listNotifications(
 
 export async function countUnreadNotifications(userId: string): Promise<number> {
   const supabase = await createServerSupabaseClient();
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
     .eq("recipient_id", userId)
     .is("read_at", null);
+  if (error) recordDataError("notifications.unreadCount", error.code);
   return count ?? 0;
 }
 

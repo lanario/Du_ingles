@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { recordPerformance } from "@/lib/observability/performance";
 import type { AppRole } from "@/types/domain";
 
 export interface SessionContext {
@@ -21,6 +22,16 @@ export interface SessionContext {
   fullName: string;
   /** URL relativa da foto de perfil (`/api/avatars/...`) ou `null`. */
   avatarUrl: string | null;
+  /** Perfil já carregado para o menu, sem uma segunda consulta no layout. */
+  profile: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: AppRole;
+    phone: string | null;
+    birthDate: string | null;
+    avatarPath: string | null;
+  } | null;
 }
 
 /**
@@ -40,7 +51,14 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
    * *signing keys* assimétricas no Supabase é o que a converte em latência
    * zero.
    */
-  const { data: claimsData } = await supabase.auth.getClaims();
+  const claimsStartedAt = performance.now();
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  recordPerformance(
+    "session.getClaims",
+    claimsStartedAt,
+    claimsError ? "error" : "ok",
+    claimsError?.code,
+  );
   const claims = claimsData?.claims ?? null;
   if (!claims?.sub) return null;
 
@@ -52,11 +70,21 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   // projeto, e mesmo ligado ela só muda na renovação do token: promover
   // alguém a admin ficaria invisível até o refresh. As claims ficam só como
   // fallback caso a linha não exista.
-  const { data: profile } = await supabase
+  const profileStartedAt = performance.now();
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("role, organization_id, must_change_password, full_name, avatar_url")
+    .select(
+      "id, email, role, organization_id, must_change_password, full_name, avatar_url, phone, birth_date",
+    )
     .eq("id", userId)
-    .single();
+    .maybeSingle();
+  recordPerformance(
+    "session.profile",
+    profileStartedAt,
+    profileError ? "error" : "ok",
+    profileError?.code,
+  );
+  if (profileError) throw new Error("Falha ao carregar o perfil da sessão.");
 
   const claimRole = typeof claims["app_role"] === "string" ? claims["app_role"] : null;
   const claimOrg = typeof claims["org_id"] === "string" ? claims["org_id"] : null;
@@ -74,6 +102,17 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     mustChangePassword: profile?.must_change_password ?? false,
     fullName: profile?.full_name || userEmail.split("@")[0] || "Minha conta",
     avatarUrl: profile?.avatar_url ? `/api/avatars/${profile.avatar_url}` : null,
+    profile: profile
+      ? {
+          id: profile.id,
+          fullName: profile.full_name,
+          email: profile.email,
+          role: profile.role as AppRole,
+          phone: profile.phone,
+          birthDate: profile.birth_date,
+          avatarPath: profile.avatar_url,
+        }
+      : null,
   };
 });
 

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env } from "@/lib/env";
+import { recordPerformance } from "@/lib/observability/performance";
 import type { AppRole } from "@/types/domain";
 
 const PUBLIC_PATHS = ["/login", "/recuperar-senha", "/redefinir-senha"];
@@ -112,7 +113,14 @@ export async function middleware(request: NextRequest) {
    * do cookie continua acontecendo: `getClaims()` passa pelo `getSession()`,
    * que refresca o token vencido e dispara o `setAll` acima.
    */
-  const { data: claimsData } = await supabase.auth.getClaims();
+  const claimsStartedAt = performance.now();
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+  recordPerformance(
+    "middleware.getClaims",
+    claimsStartedAt,
+    claimsError ? "error" : "ok",
+    claimsError?.code,
+  );
   const claims = claimsData?.claims ?? null;
 
   if (isProtected && !claims) {

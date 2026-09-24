@@ -20,14 +20,18 @@ import { TEST_SESSION_ID_WITH_PDF } from "../lib/config.js";
  */
 export function runPdfAndReports(baseUrl, data) {
   if (TEST_SESSION_ID_WITH_PDF) {
-    const account = data.teachers.length ? pickAccount(data.teachers) : pickAccount(data.admins);
+    const account = data.teachers.length
+      ? pickAccount(data.teachers)
+      : pickAccount(data.admins);
     seedSessionCookie(baseUrl, account);
     const res = http.get(`${baseUrl}/api/sessions/${TEST_SESSION_ID_WITH_PDF}/pdf`, {
       tags: { page: "pdf-sessao" },
+      responseType: "none",
     });
     check(res, {
       "pdf: HTTP 200": (r) => r.status === 200,
-      "pdf: content-type correto": (r) => (r.headers["Content-Type"] || "").includes("pdf"),
+      "pdf: content-type correto": (r) =>
+        (r.headers["Content-Type"] || "").includes("pdf"),
     });
   } else if (__ITER === 0 && __VU === 1) {
     console.warn(
@@ -41,6 +45,7 @@ export function runPdfAndReports(baseUrl, data) {
     seedSessionCookie(baseUrl, admin);
     const rep = http.get(`${baseUrl}/api/relatorios/export?escopo=overview`, {
       tags: { page: "relatorio-csv" },
+      responseType: "none",
     });
     check(rep, {
       "relatorio: HTTP 200": (r) => r.status === 200,

@@ -9,6 +9,7 @@ import { check } from "k6";
 export function expectAuthedPage(res, label) {
   return check(res, {
     [`${label}: HTTP 200`]: (r) => r.status === 200,
-    [`${label}: não redirecionou pro /login`]: (r) => !(r.url || "").includes("/login"),
+    [`${label}: manteve acesso autorizado`]: (r) =>
+      !/\/(login|403)(?:[/?#]|$)/.test(r.url || ""),
   });
 }

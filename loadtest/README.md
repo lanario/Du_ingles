@@ -19,7 +19,7 @@ Isso só é seguro com estas regras:
 5. Rode o **smoke test primeiro** (poucos VUs) pra validar que os scripts
    autenticam e navegam certo antes de qualquer carga de verdade.
 6. Se o teste vier de uma única máquina/IP, um pico repentino de centenas de
-   conexões pode acionar proteção anti-bot da Vercel/Cloudflare *antes* de
+   conexões pode acionar proteção anti-bot da Vercel/Cloudflare _antes_ de
    qualquer gargalo da aplicação aparecer — isso mediria a proteção de borda,
    não o app. Se os resultados parecerem estranhos demais (tudo 403/429 de
    uma vez), essa é a primeira suspeita.
@@ -51,7 +51,7 @@ deve ser commitado (já está no `.gitignore`).
 podem compartilhar a mesma conta autenticada (isso é normal e realista pra
 medir carga de banco/servidor) — 10–20 contas de aluno, 3–5 de professor e
 1–2 de admin já bastam para os perfis de escala combinados (50–300 VUs).
-Isso *não* testa unicidade por conta (ex.: dois logins "simultâneos" do
+Isso _não_ testa unicidade por conta (ex.: dois logins "simultâneos" do
 mesmo usuário) — só o throughput geral do backend.
 
 **Para o cenário de PDF** (`scenarios/pdf-and-reports.js`), opcionalmente
@@ -65,10 +65,50 @@ Sem isso, esse cenário testa só `/api/relatorios/export`.
 
 ## Rodando
 
+### Diagnóstico progressivo até 500 usuários virtuais
+
+Use um ambiente de homologação com o mesmo build e configuração de escala que
+pretende medir. O arquivo `loadtest/data/test-users.staging.local.json` deve ter
+contas **desse** Supabase, com a mesma estrutura do exemplo. Crie um arquivo
+`.env.staging.local` com `NEXT_PUBLIC_SUPABASE_URL` e
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` do projeto de homologação. Ambos são ignorados
+pelo Git.
+
+```powershell
+.\loadtest\run-diagnostic.ps1 `
+  -BaseUrl "https://seu-site-de-homologacao.exemplo" `
+  -EnvFile ".env.staging.local"
+```
+
+O perfil `diagnostic-500.js` sobe a concorrência em quatro degraus (10%, 30%,
+60% e 100%), mantém o pico por cinco minutos e reduz a carga gradualmente.
+São 500 VUs de navegação, divididas em aproximadamente 70% aluno, 20%
+professor e 10% admin, mais até 20 VUs para PDF/CSV em taxa fixa. Antes de
+subir, o script autentica as contas e verifica uma página de cada papel e o
+endpoint CSV. Há limites para erro
+HTTP, verificações de acesso, p95 por fluxo e iterações descartadas.
+
+Cada execução salva métricas brutas (`.ndjson`), resumo (`.json`) e relatório
+por página (`.md`) em `loadtest/results/`. O relatório mostra p50/p95/p99,
+HTTP 429, HTTP 5xx, falhas de verificação e evolução por minuto. Compare a
+mesma janela com métricas de Vercel (funções, CPU/memória, 5xx) e Supabase
+(CPU, conexões, queries lentas e logs). Repetir a mesma identidade em muitas
+VUs mede concorrência de requisições, mas não diversidade de dados por usuário.
+
+Para validar o script antes do perfil completo, use os parâmetros
+`-MaxVus 6 -PdfVus 1 -StepRampSeconds 5 -StepHoldSeconds 5
+-PeakHoldSeconds 15 -RampDownSeconds 5`.
+
+`BASE_URL` é obrigatória em todos os cenários. Escolha explicitamente o
+ambiente sob teste; para validar só a landing sem contas, rode
+`k6 run -e BASE_URL=http://localhost:3100 loadtest/public-smoke.js` com o app
+local iniciado. Veja também [docs/testing.md](../docs/testing.md).
+
 ### 1. Smoke test — valida os scripts, carga desprezível
 
 ```bash
-k6 run -e SUPABASE_URL=https://qxkqndnvacwoqnvofsth.supabase.co \
+k6 run -e BASE_URL=<url do ambiente> \
+        -e SUPABASE_URL=<url do projeto Supabase> \
         -e SUPABASE_ANON_KEY=<sua anon key> \
         -e MAX_VUS=6 -e RAMP_TIME=20s -e HOLD_TIME=40s -e RAMP_DOWN_TIME=10s \
         loadtest/main.js
@@ -82,7 +122,8 @@ investigue antes de escalar.
 ### 2. Carga alvo (50–300 usuários simultâneos, combinado no planejamento)
 
 ```bash
-k6 run -e SUPABASE_URL=https://qxkqndnvacwoqnvofsth.supabase.co \
+k6 run -e BASE_URL=<url do ambiente> \
+        -e SUPABASE_URL=<url do projeto Supabase> \
         -e SUPABASE_ANON_KEY=<sua anon key> \
         -e MAX_VUS=150 -e RAMP_TIME=3m -e HOLD_TIME=8m -e RAMP_DOWN_TIME=2m \
         -e PDF_RPS=2 \
@@ -92,13 +133,13 @@ k6 run -e SUPABASE_URL=https://qxkqndnvacwoqnvofsth.supabase.co \
 
 `MAX_VUS` é repartido ~70% aluno / ~20% professor / ~10% admin (ver
 `main.js`). Suba em passos (ex.: 50 → 100 → 200 → 300 em execuções
-separadas) em vez de já mirar 300 de primeira — assim dá pra ver *onde*
-começa a degradar, não só *se* degrada.
+separadas) em vez de já mirar 300 de primeira — assim dá pra ver _onde_
+começa a degradar, não só _se_ degrada.
 
 ### 3. Fluxo de login isolado (respeita o rate limit de 5 tentativas/15min)
 
 ```bash
-k6 run -e SUPABASE_URL=https://qxkqndnvacwoqnvofsth.supabase.co \
+k6 run -e SUPABASE_URL=<url do projeto Supabase> \
         loadtest/scenarios/login-flow.js
 ```
 
@@ -106,15 +147,17 @@ k6 run -e SUPABASE_URL=https://qxkqndnvacwoqnvofsth.supabase.co \
 
 **Cobrem** (via HTTP direto, autenticando uma vez por VU contra a API do
 Supabase e reaproveitando a sessão — ver `lib/auth.js`):
+
 - Navegação autenticada de aluno, professor e admin pelas telas reais do
-  painel (o middleware roda em cada uma — `getClaims()` contra o Supabase a
-  cada request, um dos pontos de atenção do planejamento).
+  painel (middleware e renderização das páginas, incluindo as consultas de
+  autorização e conteúdo executadas no servidor).
 - `/api/sessions/[id]/pdf` (leitura de PDF do Storage) e
   `/api/relatorios/export` (CSV gerado na hora), isolados numa taxa fixa de
   requisições/segundo.
 - O login real (`scenarios/login-flow.js`), via browser automatizado.
 
 **Não cobrem:**
+
 - **Server Actions de escrita** (criar tarefa, enviar mensagem, salvar plano
   de aula, etc.). Elas usam o protocolo interno de Server Actions do Next.js
   (header `Next-Action` com um ID que muda a cada build) — replicar isso via
@@ -149,5 +192,5 @@ Supabase e reaproveitando a sessão — ver `lib/auth.js`):
 Escreva o achado principal (onde começou a degradar e qual métrica mostrou
 isso primeiro — latência, erro, conexão de banco) antes de decidir o que
 fortalecer. Suspeitas mais prováveis pela arquitetura atual, em ordem:
-pool de conexões do Supabase, geração/leitura de PDF, e o
-`getClaims()` do middleware em cada navegação.
+pool de conexões do Supabase, geração/leitura de PDF e consultas das páginas
+autenticadas.

@@ -39,7 +39,8 @@ export async function listGroups(): Promise<GroupListItem[]> {
     .eq("enrollments.status", "active")
     .order("created_at", { ascending: false });
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao listar turmas (${error.code}).`);
+  if (!data) return [];
 
   return data.map((row) => ({
     id: row.id,
@@ -103,7 +104,8 @@ export async function listGroupsByTeacher(teacherId: string): Promise<GroupDetai
     .order("is_active", { ascending: false })
     .order("name");
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao listar turmas do professor (${error.code}).`);
+  if (!data) return [];
   return (data as unknown as GroupRow[]).map(mapGroupRow);
 }
 
@@ -121,7 +123,8 @@ export async function listGroupsByIds(ids: string[]): Promise<GroupDetail[]> {
     .eq("enrollments.status", "active")
     .order("name");
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao buscar turmas do aluno (${error.code}).`);
+  if (!data) return [];
   return (data as unknown as GroupRow[]).map(mapGroupRow);
 }
 
@@ -135,7 +138,8 @@ export async function listActiveGroups(): Promise<GroupDetail[]> {
     .eq("enrollments.status", "active")
     .order("name");
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao listar turmas ativas (${error.code}).`);
+  if (!data) return [];
   return (data as unknown as GroupRow[]).map(mapGroupRow);
 }
 
@@ -149,7 +153,8 @@ export async function listAllGroups(): Promise<GroupDetail[]> {
     .order("is_active", { ascending: false })
     .order("name");
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao listar turmas da escola (${error.code}).`);
+  if (!data) return [];
   return (data as unknown as GroupRow[]).map(mapGroupRow);
 }
 
@@ -169,7 +174,8 @@ export async function listMyGroups(teacherId: string): Promise<MyGroupItem[]> {
     .eq("is_active", true)
     .order("name");
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao listar minhas turmas (${error.code}).`);
+  if (!data) return [];
   return data;
 }
 
@@ -182,9 +188,10 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
     )
     .eq("id", id)
     .eq("enrollments.status", "active")
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) throw new Error(`Falha ao buscar turma (${error.code}).`);
+  if (!data) return null;
 
   return {
     id: data.id,

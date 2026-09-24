@@ -1,6 +1,8 @@
 import "server-only";
+import { cache } from "react";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { recordDataError } from "@/lib/observability/performance";
 import type { AppRole } from "@/types/domain";
 import type { UpdateUserInput } from "@/schemas/users";
 
@@ -265,14 +267,15 @@ export interface MyProfile {
  * Perfil do próprio usuário logado, incluindo o que ele mesmo pode editar.
  * Passa pela RLS normal (`profiles_select_self`) — sem admin client.
  */
-export async function getMyProfile(userId: string): Promise<MyProfile | null> {
+export const getMyProfile = cache(async (userId: string): Promise<MyProfile | null> => {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, email, role, phone, birth_date, avatar_url")
     .eq("id", userId)
     .maybeSingle();
 
+  if (error) recordDataError("profile.myProfile", error.code);
   if (!data) return null;
   return {
     id: data.id,
@@ -283,4 +286,4 @@ export async function getMyProfile(userId: string): Promise<MyProfile | null> {
     birthDate: data.birth_date,
     avatarPath: data.avatar_url,
   };
-}
+});

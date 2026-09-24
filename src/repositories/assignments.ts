@@ -38,6 +38,11 @@ export interface AssignmentListItem {
   questionCount?: number;
 }
 
+export type DashboardAssignmentItem = Pick<
+  AssignmentListItem,
+  "id" | "title" | "groupName" | "dueAt" | "myStatus"
+>;
+
 export interface SubmissionRow {
   studentId: string;
   studentName: string;
@@ -104,12 +109,14 @@ export async function listStudentAssignments(
     .select(
       "id, group_id, title, instructions, due_at, max_score, group:group_id(name), submissions:assignment_submissions(status, score, student_id)",
     )
+    .eq("submissions.student_id", studentId)
     .order("due_at", { ascending: true, nullsFirst: false });
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao carregar tarefas do aluno (${error.code}).`);
+  if (!data) return [];
 
   return data.map((row) => {
-    const mine = row.submissions?.find((s) => s.student_id === studentId);
+    const mine = row.submissions?.[0];
     return {
       id: row.id,
       groupId: row.group_id,
@@ -122,6 +129,31 @@ export async function listStudentAssignments(
       questionCount: readQuestions(row.instructions).length,
     };
   });
+}
+
+/** Resumo do painel: evita transferir instruções e notas de tarefas não exibidas. */
+export async function listStudentDashboardAssignments(
+  studentId: string,
+): Promise<DashboardAssignmentItem[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("assignments")
+    .select(
+      "id, title, due_at, group:group_id(name), submissions:assignment_submissions(status, student_id)",
+    )
+    .eq("submissions.student_id", studentId)
+    .order("due_at", { ascending: true, nullsFirst: false });
+
+  if (error) throw new Error(`Falha ao carregar tarefas do painel (${error.code}).`);
+  if (!data) return [];
+
+  return data.map((row) => ({
+    id: row.id,
+    title: row.title,
+    groupName: row.group?.name ?? "—",
+    dueAt: row.due_at,
+    myStatus: derivedStatus(row.submissions?.[0]?.status, row.due_at),
+  }));
 }
 
 export interface AssignmentDetail {

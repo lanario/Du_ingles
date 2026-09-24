@@ -9,7 +9,11 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:architecture": "node --test tests/architecture.test.mjs",
+    "test:unit": "node --import tsx --test tests/*.test.mts",
+    "test:integration": "node --test tests/integration/*.test.mjs",
+    "bench": "node --import tsx benchmarks/assignment-validation.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -47,14 +51,17 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@tailwindcss/postcss": "^4",
+    "@testcontainers/postgresql": "12.1.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^15.5.23",
     "eslint-config-prettier": "^10.1.8",
+    "pg": "8.23.0",
     "prettier": "^3.9.6",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "^5"
   }
 }

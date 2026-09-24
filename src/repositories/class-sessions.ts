@@ -35,7 +35,8 @@ export async function listMyUpcomingSessions(limit = 10): Promise<SessionListIte
     .order("scheduled_at", { ascending: true })
     .limit(limit);
 
-  if (error || !data) return [];
+  if (error) throw new Error(`Falha ao carregar próximas aulas (${error.code}).`);
+  if (!data) return [];
 
   return data.map((row) => ({
     id: row.id,

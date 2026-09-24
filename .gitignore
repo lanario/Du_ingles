@@ -48,6 +48,7 @@ supabase/.temp/
 
 # credenciais das contas de teste do k6 (loadtest/) — nunca commitar
 loadtest/data/test-users.json
+loadtest/data/test-users.*.local.json
 loadtest/results/
 
 # Modelos visuais trazidos de outros projetos: referência de layout, não código

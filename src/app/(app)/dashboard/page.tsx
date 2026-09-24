@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/session";
 import { meetOpensAt, meetUrlsFor } from "@/lib/google/meet-access";
 import { listMyUpcomingSessions } from "@/repositories/class-sessions";
-import { listStudentAssignments } from "@/repositories/assignments";
+import { listStudentDashboardAssignments } from "@/repositories/assignments";
 import { getStudentProgress } from "@/repositories/progress";
 import { listGroups } from "@/repositories/groups";
 import { listLessonPlans } from "@/repositories/lesson-plans";
-import { getMyDisplayName } from "@/repositories/users";
+import { measureServer } from "@/lib/observability/performance";
 import { StudentDashboard } from "@/components/features/dashboard/student-dashboard";
 import { TeacherDashboard } from "@/components/features/dashboard/teacher-dashboard";
 
@@ -26,11 +26,10 @@ export default async function DashboardPage() {
   const ctx = await requireRole(["teacher", "student"]);
   const isTeacher = ctx.effectiveRole === "teacher";
 
-  const [sessions, fullName] = await Promise.all([
+  const sessions = await measureServer("dashboard.upcomingSessions", () =>
     listMyUpcomingSessions(6),
-    getMyDisplayName(ctx.userId),
-  ]);
-  const firstName = firstNameOf(fullName, ctx.email);
+  );
+  const firstName = firstNameOf(ctx.fullName, ctx.email);
 
   if (isTeacher) {
     const [groups, plans] = await Promise.all([
@@ -78,8 +77,10 @@ export default async function DashboardPage() {
   }
 
   const [progress, assignments] = await Promise.all([
-    getStudentProgress(ctx.userId),
-    listStudentAssignments(ctx.userId),
+    measureServer("dashboard.studentProgress", () => getStudentProgress(ctx.userId)),
+    measureServer("dashboard.studentAssignments", () =>
+      listStudentDashboardAssignments(ctx.userId),
+    ),
   ]);
 
   const openTasks = assignments.filter(

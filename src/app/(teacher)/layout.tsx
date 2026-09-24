@@ -8,7 +8,7 @@ import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
-import { getMyProfile } from "@/repositories/users";
+import { measureServer } from "@/lib/observability/performance";
 
 /**
  * Área do professor: o mesmo chrome do painel administrativo (rail navy,
@@ -46,10 +46,9 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   if (ctx.realRole === "admin") redirect("/admin");
   if (ctx.realRole !== "teacher") redirect("/403");
 
-  const [notifications, unreadCount, profile] = await Promise.all([
-    listNotifications(ctx.userId),
-    countUnreadNotifications(ctx.userId),
-    getMyProfile(ctx.userId),
+  const [notifications, unreadCount] = await Promise.all([
+    measureServer("teacherShell.notifications", () => listNotifications(ctx.userId)),
+    measureServer("teacherShell.unreadCount", () => countUnreadNotifications(ctx.userId)),
   ]);
 
   return (
@@ -67,7 +66,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
           email={ctx.email}
           fullName={ctx.fullName}
           avatarUrl={ctx.avatarUrl}
-          profile={profile}
+          profile={ctx.profile}
           initialNotifications={notifications}
           initialUnreadCount={unreadCount}
           sections={TEACHER_NAV_SECTIONS}

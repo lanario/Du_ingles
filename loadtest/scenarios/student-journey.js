@@ -9,11 +9,14 @@ import { firstIdFrom, thinkTime } from "../lib/util.js";
  * de páginas simples com telas que agregam mais dado (progresso, turmas).
  */
 export function runStudentJourney(baseUrl) {
-  let res = http.get(`${baseUrl}/dashboard`, { tags: { page: "dashboard" } });
+  let res = http.get(`${baseUrl}/dashboard`, {
+    tags: { page: "dashboard" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "aluno:dashboard");
   sleep(thinkTime());
 
-  res = http.get(`${baseUrl}/agenda`, { tags: { page: "agenda" } });
+  res = http.get(`${baseUrl}/agenda`, { tags: { page: "agenda" }, responseType: "none" });
   expectAuthedPage(res, "aluno:agenda");
   sleep(thinkTime());
 
@@ -28,19 +31,28 @@ export function runStudentJourney(baseUrl) {
     sleep(thinkTime());
   }
 
-  res = http.get(`${baseUrl}/biblioteca`, { tags: { page: "biblioteca" } });
+  res = http.get(`${baseUrl}/biblioteca`, {
+    tags: { page: "biblioteca" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "aluno:biblioteca");
   sleep(thinkTime());
 
-  res = http.get(`${baseUrl}/turmas`, { tags: { page: "turmas" } });
+  res = http.get(`${baseUrl}/turmas`, { tags: { page: "turmas" }, responseType: "none" });
   expectAuthedPage(res, "aluno:turmas");
   sleep(thinkTime());
 
-  res = http.get(`${baseUrl}/progresso`, { tags: { page: "progresso" } });
+  res = http.get(`${baseUrl}/progresso`, {
+    tags: { page: "progresso" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "aluno:progresso");
   sleep(thinkTime());
 
-  res = http.get(`${baseUrl}/mensagens`, { tags: { page: "mensagens" } });
+  res = http.get(`${baseUrl}/mensagens`, {
+    tags: { page: "mensagens" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "aluno:mensagens");
   sleep(thinkTime());
 }

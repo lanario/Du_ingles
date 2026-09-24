@@ -8,7 +8,7 @@ import {
   listNotifications,
   countUnreadNotifications,
 } from "@/repositories/notifications";
-import { getMyProfile } from "@/repositories/users";
+import { measureServer } from "@/lib/observability/performance";
 
 /**
  * Sidebar hover-expand ocupando a tela inteira, sem cabeçalho acima — mesmo
@@ -25,10 +25,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // telas do painel recortadas para ele — e não transita entre as duas.
   if (ctx.effectiveRole === "teacher") redirect("/professor");
 
-  const [notifications, unreadCount, profile] = await Promise.all([
-    listNotifications(ctx.userId),
-    countUnreadNotifications(ctx.userId),
-    getMyProfile(ctx.userId),
+  const [notifications, unreadCount] = await Promise.all([
+    measureServer("studentShell.notifications", () => listNotifications(ctx.userId)),
+    measureServer("studentShell.unreadCount", () => countUnreadNotifications(ctx.userId)),
   ]);
 
   return (
@@ -47,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             email={ctx.email}
             fullName={ctx.fullName}
             avatarUrl={ctx.avatarUrl}
-            profile={profile}
+            profile={ctx.profile}
             initialNotifications={notifications}
             initialUnreadCount={unreadCount}
           />

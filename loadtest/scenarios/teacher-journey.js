@@ -10,11 +10,17 @@ import { firstIdFrom, thinkTime } from "../lib/util.js";
  * ver perf/04d16aa no histórico do repo), por isso entra com detalhe aberto.
  */
 export function runTeacherJourney(baseUrl) {
-  let res = http.get(`${baseUrl}/professor`, { tags: { page: "painel" } });
+  let res = http.get(`${baseUrl}/professor`, {
+    tags: { page: "painel" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "professor:painel");
   sleep(thinkTime());
 
-  res = http.get(`${baseUrl}/professor/agenda`, { tags: { page: "agenda" } });
+  res = http.get(`${baseUrl}/professor/agenda`, {
+    tags: { page: "agenda" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "professor:agenda");
   sleep(thinkTime());
 
@@ -24,12 +30,18 @@ export function runTeacherJourney(baseUrl) {
   sleep(thinkTime());
 
   if (turmaId) {
-    res = http.get(`${baseUrl}/professor/turmas/${turmaId}`, { tags: { page: "turma-detalhe" } });
+    res = http.get(`${baseUrl}/professor/turmas/${turmaId}`, {
+      tags: { page: "turma-detalhe" },
+      responseType: "none",
+    });
     expectAuthedPage(res, "professor:turma-detalhe");
     sleep(thinkTime());
   }
 
-  res = http.get(`${baseUrl}/professor/alunos`, { tags: { page: "alunos" } });
+  res = http.get(`${baseUrl}/professor/alunos`, {
+    tags: { page: "alunos" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "professor:alunos");
   sleep(thinkTime());
 
@@ -41,12 +53,16 @@ export function runTeacherJourney(baseUrl) {
   if (planId) {
     res = http.get(`${baseUrl}/professor/planejador/${planId}`, {
       tags: { page: "planejador-detalhe" },
+      responseType: "none",
     });
     expectAuthedPage(res, "professor:planejador-detalhe");
     sleep(thinkTime());
   }
 
-  res = http.get(`${baseUrl}/professor/mensagens`, { tags: { page: "mensagens" } });
+  res = http.get(`${baseUrl}/professor/mensagens`, {
+    tags: { page: "mensagens" },
+    responseType: "none",
+  });
   expectAuthedPage(res, "professor:mensagens");
   sleep(thinkTime());
 }

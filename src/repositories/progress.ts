@@ -1,5 +1,7 @@
 import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { measureDataQuery } from "@/lib/observability/performance";
+import { groupAttendanceRates } from "@/lib/attendance/group-rates";
 import type { CefrLevel } from "@/types/domain";
 
 export interface GroupProgress {
@@ -44,29 +46,47 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
 
   const [profileResult, enrollmentsResult, attendanceResult, gradesResult] =
     await Promise.all([
-      supabase
-        .from("student_profiles")
-        .select("current_level, enrollment_date")
-        .eq("profile_id", studentId)
-        .maybeSingle(),
-      supabase
-        .from("enrollments")
-        .select("group:group_id(id, name, level, teacher:teacher_id(full_name))")
-        .eq("student_id", studentId)
-        .eq("status", "active"),
-      supabase
-        .from("attendance")
-        .select("status, session:session_id(id, status, scheduled_at, group_id)")
-        .eq("student_id", studentId),
-      supabase
-        .from("assignment_submissions")
-        .select(
-          "score, feedback, graded_at, assignment:assignment_id(title, max_score, group:group_id(name))",
-        )
-        .eq("student_id", studentId)
-        .eq("status", "graded")
-        .order("graded_at", { ascending: false }),
+      measureDataQuery("studentProgress.profile", () =>
+        supabase
+          .from("student_profiles")
+          .select("current_level, enrollment_date")
+          .eq("profile_id", studentId)
+          .maybeSingle(),
+      ),
+      measureDataQuery("studentProgress.enrollments", () =>
+        supabase
+          .from("enrollments")
+          .select("group:group_id(id, name, level, teacher:teacher_id(full_name))")
+          .eq("student_id", studentId)
+          .eq("status", "active"),
+      ),
+      measureDataQuery("studentProgress.attendance", () =>
+        supabase
+          .from("attendance")
+          .select("status, session:session_id(id, status, scheduled_at, group_id)")
+          .eq("student_id", studentId),
+      ),
+      measureDataQuery("studentProgress.grades", () =>
+        supabase
+          .from("assignment_submissions")
+          .select(
+            "score, graded_at, assignment:assignment_id(title, max_score, group:group_id(name))",
+          )
+          .eq("student_id", studentId)
+          .eq("status", "graded")
+          .order("graded_at", { ascending: false }),
+      ),
     ]);
+
+  for (const [name, result] of [
+    ["perfil", profileResult],
+    ["matrículas", enrollmentsResult],
+    ["presenças", attendanceResult],
+    ["notas", gradesResult],
+  ] as const) {
+    if (result.error)
+      throw new Error(`Falha ao carregar ${name} do progresso (${result.error.code}).`);
+  }
 
   const attendanceRows = attendanceResult.data ?? [];
   const completedSessions = attendanceRows.filter(
@@ -101,6 +121,7 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
 
   const groupRows = (enrollmentsResult.data ?? []).filter((row) => row.group);
   const groupIds = groupRows.map((row) => row.group!.id);
+  const ratesByGroup = groupAttendanceRates(attendanceRows);
 
   interface UpcomingSessionRow {
     title: string;
@@ -112,15 +133,18 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
 
   let upcomingSessions: UpcomingSessionRow[] = [];
   if (groupIds.length) {
-    const { data } = await supabase
-      .from("class_sessions")
-      .select(
-        "title, group_id, scheduled_at, duration_minutes, teacher:teacher_id(full_name)",
-      )
-      .in("group_id", groupIds)
-      .in("status", ["scheduled", "in_progress"])
-      .gte("scheduled_at", new Date().toISOString())
-      .order("scheduled_at", { ascending: true });
+    const { data, error } = await measureDataQuery("studentProgress.upcoming", () =>
+      supabase
+        .from("class_sessions")
+        .select(
+          "title, group_id, scheduled_at, duration_minutes, teacher:teacher_id(full_name)",
+        )
+        .in("group_id", groupIds)
+        .in("status", ["scheduled", "in_progress"])
+        .gte("scheduled_at", new Date().toISOString())
+        .order("scheduled_at", { ascending: true }),
+    );
+    if (error) throw new Error(`Falha ao carregar aulas futuras (${error.code}).`);
     upcomingSessions = data ?? [];
   }
 
@@ -132,22 +156,14 @@ export async function getStudentProgress(studentId: string): Promise<StudentProg
   const nextOverall = upcomingSessions[0] ?? null;
   const groupNameById = new Map(groupRows.map((row) => [row.group!.id, row.group!.name]));
 
-  const groups: GroupProgress[] = await Promise.all(
-    groupRows.map(async (row) => {
-      const { data: rate } = await supabase.rpc("student_attendance_rate", {
-        p_group: row.group!.id,
-        p_student: studentId,
-      });
-      return {
-        groupId: row.group!.id,
-        groupName: row.group!.name,
-        level: row.group!.level,
-        teacherName: row.group!.teacher?.full_name ?? "—",
-        attendanceRate: rate ?? 0,
-        nextSessionAt: upcomingByGroup.get(row.group!.id)?.scheduled_at ?? null,
-      };
-    }),
-  );
+  const groups: GroupProgress[] = groupRows.map((row) => ({
+    groupId: row.group!.id,
+    groupName: row.group!.name,
+    level: row.group!.level,
+    teacherName: row.group!.teacher?.full_name ?? "—",
+    attendanceRate: ratesByGroup.get(row.group!.id) ?? 0,
+    nextSessionAt: upcomingByGroup.get(row.group!.id)?.scheduled_at ?? null,
+  }));
 
   const grades: GradedAssignmentRow[] = (gradesResult.data ?? []).map((g) => ({
     title: g.assignment?.title ?? "—",
