@@ -26,11 +26,13 @@ export function GoogleConnect({
   status,
   notice,
   className,
+  showDescription = true,
 }: {
   status: GoogleStatus;
   /** Valor de `?google=` que o retorno do Google deixou na URL. */
   notice?: string;
   className?: string;
+  showDescription?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -80,7 +82,7 @@ export function GoogleConnect({
         )}
       </div>
 
-      {!status.connected && (
+      {showDescription && !status.connected && (
         <p className="text-xs text-muted-foreground">
           {status.revoked
             ? "O Google recusou o acesso anterior. Reconecte para voltar a receber as aulas."

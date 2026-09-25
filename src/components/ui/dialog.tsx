@@ -12,6 +12,8 @@ interface DialogProps {
   children: ReactNode;
   /** Modais com formulário longo (ex.: criar turma) pedem mais largura. */
   size?: "md" | "lg";
+  /** Eleva confirmações abertas sobre painéis que já usam uma camada modal. */
+  layer?: "default" | "overlay";
 }
 
 /**
@@ -25,6 +27,7 @@ export function Dialog({
   description,
   children,
   size = "md",
+  layer = "default",
 }: DialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -87,7 +90,13 @@ export function Dialog({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6">
+        <div
+          className={
+            layer === "overlay"
+              ? "fixed inset-0 z-[110] flex items-end justify-center p-0 sm:items-center sm:p-6"
+              : "fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6"
+          }
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

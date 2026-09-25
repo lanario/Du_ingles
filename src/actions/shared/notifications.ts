@@ -80,3 +80,21 @@ export async function markAllNotificationsReadAction(): Promise<ActionResult<num
   revalidateShells();
   return ok(data?.length ?? 0);
 }
+
+/** Apaga definitivamente todas as notificações da caixa do usuário atual. */
+export async function clearNotificationsAction(): Promise<ActionResult<string[]>> {
+  const ctx = await getSessionContext();
+  if (!ctx) return fail("UNAUTHENTICATED", "Sessão expirada. Entre novamente.");
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("recipient_id", ctx.userId)
+    .select("id");
+
+  if (error) return fail("INTERNAL_ERROR", "Não foi possível limpar as notificações.");
+
+  revalidateShells();
+  return ok((data ?? []).map((row) => row.id));
+}

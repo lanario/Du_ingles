@@ -14,19 +14,22 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  clearNotificationsAction,
   markAllNotificationsReadAction,
   markNotificationReadAction,
   markNotificationUnreadAction,
 } from "@/actions/shared/notifications";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import type { NotificationItem } from "@/repositories/notifications";
-import { BellIcon } from "@/components/ui/icons";
+import { BellIcon, TrashIcon } from "@/components/ui/icons";
+import { Dialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { preferenceStorage } from "@/lib/consent/client";
 import { relativeTime, visualFor } from "@/lib/notifications";
 import {
   NotificationPanel,
   type NotificationFilter,
+  type NotificationTheme,
   type PanelAnchor,
 } from "@/components/features/notification-panel";
 
@@ -45,11 +48,14 @@ const SEEN_EVENT = "du:notifications-seen";
 /** Marco "vi até aqui" desta visita, para quando o storage não pode ser usado. */
 const sessionSeenAt = new Map<string, number>();
 
-interface SyncDetail {
-  origin: string;
-  ids: string[] | "all";
-  readAt: string | null;
-}
+type SyncDetail =
+  | {
+      origin: string;
+      kind: "read";
+      ids: string[] | "all";
+      readAt: string | null;
+    }
+  | { origin: string; kind: "delete"; ids: string[] };
 
 function broadcast(detail: SyncDetail) {
   window.dispatchEvent(new CustomEvent<SyncDetail>(SYNC_EVENT, { detail }));
@@ -134,7 +140,7 @@ export function NotificationBell({
   userId: string;
   initialNotifications: NotificationItem[];
   initialUnreadCount: number;
-  theme?: "light" | "admin" | "app";
+  theme?: NotificationTheme;
   /** "rail" veste o gatilho como uma linha de navegação (ícone + rótulo
    * opcional que aparece/some com o hover-expand da sidebar) e abre o
    * painel para a direita — evita que ele estoure para fora da tela
@@ -153,11 +159,13 @@ export function NotificationBell({
   const [unread, setUnread] = useState(initialUnreadCount);
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const [flash, setFlash] = useState<NotificationItem | null>(null);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   // Instante da última abertura do painel. O selo só conta o que chegou depois:
   // notificação já vista mas ainda não lida não se anuncia de novo como novidade.
   const [seenAt, setSeenAt] = useState(0);
   const [anchor, setAnchor] = useState<PanelAnchor>({ style: {}, origin: "top right" });
   const [markingAll, startMarkAll] = useTransition();
+  const [clearing, startClear] = useTransition();
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -258,16 +266,30 @@ export function NotificationBell({
     });
   }, []);
 
+  const applyDelete = useCallback((ids: string[]) => {
+    const deleted = new Set(ids);
+    const removedUnread = itemsRef.current.filter(
+      (item) => deleted.has(item.id) && !item.readAt,
+    ).length;
+    setItems((current) => current.filter((item) => !deleted.has(item.id)));
+    setUnread((current) => Math.max(0, current - removedUnread));
+    setFlash((current) => (current && deleted.has(current.id) ? null : current));
+  }, []);
+
   // Espelho entre instâncias irmãs da mesma aba.
   useEffect(() => {
     function onSync(event: Event) {
       const detail = (event as CustomEvent<SyncDetail>).detail;
       if (!detail || detail.origin === instanceId) return;
+      if (detail.kind === "delete") {
+        applyDelete(detail.ids);
+        return;
+      }
       applyRead(detail.ids, detail.readAt);
     }
     window.addEventListener(SYNC_EVENT, onSync);
     return () => window.removeEventListener(SYNC_EVENT, onSync);
-  }, [instanceId, applyRead]);
+  }, [instanceId, applyDelete, applyRead]);
 
   // Realtime: INSERT traz a novidade, UPDATE mantém o estado de leitura
   // coerente quando a mesma conta está aberta em outro dispositivo.
@@ -386,7 +408,7 @@ export function NotificationBell({
   // Fechar ao clicar fora. O painel mora num portal, então precisa entrar no
   // teste explicitamente — `contains` no gatilho não alcança.
   useEffect(() => {
-    if (!open) return;
+    if (!open || confirmClearOpen) return;
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node;
       if (panelRef.current?.contains(target)) return;
@@ -395,19 +417,20 @@ export function NotificationBell({
     }
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
+  }, [open, confirmClearOpen]);
 
   // Esc fecha mesmo quando o foco escapou do painel (clique no shell, por ex.).
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
+      if (confirmClearOpen) return;
       setOpen(false);
       triggerRef.current?.focus({ preventScroll: true });
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, confirmClearOpen]);
 
   /* --------------------------------------------------------------- ações */
 
@@ -427,11 +450,11 @@ export function NotificationBell({
     if (item.readAt) return;
     const now = new Date().toISOString();
     applyRead([item.id], now);
-    broadcast({ origin: instanceId, ids: [item.id], readAt: now });
+    broadcast({ origin: instanceId, kind: "read", ids: [item.id], readAt: now });
     const result = await markNotificationReadAction(item.id);
     if (!result.success) {
       applyRead([item.id], null);
-      broadcast({ origin: instanceId, ids: [item.id], readAt: null });
+      broadcast({ origin: instanceId, kind: "read", ids: [item.id], readAt: null });
     }
   }
 
@@ -441,11 +464,16 @@ export function NotificationBell({
       return;
     }
     applyRead([item.id], null);
-    broadcast({ origin: instanceId, ids: [item.id], readAt: null });
+    broadcast({ origin: instanceId, kind: "read", ids: [item.id], readAt: null });
     const result = await markNotificationUnreadAction(item.id);
     if (!result.success) {
       applyRead([item.id], item.readAt);
-      broadcast({ origin: instanceId, ids: [item.id], readAt: item.readAt });
+      broadcast({
+        origin: instanceId,
+        kind: "read",
+        ids: [item.id],
+        readAt: item.readAt,
+      });
     }
   }
 
@@ -461,7 +489,7 @@ export function NotificationBell({
     const previousUnread = unread;
     const now = new Date().toISOString();
     applyRead("all", now);
-    broadcast({ origin: instanceId, ids: "all", readAt: now });
+    broadcast({ origin: instanceId, kind: "read", ids: "all", readAt: now });
 
     startMarkAll(async () => {
       const result = await markAllNotificationsReadAction();
@@ -469,6 +497,32 @@ export function NotificationBell({
         setItems(snapshot);
         setUnread(previousUnread);
       }
+    });
+  }
+
+  function clearAll() {
+    if (items.length === 0 || clearing) return;
+    setConfirmClearOpen(true);
+  }
+
+  function confirmClearAll() {
+    if (items.length === 0 || clearing) return;
+    setConfirmClearOpen(false);
+    const snapshot = items;
+    const previousUnread = unread;
+    setItems([]);
+    setUnread(0);
+    setFlash(null);
+
+    startClear(async () => {
+      const result = await clearNotificationsAction();
+      if (!result.success) {
+        setItems(snapshot);
+        setUnread(previousUnread);
+        window.alert(result.error.message);
+        return;
+      }
+      broadcast({ origin: instanceId, kind: "delete", ids: result.data });
     });
   }
 
@@ -622,6 +676,7 @@ export function NotificationBell({
             {open && (
               <NotificationPanel
                 key="panel"
+                theme={theme}
                 panelRef={panelRef}
                 items={items}
                 unread={unread}
@@ -630,13 +685,59 @@ export function NotificationBell({
                 anchor={anchor}
                 sheet={sheet}
                 markingAll={markingAll}
+                clearing={clearing}
                 onClose={closePanel}
                 onOpenItem={openItem}
                 onToggleRead={(item) => void toggleRead(item)}
                 onMarkAll={markAll}
+                onClear={clearAll}
               />
             )}
           </AnimatePresence>
+
+          <Dialog
+            open={confirmClearOpen}
+            onClose={() => setConfirmClearOpen(false)}
+            title="Limpar notificações"
+            description="Confirme a exclusão de todas as notificações desta conta."
+            layer="overlay"
+          >
+            <div className="space-y-5">
+              <div className="flex gap-3 rounded-xl border border-destructive/25 bg-destructive/5 p-4">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
+                  <TrashIcon className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-navy-900">
+                    Apagar todas as notificações?
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    A lista será esvaziada definitivamente e esta ação não poderá ser
+                    desfeita.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearOpen(false)}
+                  className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-navy-900 transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmClearAll}
+                  disabled={clearing}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-destructive px-4 text-sm font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  Apagar notificações
+                </button>
+              </div>
+            </div>
+          </Dialog>
 
           <AnimatePresence>
             {flash && !open && !sheet && (

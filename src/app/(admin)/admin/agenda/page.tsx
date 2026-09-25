@@ -32,15 +32,16 @@ export default async function AdminAgendaPage({
   if (googleState.connected) queueBackfill(ctx.userId, ctx.realRole);
 
   return (
-    <div className="space-y-5">
-      <header>
+    <div className="space-y-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <h1 className="text-2xl font-semibold">Agenda</h1>
-        <p className="mt-1 text-sm text-admin-foreground/70">
-          Aulas, reuniões, provas e eventos de todas as turmas.
-        </p>
+        <GoogleConnect
+          status={googleState}
+          notice={google}
+          showDescription={false}
+          className="ml-auto items-end"
+        />
       </header>
-
-      <GoogleConnect status={googleState} notice={google} />
 
       <AgendaView initial={agenda} area="admin" />
     </div>

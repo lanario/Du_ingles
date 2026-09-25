@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import gsap from "gsap";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { BellIcon, CheckIcon, CloseIcon, EyeIcon } from "@/components/ui/icons";
+import {
+  BellIcon,
+  CheckIcon,
+  CloseIcon,
+  EyeIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import type { NotificationItem } from "@/repositories/notifications";
 import {
   fullTimestamp,
@@ -16,6 +22,7 @@ import {
 import { LogoLoader } from "@/components/ui/logo-loader";
 
 export type NotificationFilter = "all" | "unread";
+export type NotificationTheme = "light" | "admin" | "app";
 
 export interface PanelAnchor {
   /** Posição já resolvida em coordenadas de viewport (`position: fixed`). */
@@ -64,6 +71,7 @@ const TONE: Record<NotificationTone, { icon: string; chip: string; rail: string 
 };
 
 interface PanelProps {
+  theme: NotificationTheme;
   /** O dono do painel reposiciona o nó a cada frame — por isso o ref vem de fora. */
   panelRef: React.RefObject<HTMLDivElement | null>;
   items: NotificationItem[];
@@ -74,13 +82,16 @@ interface PanelProps {
   /** Abaixo de `sm` o painel vira gaveta inferior arrastável. */
   sheet: boolean;
   markingAll: boolean;
+  clearing: boolean;
   onClose: () => void;
   onOpenItem: (item: NotificationItem) => void;
   onToggleRead: (item: NotificationItem) => void;
   onMarkAll: () => void;
+  onClear: () => void;
 }
 
 export function NotificationPanel({
+  theme,
   panelRef,
   items,
   unread,
@@ -89,11 +100,16 @@ export function NotificationPanel({
   anchor,
   sheet,
   markingAll,
+  clearing,
   onClose,
   onOpenItem,
   onToggleRead,
   onMarkAll,
+  onClear,
 }: PanelProps) {
+  // As centrais abertas pelas duas sidebars usam a mesma superfície navy.
+  // O tema claro permanece disponível para sinos usados fora dos painéis.
+  const adminTheme = theme === "admin" || theme === "app";
   const reduceMotion = useReducedMotion();
   const listRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -155,9 +171,10 @@ export function NotificationPanel({
   }
 
   const surface = cn(
-    "pointer-events-auto z-[95] flex flex-col overflow-hidden border border-border bg-background text-foreground",
-    "shadow-[0_1px_2px_rgba(11,26,51,0.06),0_24px_60px_-12px_rgba(11,26,51,0.28)]",
-    "focus-visible:outline-none",
+    "pointer-events-auto z-[95] flex flex-col overflow-hidden border focus-visible:outline-none",
+    adminTheme
+      ? "border-navy-300/25 bg-navy-900 text-white shadow-2xl"
+      : "border-border bg-background text-foreground shadow-[0_1px_2px_rgba(11,26,51,0.06),0_24px_60px_-12px_rgba(11,26,51,0.28)]",
     sheet
       ? "fixed inset-x-0 bottom-0 max-h-[82svh] rounded-t-3xl border-b-0 pb-[env(safe-area-inset-bottom,0px)]"
       : "fixed w-[min(23rem,calc(100vw-1.5rem))] rounded-2xl",
@@ -167,48 +184,99 @@ export function NotificationPanel({
     <>
       {sheet && (
         <div className="flex justify-center pb-1 pt-2.5">
-          <span aria-hidden className="h-1 w-10 rounded-full bg-border" />
+          <span
+            aria-hidden
+            className={cn(
+              "h-1 w-10 rounded-full",
+              adminTheme ? "bg-navy-300/60" : "bg-border",
+            )}
+          />
         </div>
       )}
 
       <header className="flex items-start gap-2 px-4 pb-2.5 pt-3.5">
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold tracking-tight">Notificações</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <h2
+            className={cn(
+              "text-sm font-semibold tracking-tight",
+              adminTheme ? "text-white" : "text-foreground",
+            )}
+          >
+            Notificações
+          </h2>
+          <p
+            className={cn(
+              "mt-0.5 text-xs",
+              adminTheme ? "text-navy-100/80" : "text-muted-foreground",
+            )}
+          >
             {unread > 0
               ? `${unread} não lida${unread > 1 ? "s" : ""}`
               : "Você está em dia"}
           </p>
         </div>
 
-        <AnimatePresence initial={false}>
-          {unread > 0 && (
-            <motion.button
+        <div className="flex flex-none items-center gap-1.5">
+          <AnimatePresence initial={false}>
+            {unread > 0 && (
+              <motion.button
+                type="button"
+                onClick={onMarkAll}
+                disabled={markingAll || clearing}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 520, damping: 34 }}
+                className={cn(
+                  "flex flex-none items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60",
+                  adminTheme
+                    ? "border-gold-500/50 text-gold-300 hover:border-gold-400 hover:bg-gold-500/15 focus-visible:ring-gold-400 focus-visible:ring-offset-navy-900"
+                    : "border-border text-navy-700 hover:border-navy-300 hover:bg-navy-50 focus-visible:ring-ring",
+                )}
+              >
+                {markingAll ? (
+                  <LogoLoader size={14} label={null} />
+                ) : (
+                  <CheckIcon className="h-3.5 w-3.5" />
+                )}
+                Marcar todas
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {items.length > 0 && (
+            <button
               type="button"
-              onClick={onMarkAll}
-              disabled={markingAll}
-              initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 520, damping: 34 }}
-              className="flex flex-none items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-navy-700 transition-colors hover:border-navy-300 hover:bg-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:opacity-60"
+              onClick={onClear}
+              disabled={clearing || markingAll}
+              className={cn(
+                "flex flex-none items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60",
+                adminTheme
+                  ? "border-red-300/40 text-red-200 hover:border-red-300/70 hover:bg-red-400/10 focus-visible:ring-red-300 focus-visible:ring-offset-navy-900"
+                  : "border-border text-red-700 hover:border-red-300 hover:bg-red-50 focus-visible:ring-red-400",
+              )}
             >
-              {markingAll ? (
+              {clearing ? (
                 <LogoLoader size={14} label={null} />
               ) : (
-                <CheckIcon className="h-3.5 w-3.5" />
+                <TrashIcon className="h-3.5 w-3.5" />
               )}
-              Marcar todas
-            </motion.button>
+              Limpar
+            </button>
           )}
-        </AnimatePresence>
+        </div>
 
         {sheet && (
           <button
             type="button"
             onClick={onClose}
             aria-label="Fechar notificações"
-            className="grid h-8 w-8 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className={cn(
+              "grid h-8 w-8 flex-none place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
+              adminTheme
+                ? "text-navy-100/75 hover:bg-white/10 hover:text-white focus-visible:ring-gold-400"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring",
+            )}
           >
             <CloseIcon className="h-4 w-4" />
           </button>
@@ -221,19 +289,30 @@ export function NotificationPanel({
         total={items.length}
         unread={unread}
         reduceMotion={Boolean(reduceMotion)}
+        adminTheme={adminTheme}
       />
 
       <div className="relative min-h-0 flex-1">
         <div
           ref={listRef}
-          className="max-h-[min(26rem,60svh)] overflow-y-auto overscroll-contain px-2 pb-2"
+          className={cn(
+            "max-h-[min(26rem,60svh)] overflow-y-auto overscroll-contain px-2 pb-2",
+            adminTheme && "admin-notification-scrollbar",
+          )}
         >
           {visible.length === 0 ? (
-            <EmptyState filter={filter} />
+            <EmptyState filter={filter} adminTheme={adminTheme} />
           ) : (
             groups.map((group) => (
               <section key={group.bucket}>
-                <h3 className="sticky top-0 z-10 bg-background/90 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground backdrop-blur">
+                <h3
+                  className={cn(
+                    "sticky top-0 z-10 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur",
+                    adminTheme
+                      ? "bg-navy-900/95 text-navy-100/70"
+                      : "bg-background/90 text-muted-foreground",
+                  )}
+                >
                   {group.label}
                 </h3>
                 <AnimatePresence initial={false} mode="popLayout">
@@ -244,6 +323,7 @@ export function NotificationPanel({
                       index={index}
                       now={now}
                       reduceMotion={Boolean(reduceMotion)}
+                      adminTheme={adminTheme}
                       onOpen={() => onOpenItem(item)}
                       onToggleRead={() => onToggleRead(item)}
                     />
@@ -257,17 +337,34 @@ export function NotificationPanel({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent transition-opacity duration-200",
+            "pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t to-transparent transition-opacity duration-200",
+            adminTheme ? "from-navy-900" : "from-background",
             atBottom ? "opacity-0" : "opacity-100",
           )}
         />
       </div>
 
       {!sheet && (
-        <footer className="flex items-center justify-between border-t border-border/70 px-4 py-2 text-[10px] text-muted-foreground">
+        <footer
+          className={cn(
+            "flex items-center justify-between border-t px-4 py-2 text-[10px]",
+            adminTheme
+              ? "border-navy-300/20 text-navy-100/70"
+              : "border-border/70 text-muted-foreground",
+          )}
+        >
           <span>Atualiza em tempo real</span>
           <span>
-            <kbd className="rounded border border-border px-1 py-px font-sans">Esc</kbd>{" "}
+            <kbd
+              className={cn(
+                "rounded border px-1 py-px font-sans",
+                adminTheme
+                  ? "border-navy-300/30 bg-navy-950/40 text-navy-100"
+                  : "border-border",
+              )}
+            >
+              Esc
+            </kbd>{" "}
             fecha
           </span>
         </footer>
@@ -363,12 +460,14 @@ function FilterTabs({
   total,
   unread,
   reduceMotion,
+  adminTheme,
 }: {
   filter: NotificationFilter;
   onChange: (filter: NotificationFilter) => void;
   total: number;
   unread: number;
   reduceMotion: boolean;
+  adminTheme: boolean;
 }) {
   /** Última aba sob o ponteiro (ou o foco) — não volta a `null` de propósito. */
   const [hovered, setHovered] = useState<NotificationFilter>(filter);
@@ -420,7 +519,10 @@ function FilterTabs({
   return (
     <div className="px-3 pb-2">
       <div
-        className="flex gap-1 rounded-full bg-muted p-0.5"
+        className={cn(
+          "flex gap-1 rounded-full p-0.5",
+          adminTheme ? "bg-navy-950/50 ring-1 ring-navy-300/15" : "bg-muted",
+        )}
         onPointerLeave={() => setHovering(false)}
       >
         {(
@@ -448,8 +550,18 @@ function FilterTabs({
               onBlur={() => setHovering(false)}
               aria-pressed={active}
               className={cn(
-                "relative flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                active ? "text-navy-900" : "text-muted-foreground hover:text-navy-800",
+                "relative flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2",
+                adminTheme
+                  ? cn(
+                      "focus-visible:ring-gold-400",
+                      active ? "text-white" : "text-navy-100/70 hover:text-white",
+                    )
+                  : cn(
+                      "focus-visible:ring-ring",
+                      active
+                        ? "text-navy-900"
+                        : "text-muted-foreground hover:text-navy-800",
+                    ),
               )}
             >
               {active && (
@@ -462,7 +574,12 @@ function FilterTabs({
                   <span
                     ref={pillRef}
                     style={{ boxShadow: PILL_SHADOW }}
-                    className="block h-full w-full rounded-full bg-background ring-1 ring-gold-500/40"
+                    className={cn(
+                      "block h-full w-full rounded-full ring-1",
+                      adminTheme
+                        ? "bg-navy-800 ring-gold-400/70"
+                        : "bg-background ring-gold-500/40",
+                    )}
                   />
                 </motion.span>
               )}
@@ -486,7 +603,13 @@ function FilterTabs({
                   <span
                     className={cn(
                       "ml-1.5 text-[10px] tabular-nums transition-colors duration-200",
-                      active ? "text-gold-700" : "text-muted-foreground/70",
+                      active
+                        ? adminTheme
+                          ? "text-gold-300"
+                          : "text-gold-700"
+                        : adminTheme
+                          ? "text-navy-100/55"
+                          : "text-muted-foreground/70",
                     )}
                   >
                     {count > 99 ? "99+" : count}
@@ -508,6 +631,7 @@ function Row({
   index,
   now,
   reduceMotion,
+  adminTheme,
   onOpen,
   onToggleRead,
 }: {
@@ -515,6 +639,7 @@ function Row({
   index: number;
   now: Date;
   reduceMotion: boolean;
+  adminTheme: boolean;
   onOpen: () => void;
   onToggleRead: () => void;
 }) {
@@ -548,8 +673,17 @@ function Row({
         onClick={onOpen}
         title={fullTimestamp(item.createdAt)}
         className={cn(
-          "flex w-full gap-3 rounded-2xl p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-          unread ? "bg-navy-50/60 hover:bg-navy-50" : "hover:bg-muted/70",
+          "flex w-full gap-3 rounded-2xl p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+          adminTheme
+            ? cn(
+                "focus-visible:ring-gold-400 focus-visible:ring-offset-navy-900",
+                unread ? "bg-navy-800/80 hover:bg-navy-800" : "hover:bg-white/10",
+              )
+            : cn(
+                "focus-visible:ring-ring focus-visible:ring-offset-background",
+                unread ? "bg-navy-50/60 hover:bg-navy-50" : "hover:bg-muted/70",
+              ),
+          item.link ? "cursor-pointer" : "cursor-default",
         )}
       >
         {unread && (
@@ -578,19 +712,32 @@ function Row({
               className={cn(
                 "min-w-0 flex-1 truncate text-[13px] leading-5",
                 unread
-                  ? "font-semibold text-foreground"
-                  : "font-medium text-foreground/75",
+                  ? cn("font-semibold", adminTheme ? "text-white" : "text-foreground")
+                  : cn(
+                      "font-medium",
+                      adminTheme ? "text-navy-100/80" : "text-foreground/75",
+                    ),
               )}
             >
               {item.title}
             </span>
-            <span className="flex-none text-[11px] tabular-nums text-muted-foreground">
+            <span
+              className={cn(
+                "flex-none text-[11px] tabular-nums",
+                adminTheme ? "text-navy-100/65" : "text-muted-foreground",
+              )}
+            >
               {relativeTime(item.createdAt, now.getTime())}
             </span>
           </span>
 
           {item.body && (
-            <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-muted-foreground">
+            <span
+              className={cn(
+                "mt-0.5 line-clamp-2 block text-xs leading-5",
+                adminTheme ? "text-navy-100/75" : "text-muted-foreground",
+              )}
+            >
               {item.body}
             </span>
           )}
@@ -604,11 +751,6 @@ function Row({
             >
               {visual.label}
             </span>
-            {item.link && (
-              <span className="text-[10px] font-medium text-navy-600 opacity-0 transition-opacity group-hover/row:opacity-100">
-                Abrir →
-              </span>
-            )}
           </span>
         </span>
       </button>
@@ -619,7 +761,12 @@ function Row({
         onClick={onToggleRead}
         aria-label={unread ? "Marcar como lida" : "Marcar como não lida"}
         title={unread ? "Marcar como lida" : "Marcar como não lida"}
-        className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-all hover:border-navy-300 hover:text-navy-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover/row:opacity-100"
+        className={cn(
+          "absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full border opacity-0 shadow-sm transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 group-hover/row:opacity-100",
+          adminTheme
+            ? "border-navy-300/30 bg-navy-950 text-navy-100 hover:border-gold-400 hover:text-gold-300 focus-visible:ring-gold-400"
+            : "border-border bg-background text-muted-foreground hover:border-navy-300 hover:text-navy-700 focus-visible:ring-ring",
+        )}
       >
         {unread ? (
           <CheckIcon className="h-3.5 w-3.5" />
@@ -631,20 +778,43 @@ function Row({
   );
 }
 
-function EmptyState({ filter }: { filter: NotificationFilter }) {
+function EmptyState({
+  filter,
+  adminTheme,
+}: {
+  filter: NotificationFilter;
+  adminTheme: boolean;
+}) {
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-muted text-muted-foreground">
+      <span
+        className={cn(
+          "grid h-12 w-12 place-items-center rounded-2xl",
+          adminTheme
+            ? "bg-navy-800 text-gold-300 ring-1 ring-navy-300/20"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
         {filter === "unread" ? (
           <CheckIcon className="h-5 w-5" />
         ) : (
           <BellIcon className="h-5 w-5" />
         )}
       </span>
-      <p className="text-sm font-medium text-foreground">
+      <p
+        className={cn(
+          "text-sm font-medium",
+          adminTheme ? "text-white" : "text-foreground",
+        )}
+      >
         {filter === "unread" ? "Nada por ler" : "Nenhuma notificação"}
       </p>
-      <p className="max-w-[15rem] text-xs leading-5 text-muted-foreground">
+      <p
+        className={cn(
+          "max-w-[15rem] text-xs leading-5",
+          adminTheme ? "text-navy-100/70" : "text-muted-foreground",
+        )}
+      >
         {filter === "unread"
           ? "Você já viu tudo o que chegou até agora."
           : "Avisos, tarefas e mudanças de turma aparecem aqui assim que acontecem."}

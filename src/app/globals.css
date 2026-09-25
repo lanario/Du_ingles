@@ -176,6 +176,40 @@ body {
   display: none;
 }
 
+/* Scroll do painel de notificações administrativas: o indicador dourado
+   mantém a barra visível sobre a superfície navy sem trazer o cinza nativo
+   do navegador para dentro do chrome da Du Inglês. */
+.admin-notification-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-500) var(--navy-950);
+}
+
+.admin-notification-scrollbar::-webkit-scrollbar {
+  width: 9px;
+}
+
+.admin-notification-scrollbar::-webkit-scrollbar-track {
+  background: var(--navy-950);
+  border-radius: 999px;
+}
+
+.admin-notification-scrollbar::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 2px solid var(--navy-950);
+  border-radius: 999px;
+  background: var(--gold-500);
+}
+
+.admin-notification-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-400);
+}
+
+.admin-notification-scrollbar::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /*
  * Botão de "letras que sobem" (nav de marketing). A camada `__face` cobre o
  * botão no repouso — navy sólido, igual aos demais botões primários — e desce

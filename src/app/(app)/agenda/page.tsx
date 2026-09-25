@@ -39,9 +39,6 @@ export default async function AgendaPage({
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-semibold">Agenda</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Suas aulas, provas e o que a escola marcou.
-        </p>
       </header>
 
       <GoogleConnect status={googleState} notice={google} />

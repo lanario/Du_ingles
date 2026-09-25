@@ -1081,15 +1081,21 @@ export function PlannerView({
                           type="button"
                           onClick={() => toggleMonth(key)}
                           aria-expanded={open}
-                          className="mb-3 flex w-full items-center gap-3 text-left"
+                          className={cn(
+                            "mb-4 flex min-h-12 w-full items-center gap-3 rounded-xl border bg-admin-surface px-4 py-3 text-left shadow-[0_1px_2px_rgba(11,26,51,0.04)] transition-[background-color,border-color,box-shadow]",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-background",
+                            open
+                              ? "border-navy-100 shadow-[0_10px_30px_-24px_rgba(11,26,51,0.45)]"
+                              : "border-admin-border hover:border-gold-400 hover:bg-admin-muted/50 hover:shadow-[0_10px_30px_-24px_rgba(11,26,51,0.35)]",
+                          )}
                         >
-                          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-admin-foreground/60">
+                          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-admin-foreground/70">
                             {label}
                           </h2>
-                          <span className="h-px flex-1 bg-gradient-to-r from-gold-300 to-transparent" />
+                          <span className="h-px flex-1 bg-gradient-to-r from-gold-400/80 to-gold-300/20" />
                           <ChevronRightIcon
                             className={cn(
-                              "h-4 w-4 shrink-0 text-admin-foreground/45 transition-transform",
+                              "h-4 w-4 shrink-0 text-navy-800 transition-transform",
                               open && "rotate-90",
                             )}
                           />
@@ -1685,6 +1691,11 @@ function PlanCard({
             <PencilIcon className="h-4 w-4" />
           </IconAction>
         )}
+        {canEdit && (
+          <IconAction label="Excluir" onClick={onDelete} disabled={busy} danger>
+            <TrashIcon className="h-4 w-4" />
+          </IconAction>
+        )}
         <ActionMenu
           label={`Mais ações da aula "${plan.title}"`}
           openOnHover
@@ -1717,11 +1728,6 @@ function PlanCard({
               : []),
           ]}
         />
-        {canEdit && (
-          <IconAction label="Excluir" onClick={onDelete} disabled={busy} danger>
-            <TrashIcon className="h-4 w-4" />
-          </IconAction>
-        )}
       </div>
     </motion.article>
   );

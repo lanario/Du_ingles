@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import Image from "next/image";
 import { NavLink } from "@/components/ui/nav-link";
 import type { Route } from "next";
@@ -83,6 +90,8 @@ export interface AdminNavItem {
 
 export interface AdminNavSection {
   label: string;
+  /** Ícone do botão da categoria; usa o primeiro item como fallback. */
+  icon?: IconName;
   items: AdminNavItem[];
 }
 
@@ -90,10 +99,12 @@ export interface AdminNavSection {
 export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
     label: "Visão geral",
+    icon: "grid",
     items: [{ href: "/admin", label: "Painel", icon: "grid" }],
   },
   {
     label: "Gestão",
+    icon: "users",
     items: [
       { href: "/admin/usuarios", label: "Usuários", icon: "users" },
       { href: "/admin/alunos", label: "Alunos", icon: "graduation" },
@@ -104,6 +115,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     label: "Operação",
+    icon: "calendar",
     items: [
       { href: "/admin/agenda", label: "Agenda", icon: "calendar" },
       { href: "/admin/planejador", label: "Planejador de aulas", icon: "lesson" },
@@ -116,6 +128,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     label: "Conta",
+    icon: "gear",
     // "Meu Perfil" mora só no menu da foto de perfil (`UserMenu`) — item
     // duplicado aqui só confundia sobre qual dos dois abrir.
     items: [{ href: "/admin/configuracoes", label: "Configurações", icon: "gear" }],
@@ -230,8 +243,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   gear: (
     <>
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 3v2.4M12 18.6V21M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M3 12h2.4M18.6 12H21M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7" />
+      <path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4A2 2 0 0 0 4 9.9l.2.1a2 2 0 0 1 1 1.7v.6a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.6a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z" />
+      <circle cx="12" cy="12" r="3" />
     </>
   ),
 };
@@ -298,6 +311,34 @@ function itemAtivo(pathname: string, sections: AdminNavSection[], rootHref: stri
   );
 }
 
+function secaoAtiva(pathname: string, sections: AdminNavSection[], rootHref: string) {
+  return sections.find((section) =>
+    section.items.some((item) => isActivePath(pathname, item.href, rootHref)),
+  )?.label;
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      fill="none"
+      className={cn(
+        "h-3.5 w-3.5 flex-none transition-transform duration-200",
+        open && "rotate-180",
+      )}
+    >
+      <path
+        d="m4 6 4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /** Emblema "Du" do chrome admin, em duas variantes (compacta/completa). */
 function Brand({ compact }: { compact?: boolean }) {
   return (
@@ -356,6 +397,15 @@ function AdminRail({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const sectionIdPrefix = useId();
+  const activeSection = secaoAtiva(pathname, sections, rootHref);
+  const [openSection, setOpenSection] = useState<string | undefined>(
+    () => activeSection ?? sections[0]?.label,
+  );
+
+  useEffect(() => {
+    if (activeSection) setOpenSection(activeSection);
+  }, [activeSection]);
 
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -531,101 +581,208 @@ function AdminRail({
             aria-label={navLabel}
             className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2"
           >
-            {sections.map((section, index) => (
-              <div key={section.label}>
-                {index > 0 && <div className="my-1.5 h-px bg-admin-shell-border" />}
-                <p
-                  data-nav-label
-                  style={navStyle(sectionLabelIndices[index]!.titleIndex)}
-                  className="px-2.5 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-admin-shell-foreground/40"
-                >
-                  {section.label}
-                </p>
-                <div className="space-y-0.5">
-                  {section.items.map((item, itemIndex) => {
-                    const labelIndex =
-                      sectionLabelIndices[index]!.itemIndices[itemIndex]!;
-                    if (item.disabled) {
-                      return (
-                        <div
-                          key={item.href}
-                          aria-disabled="true"
-                          className={cn(
-                            ROW_CLASS,
-                            "cursor-default text-admin-shell-foreground/40",
-                          )}
-                        >
-                          <span className="flex-none">
-                            <NavIcon name={item.icon} />
-                          </span>
-                          <span
-                            data-nav-label
-                            style={navStyle(labelIndex)}
-                            className="flex min-w-0 flex-1 items-center gap-2 truncate whitespace-nowrap"
-                          >
-                            <span className="truncate">{item.label}</span>
-                            <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
-                              Em breve
-                            </span>
-                          </span>
-                        </div>
-                      );
-                    }
+            {sections.map((section, index) => {
+              const sectionOpen = openSection === section.label;
+              const showItems = expanded && sectionOpen;
+              const sectionIcon = section.icon ?? section.items[0]?.icon;
+              const contentId = `${sectionIdPrefix}-section-${index}`;
+              const standaloneItem =
+                section.items.length === 1 ? section.items[0] : undefined;
 
-                    const active = isActive(item.href);
-                    return (
-                      <NavLink
-                        key={item.href}
-                        href={item.href}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          ROW_CLASS,
-                          active
-                            ? "font-medium text-admin-shell-foreground"
-                            : "text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900",
-                        )}
-                      >
-                        {active && (
-                          <motion.span
-                            layoutId="admin-nav-active"
-                            transition={{
-                              type: "spring",
-                              stiffness: 480,
-                              damping: 38,
-                              mass: 0.7,
-                            }}
-                            className="absolute inset-0 -z-10 rounded-2xl bg-navy-900/15"
-                          />
-                        )}
-                        <span
-                          aria-hidden
-                          className={cn(
-                            "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-navy-900",
-                            "origin-center transition-transform duration-200",
-                            active ? "scale-y-100" : "scale-y-0",
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            "flex-none transition-colors",
-                            active ? "text-navy-900" : "group-hover:text-navy-900",
-                          )}
-                        >
-                          <NavIcon name={item.icon} />
-                        </span>
-                        <span
-                          data-nav-label
-                          style={navStyle(labelIndex)}
-                          className="truncate whitespace-nowrap"
-                        >
-                          {item.label}
-                        </span>
-                      </NavLink>
-                    );
-                  })}
+              if (standaloneItem) {
+                const active = !standaloneItem.disabled && isActive(standaloneItem.href);
+                const standaloneClassName = cn(
+                  "relative mb-2 flex h-10 w-full items-center gap-3 rounded-2xl border px-3 text-left text-sm font-medium transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-shell",
+                  active
+                    ? "border-navy-900/30 bg-navy-900/10 text-admin-shell-foreground"
+                    : "border-transparent text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900",
+                  standaloneItem.disabled &&
+                    "cursor-default text-admin-shell-foreground/40",
+                );
+                const content = (
+                  <>
+                    <span
+                      className={cn(
+                        "flex-none",
+                        active ? "text-navy-900" : "text-current",
+                      )}
+                    >
+                      <NavIcon name={sectionIcon ?? standaloneItem.icon} />
+                    </span>
+                    <span
+                      data-nav-label
+                      style={navStyle(sectionLabelIndices[index]!.itemIndices[0]!)}
+                      className="min-w-0 flex-1 truncate whitespace-nowrap"
+                    >
+                      {standaloneItem.label}
+                    </span>
+                  </>
+                );
+
+                return standaloneItem.disabled ? (
+                  <div
+                    key={section.label}
+                    aria-disabled="true"
+                    className={standaloneClassName}
+                  >
+                    {content}
+                  </div>
+                ) : (
+                  <NavLink
+                    key={section.label}
+                    href={standaloneItem.href}
+                    aria-current={active ? "page" : undefined}
+                    className={standaloneClassName}
+                  >
+                    {content}
+                  </NavLink>
+                );
+              }
+
+              return (
+                <div key={section.label} className="mb-2">
+                  <button
+                    type="button"
+                    aria-expanded={showItems}
+                    aria-controls={contentId}
+                    onClick={() =>
+                      setOpenSection((current) =>
+                        current === section.label ? undefined : section.label,
+                      )
+                    }
+                    className={cn(
+                      "group/section h-10 w-full items-center gap-3 rounded-2xl border px-3 text-left text-sm font-medium transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-shell",
+                      "flex",
+                      sectionOpen
+                        ? "border-navy-900/30 bg-navy-900/10 text-admin-shell-foreground"
+                        : "border-transparent text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900",
+                    )}
+                  >
+                    {sectionIcon && (
+                      <span className="flex-none text-navy-900">
+                        <NavIcon name={sectionIcon} />
+                      </span>
+                    )}
+                    <span
+                      data-nav-label
+                      style={navStyle(sectionLabelIndices[index]!.titleIndex)}
+                      className="min-w-0 flex-1 truncate whitespace-nowrap"
+                    >
+                      {section.label}
+                    </span>
+                    <span
+                      data-nav-label
+                      style={navStyle(sectionLabelIndices[index]!.titleIndex)}
+                    >
+                      <Chevron open={sectionOpen} />
+                    </span>
+                  </button>
+                  <motion.div
+                    id={contentId}
+                    aria-hidden={!showItems}
+                    inert={!showItems}
+                    animate={{
+                      height: showItems ? "auto" : 0,
+                      opacity: showItems ? 1 : 0,
+                    }}
+                    transition={{ duration: reduceMotion ? 0 : 0.18 }}
+                    className="overflow-hidden"
+                  >
+                    <div
+                      className={cn(
+                        "space-y-0.5",
+                        expanded &&
+                          "relative ml-4 mt-1 border-l border-admin-shell-foreground/20 pl-2",
+                      )}
+                    >
+                      {section.items.map((item, itemIndex) => {
+                        const labelIndex =
+                          sectionLabelIndices[index]!.itemIndices[itemIndex]!;
+                        if (item.disabled) {
+                          return (
+                            <div
+                              key={item.href}
+                              aria-disabled="true"
+                              className={cn(
+                                ROW_CLASS,
+                                "cursor-default text-admin-shell-foreground/40",
+                              )}
+                            >
+                              <span className="flex-none">
+                                <NavIcon name={item.icon} />
+                              </span>
+                              <span
+                                data-nav-label
+                                style={navStyle(labelIndex)}
+                                className="flex min-w-0 flex-1 items-center gap-2 truncate whitespace-nowrap"
+                              >
+                                <span className="truncate">{item.label}</span>
+                                <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
+                                  Em breve
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        const active = isActive(item.href);
+                        return (
+                          <NavLink
+                            key={item.href}
+                            href={item.href}
+                            aria-current={active ? "page" : undefined}
+                            className={cn(
+                              ROW_CLASS,
+                              active
+                                ? "font-medium text-admin-shell-foreground"
+                                : "text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900",
+                            )}
+                          >
+                            {active && (
+                              <motion.span
+                                layoutId="admin-nav-active"
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 480,
+                                  damping: 38,
+                                  mass: 0.7,
+                                }}
+                                className="absolute inset-0 -z-10 rounded-2xl bg-navy-900/15"
+                              />
+                            )}
+                            <span
+                              aria-hidden
+                              className={cn(
+                                "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-navy-900",
+                                "origin-center transition-transform duration-200",
+                                active ? "scale-y-100" : "scale-y-0",
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "flex-none transition-colors",
+                                active ? "text-navy-900" : "group-hover:text-navy-900",
+                              )}
+                            >
+                              <NavIcon name={item.icon} />
+                            </span>
+                            <span
+                              data-nav-label
+                              style={navStyle(labelIndex)}
+                              className="truncate whitespace-nowrap"
+                            >
+                              {item.label}
+                            </span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </nav>
 
           <div className="border-t border-admin-shell-border px-3 py-2">
@@ -683,9 +840,18 @@ function AdminNavMobile({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const sectionIdPrefix = useId();
   const [open, setOpen] = useState(false);
   const [routeAtOpen, setRouteAtOpen] = useState(pathname);
   const atual = itemAtivo(pathname, sections, rootHref);
+  const activeSection = secaoAtiva(pathname, sections, rootHref);
+  const [openSection, setOpenSection] = useState<string | undefined>(
+    () => activeSection ?? sections[0]?.label,
+  );
+
+  useEffect(() => {
+    if (activeSection) setOpenSection(activeSection);
+  }, [activeSection]);
 
   // Navegar fecha a gaveta durante a renderização (não em efeito), assim ela
   // já sai fechada no mesmo passo em que a rota muda — inclui o botão
@@ -783,73 +949,164 @@ function AdminNavMobile({
               </div>
 
               <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-2">
-                {sections.map((section, index) => (
-                  <div key={section.label}>
-                    {index > 0 && <div className="my-1.5 h-px bg-admin-shell-border" />}
-                    <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-admin-shell-foreground/50">
-                      {section.label}
-                    </p>
-                    <div className="space-y-0.5">
-                      {section.items.map((item) => {
-                        if (item.disabled) {
-                          return (
-                            <div
-                              key={item.href}
-                              aria-disabled="true"
-                              className={cn(
-                                MOBILE_ROW_CLASS,
-                                "cursor-default text-admin-shell-foreground/40",
-                              )}
-                            >
-                              <span className="flex-none text-admin-shell-foreground/40">
-                                <NavIcon name={item.icon} />
-                              </span>
-                              <span className="min-w-0 flex-1 truncate">
-                                {item.label}
-                              </span>
-                              <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
-                                Em breve
-                              </span>
-                            </div>
-                          );
-                        }
+                {sections.map((section, index) => {
+                  const sectionOpen = openSection === section.label;
+                  const sectionIcon = section.icon ?? section.items[0]?.icon;
+                  const contentId = `${sectionIdPrefix}-section-${index}`;
+                  const standaloneItem =
+                    section.items.length === 1 ? section.items[0] : undefined;
 
-                        const active = isActivePath(pathname, item.href, rootHref);
-                        return (
-                          <NavLink
-                            key={item.href}
-                            href={item.href}
-                            aria-current={active ? "page" : undefined}
-                            className={cn(
-                              MOBILE_ROW_CLASS,
-                              active
-                                ? "bg-navy-900/15 text-admin-shell-foreground"
-                                : "text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900 active:bg-navy-900/15",
-                            )}
-                          >
-                            {active && (
-                              <span
-                                aria-hidden
-                                className="absolute -left-2 bottom-1.5 top-1.5 w-[3px] rounded-r-full bg-navy-900"
-                              />
-                            )}
-                            <span
-                              className={cn(
-                                "flex-none",
-                                active
-                                  ? "text-navy-900"
-                                  : "text-admin-shell-foreground/60",
-                              )}
-                            >
-                              <NavIcon name={item.icon} />
-                            </span>
-                            {item.label}
-                          </NavLink>
-                        );
-                      })}
+                  if (standaloneItem) {
+                    const active =
+                      !standaloneItem.disabled &&
+                      isActivePath(pathname, standaloneItem.href, rootHref);
+                    const standaloneClassName = cn(
+                      "mb-2 flex min-h-11 w-full items-center gap-3 rounded-2xl border px-3 text-left text-[15px] font-medium transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-shell",
+                      active
+                        ? "border-navy-900/30 bg-navy-900/10 text-admin-shell-foreground"
+                        : "border-transparent text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900 active:bg-navy-900/15",
+                      standaloneItem.disabled &&
+                        "cursor-default text-admin-shell-foreground/40",
+                    );
+                    const content = (
+                      <>
+                        <span
+                          className={cn(
+                            "flex-none",
+                            active ? "text-navy-900" : "text-current",
+                          )}
+                        >
+                          <NavIcon name={sectionIcon ?? standaloneItem.icon} />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {standaloneItem.label}
+                        </span>
+                      </>
+                    );
+
+                    return standaloneItem.disabled ? (
+                      <div
+                        key={section.label}
+                        aria-disabled="true"
+                        className={standaloneClassName}
+                      >
+                        {content}
+                      </div>
+                    ) : (
+                      <NavLink
+                        key={section.label}
+                        href={standaloneItem.href}
+                        aria-current={active ? "page" : undefined}
+                        className={standaloneClassName}
+                      >
+                        {content}
+                      </NavLink>
+                    );
+                  }
+
+                  return (
+                    <div key={section.label} className="mb-2">
+                      <button
+                        type="button"
+                        aria-expanded={sectionOpen}
+                        aria-controls={contentId}
+                        onClick={() =>
+                          setOpenSection((current) =>
+                            current === section.label ? undefined : section.label,
+                          )
+                        }
+                        className={cn(
+                          "flex min-h-11 w-full items-center gap-3 rounded-2xl border px-3 text-left text-[15px] font-medium transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 focus-visible:ring-offset-admin-shell",
+                          sectionOpen
+                            ? "border-navy-900/30 bg-navy-900/10 text-admin-shell-foreground"
+                            : "border-transparent text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900 active:bg-navy-900/15",
+                        )}
+                      >
+                        {sectionIcon && (
+                          <span className="flex-none text-navy-900">
+                            <NavIcon name={sectionIcon} />
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{section.label}</span>
+                        <Chevron open={sectionOpen} />
+                      </button>
+                      <motion.div
+                        id={contentId}
+                        aria-hidden={!sectionOpen}
+                        inert={!sectionOpen}
+                        initial={false}
+                        animate={{
+                          height: sectionOpen ? "auto" : 0,
+                          opacity: sectionOpen ? 1 : 0,
+                        }}
+                        transition={{ duration: reduceMotion ? 0 : 0.18 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="ml-5 mt-1 space-y-0.5 border-l border-admin-shell-foreground/20 pl-2">
+                          {section.items.map((item) => {
+                            if (item.disabled) {
+                              return (
+                                <div
+                                  key={item.href}
+                                  aria-disabled="true"
+                                  className={cn(
+                                    MOBILE_ROW_CLASS,
+                                    "cursor-default text-admin-shell-foreground/40",
+                                  )}
+                                >
+                                  <span className="flex-none text-admin-shell-foreground/40">
+                                    <NavIcon name={item.icon} />
+                                  </span>
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {item.label}
+                                  </span>
+                                  <span className="flex-none rounded-full bg-admin-shell-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-admin-shell-foreground/50">
+                                    Em breve
+                                  </span>
+                                </div>
+                              );
+                            }
+
+                            const active = isActivePath(pathname, item.href, rootHref);
+                            return (
+                              <NavLink
+                                key={item.href}
+                                href={item.href}
+                                aria-current={active ? "page" : undefined}
+                                className={cn(
+                                  MOBILE_ROW_CLASS,
+                                  active
+                                    ? "bg-navy-900/15 text-admin-shell-foreground"
+                                    : "text-admin-shell-foreground/70 hover:bg-navy-900/10 hover:text-navy-900 active:bg-navy-900/15",
+                                )}
+                              >
+                                {active && (
+                                  <span
+                                    aria-hidden
+                                    className="absolute -left-2 bottom-1.5 top-1.5 w-[3px] rounded-r-full bg-navy-900"
+                                  />
+                                )}
+                                <span
+                                  className={cn(
+                                    "flex-none",
+                                    active
+                                      ? "text-navy-900"
+                                      : "text-admin-shell-foreground/60",
+                                  )}
+                                >
+                                  <NavIcon name={item.icon} />
+                                </span>
+                                {item.label}
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="shrink-0 border-t border-admin-shell-border px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
