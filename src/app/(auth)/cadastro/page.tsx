@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import {
-  StudentRegistrationWizard,
-  type RegistrationPlan,
-} from "@/components/features/auth/student-registration-wizard";
+import { StudentRegistrationWizard } from "@/components/features/auth/student-registration-wizard";
 import { getDefaultOrganizationId } from "@/lib/organization";
 import { listPublicPlans } from "@/repositories/student-plans";
 
@@ -12,19 +9,18 @@ export default async function CadastroPage() {
   const organizationId = await getDefaultOrganizationId();
   const plans = await listPublicPlans(organizationId);
 
-  const registrationPlans: RegistrationPlan[] = plans
-    .filter((plan) => plan.billingInterval !== "one_time")
+  // Só planos que a action de cadastro aceita (recorrentes e com preço na
+  // Stripe). Os identificadores da Stripe ficam no servidor: o formulário só
+  // precisa saber o que desenhar.
+  const registrationPlans = plans
+    .filter((plan) => plan.billingInterval !== "one_time" && plan.stripePriceId)
     .map((plan) => ({
-      id: plan.id,
-      name: plan.name,
-      headline: plan.headline,
-      description: plan.description,
-      features: plan.features,
-      priceCents: plan.priceCents,
-      currency: plan.currency,
-      billingInterval: plan.billingInterval as RegistrationPlan["billingInterval"],
-      lessonsPerMonth: plan.lessonsPerMonth,
-      minutesPerLesson: plan.minutesPerLesson,
+      ...plan,
+      stripeProductId: null,
+      stripePriceId: null,
+      stripePaymentLinkId: null,
+      stripePaymentLinkUrl: null,
+      syncError: null,
     }));
 
   return <StudentRegistrationWizard plans={registrationPlans} />;

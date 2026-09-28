@@ -252,7 +252,14 @@ export function PlansShowcase({
 // Construtor "nível → ritmo → compromisso"
 // ---------------------------------------------------------------------------
 
-function StepHeader({
+/**
+ * `subscribe` abre o checkout (vitrine do aluno logado); `select` só escolhe o
+ * plano — usado pelo cadastro público, onde a conta ainda nem existe e o
+ * checkout acontece depois de criá-la.
+ */
+export type PlanMode = "subscribe" | "select";
+
+export function StepHeader({
   index,
   title,
   subtitle,
@@ -281,22 +288,31 @@ function StepHeader({
   );
 }
 
-function TierBuilder({
+export function TierBuilder({
   plans,
-  pendingPlan,
-  disabled,
-  readOnly,
-  currentPlanId,
+  pendingPlan = null,
+  disabled = false,
+  readOnly = false,
+  currentPlanId = null,
+  initialPlanId = null,
+  mode = "subscribe",
   onSubscribe,
 }: {
   plans: StudentPlan[];
-  pendingPlan: string | null;
-  disabled: boolean;
-  readOnly: boolean;
-  currentPlanId: string | null;
+  pendingPlan?: string | null;
+  disabled?: boolean;
+  readOnly?: boolean;
+  /** Plano vigente (`subscribe`) ou já escolhido (`select`). */
+  currentPlanId?: string | null;
+  /** Reabre o construtor já posicionado no plano escolhido antes. */
+  initialPlanId?: string | null;
+  mode?: PlanMode;
   onSubscribe: (plan: StudentPlan) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const initialPlan = initialPlanId
+    ? (plans.find((plan) => plan.id === initialPlanId && plan.tier !== null) ?? null)
+    : null;
 
   const availableTiers = useMemo(
     () => TIER_ORDER.filter((tier) => plans.some((plan) => plan.tier === tier)),
@@ -317,9 +333,16 @@ function TierBuilder({
     [plans],
   );
 
-  const [tier, setTier] = useState<PlanTier | null>(null);
-  const [frequency, setFrequency] = useState<PlanWeeklyFrequency | null>(null);
-  const [interval, setInterval] = useState<CommitmentInterval | null>(null);
+  const [tier, setTier] = useState<PlanTier | null>(initialPlan?.tier ?? null);
+  const [frequency, setFrequency] = useState<PlanWeeklyFrequency | null>(
+    initialPlan?.weeklyFrequency ?? null,
+  );
+  const [interval, setInterval] = useState<CommitmentInterval | null>(
+    initialPlan &&
+      (COMMITMENT_INTERVALS as string[]).includes(initialPlan.billingInterval)
+      ? (initialPlan.billingInterval as CommitmentInterval)
+      : null,
+  );
 
   const matched = useMemo(
     () =>
@@ -370,51 +393,55 @@ function TierBuilder({
         </div>
       </section>
 
-      <AnimatePresence initial={false}>
-        {tier && (
-          <RevealSection key="frequency">
-            <StepHeader
-              index={2}
-              title="Seu ritmo"
-              subtitle="Quantas aulas em grupo por semana."
-            />
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {availableFrequencies.map((item) => (
-                <FrequencyCard
-                  key={item}
-                  frequency={item}
-                  selected={frequency === item}
-                  onSelect={() => setFrequency(item)}
-                />
-              ))}
-            </div>
-          </RevealSection>
-        )}
-      </AnimatePresence>
+      {/* Ritmo e compromisso dividem a linha em telas largas: os dois são
+          escolhas curtas, e empilhá-los deixava metade da tela vazia. */}
+      <div className="grid gap-x-8 gap-y-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <AnimatePresence initial={false}>
+          {tier && (
+            <RevealSection key="frequency">
+              <StepHeader
+                index={2}
+                title="Seu ritmo"
+                subtitle="Quantas aulas em grupo por semana."
+              />
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {availableFrequencies.map((item) => (
+                  <FrequencyCard
+                    key={item}
+                    frequency={item}
+                    selected={frequency === item}
+                    onSelect={() => setFrequency(item)}
+                  />
+                ))}
+              </div>
+            </RevealSection>
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence initial={false}>
-        {tier && frequency && (
-          <RevealSection key="commitment">
-            <StepHeader
-              index={3}
-              title="Seu compromisso"
-              subtitle="A periodicidade da cobrança — mais tempo, mais economia."
-            />
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {availableCommitments.map((item) => (
-                <CommitmentCard
-                  key={item}
-                  interval={item}
-                  tier={tier}
-                  frequency={frequency}
-                  selected={interval === item}
-                  onSelect={() => setInterval(item)}
-                />
-              ))}
-            </div>
-          </RevealSection>
-        )}
-      </AnimatePresence>
+        <AnimatePresence initial={false}>
+          {tier && frequency && (
+            <RevealSection key="commitment">
+              <StepHeader
+                index={3}
+                title="Seu compromisso"
+                subtitle="A periodicidade da cobrança — mais tempo, mais economia."
+              />
+              <div className="mt-4 grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]">
+                {availableCommitments.map((item) => (
+                  <CommitmentCard
+                    key={item}
+                    interval={item}
+                    tier={tier}
+                    frequency={frequency}
+                    selected={interval === item}
+                    onSelect={() => setInterval(item)}
+                  />
+                ))}
+              </div>
+            </RevealSection>
+          )}
+        </AnimatePresence>
+      </div>
 
       <AnimatePresence initial={false} mode="wait">
         {tier && frequency && interval && (
@@ -425,6 +452,7 @@ function TierBuilder({
                 tier={tier}
                 frequency={frequency}
                 interval={interval}
+                mode={mode}
                 pending={pendingPlan === matched.id}
                 disabled={disabled}
                 readOnly={readOnly}
@@ -657,6 +685,7 @@ function ResultCard({
   tier,
   frequency,
   interval,
+  mode,
   pending,
   disabled,
   readOnly,
@@ -669,6 +698,7 @@ function ResultCard({
   tier: PlanTier;
   frequency: PlanWeeklyFrequency;
   interval: CommitmentInterval;
+  mode: PlanMode;
   pending: boolean;
   disabled: boolean;
   readOnly: boolean;
@@ -773,7 +803,7 @@ function ResultCard({
         />
 
         {plan.features.length > 0 && (
-          <ul className="relative grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+          <ul className="relative grid gap-x-6 gap-y-2.5 sm:grid-cols-2 2xl:grid-cols-3">
             {plan.features.map((feature) => (
               <li
                 key={feature}
@@ -832,18 +862,24 @@ function ResultCard({
           >
             {pending && <LogoLoader size={16} label={null} />}
             {current
-              ? "Seu plano atual"
+              ? mode === "select"
+                ? "Plano escolhido"
+                : "Seu plano atual"
               : soldOut
                 ? "Vagas esgotadas"
                 : pending
                   ? "Abrindo pagamento..."
-                  : plan.trialDays > 0
-                    ? "Começar teste grátis"
-                    : "Começar agora"}
+                  : mode === "select"
+                    ? "Escolher este plano"
+                    : plan.trialDays > 0
+                      ? "Começar teste grátis"
+                      : "Começar agora"}
           </button>
 
           <p className="mt-2 text-[11px]" style={{ color: "var(--navy-300)" }}>
-            Pagamento seguro via Stripe · cancele quando quiser
+            {mode === "select"
+              ? "7 dias de experiência grátis · cancele quando quiser"
+              : "Pagamento seguro via Stripe · cancele quando quiser"}
           </p>
         </div>
       </motion.article>
@@ -885,19 +921,21 @@ function ResultCard({
 // Planos avulsos — fora da grade de níveis, vendidos como antes.
 // ---------------------------------------------------------------------------
 
-function LoosePlansGrid({
+export function LoosePlansGrid({
   plans,
-  pendingPlan,
-  disabled,
-  readOnly,
-  currentPlanId,
+  pendingPlan = null,
+  disabled = false,
+  readOnly = false,
+  currentPlanId = null,
+  mode = "subscribe",
   onSubscribe,
 }: {
   plans: StudentPlan[];
-  pendingPlan: string | null;
-  disabled: boolean;
-  readOnly: boolean;
-  currentPlanId: string | null;
+  pendingPlan?: string | null;
+  disabled?: boolean;
+  readOnly?: boolean;
+  currentPlanId?: string | null;
+  mode?: PlanMode;
   onSubscribe: (plan: StudentPlan) => void;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -939,6 +977,7 @@ function LoosePlansGrid({
             pending={pendingPlan === plan.id}
             disabled={disabled}
             readOnly={readOnly}
+            mode={mode}
             onSubscribe={() => onSubscribe(plan)}
           />
         ))}
@@ -953,9 +992,11 @@ function LoosePlanCard({
   pending,
   disabled,
   readOnly,
+  mode,
   onSubscribe,
 }: {
   plan: StudentPlan;
+  mode: PlanMode;
   current: boolean;
   pending: boolean;
   disabled: boolean;
@@ -1124,14 +1165,18 @@ function LoosePlanCard({
         >
           {pending && <LogoLoader size={16} label={null} />}
           {current
-            ? "Seu plano atual"
+            ? mode === "select"
+              ? "Plano escolhido"
+              : "Seu plano atual"
             : soldOut
               ? "Vagas esgotadas"
               : pending
                 ? "Abrindo pagamento..."
-                : plan.trialDays > 0
-                  ? "Começar teste grátis"
-                  : "Assinar este plano"}
+                : mode === "select"
+                  ? "Escolher este plano"
+                  : plan.trialDays > 0
+                    ? "Começar teste grátis"
+                    : "Assinar este plano"}
         </button>
       </div>
     </motion.article>
