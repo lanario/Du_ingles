@@ -295,6 +295,11 @@ function Sidebar({
   const glowRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<number | null>(null);
   const glowY = useRef<ReturnType<typeof createYFollower> | null>(null);
+  // Clicar num link também dá foco a ele — sem essa marca, esse foco "por
+  // mouse" ficava preso em `focused` (já que só some no blur) e prendia o
+  // painel aberto até um clique fora, mesmo com o ponteiro já longe do rail.
+  // Só o foco por teclado (sem pointerdown antes) deve manter o painel aberto.
+  const pointerDownRef = useRef(false);
 
   const clearTimer = () => {
     if (hoverTimer.current !== null) {
@@ -408,7 +413,16 @@ function Sidebar({
           scheduleHover(false);
           hideGlow();
         }}
-        onFocusCapture={() => setFocused(true)}
+        onPointerDownCapture={() => {
+          pointerDownRef.current = true;
+        }}
+        onPointerUpCapture={() => {
+          pointerDownRef.current = false;
+        }}
+        onFocusCapture={() => {
+          if (pointerDownRef.current) return;
+          setFocused(true);
+        }}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             setFocused(false);
