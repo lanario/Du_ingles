@@ -5,6 +5,7 @@ import { listMyUpcomingSessions } from "@/repositories/class-sessions";
 import { listStudentDashboardAssignments } from "@/repositories/assignments";
 import { getStudentProgress } from "@/repositories/progress";
 import { listGroups } from "@/repositories/groups";
+import { getActiveSubscriptionFor } from "@/repositories/student-subscriptions";
 import { listLessonPlans } from "@/repositories/lesson-plans";
 import { measureServer } from "@/lib/observability/performance";
 import { StudentDashboard } from "@/components/features/dashboard/student-dashboard";
@@ -76,12 +77,20 @@ export default async function DashboardPage() {
     );
   }
 
-  const [progress, assignments] = await Promise.all([
+  const [progress, assignments, subscription] = await Promise.all([
     measureServer("dashboard.studentProgress", () => getStudentProgress(ctx.userId)),
     measureServer("dashboard.studentAssignments", () =>
       listStudentDashboardAssignments(ctx.userId),
     ),
+    measureServer("dashboard.studentSubscription", () =>
+      getActiveSubscriptionFor(ctx.userId),
+    ),
   ]);
+
+  // Sem pagamento confirmado (assinatura ativa ou em experiência) e sem turma,
+  // o aluno fica aguardando: a turma só é designada depois do pagamento.
+  const isPaid = subscription?.status === "active" || subscription?.status === "trialing";
+  const awaitingPayment = !isPaid && progress.groups.length === 0;
 
   const openTasks = assignments.filter(
     (task) => task.myStatus === "pending" || task.myStatus === "late",
@@ -126,6 +135,7 @@ export default async function DashboardPage() {
     <StudentDashboard
       data={{
         firstName,
+        awaitingPayment,
         currentLevel: progress.currentLevel,
         completedSessions: progress.completedSessions,
         pendingTasks: openTasks.length,

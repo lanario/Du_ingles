@@ -44,6 +44,17 @@ const SITUATION_LABELS: Record<string, string> = {
   both: "Trabalho e estudos",
 };
 
+type AssignmentFilter = "unassigned" | "assigned" | "all";
+type PaymentFilter = "paid" | "unpaid" | "all";
+
+const SELECT_CLASS =
+  "rounded-xl border border-admin-border bg-admin-surface px-3 py-2.5 text-sm text-admin-foreground outline-none focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35";
+
+/** Pagamento feito = assinatura ativa ou em período de experiência já cadastrada. */
+function isPaidStatus(status: StudentRegistration["subscriptionStatus"]): boolean {
+  return status === "active" || status === "trialing";
+}
+
 interface RegistrationsPanelProps {
   registrations: StudentRegistration[];
   students: Student[];
@@ -62,17 +73,28 @@ export function RegistrationsPanel({
     () => new Map(students.map((student) => [student.id, student])),
     [students],
   );
+  const [assignment, setAssignment] = useState<AssignmentFilter>("unassigned");
+  const [payment, setPayment] = useState<PaymentFilter>("paid");
   const term = search.trim().toLocaleLowerCase("pt-BR");
-  const visible = registrations.filter(
-    (registration) =>
+  const visible = registrations.filter((registration) => {
+    const isAssigned = Boolean(studentById.get(registration.studentId)?.enrollment);
+    if (assignment === "assigned" && !isAssigned) return false;
+    if (assignment === "unassigned" && isAssigned) return false;
+
+    const isPaid = isPaidStatus(registration.subscriptionStatus);
+    if (payment === "paid" && !isPaid) return false;
+    if (payment === "unpaid" && isPaid) return false;
+
+    return (
       !term ||
       [
         registration.fullName,
         registration.email,
         registration.phone ?? "",
         registration.requestedPlanName ?? "",
-      ].some((value) => value.toLocaleLowerCase("pt-BR").includes(term)),
-  );
+      ].some((value) => value.toLocaleLowerCase("pt-BR").includes(term))
+    );
+  });
 
   return (
     <section className="mt-5">
@@ -83,24 +105,46 @@ export function RegistrationsPanel({
             Respostas do aluno, plano escolhido e estado do pagamento.
           </p>
         </div>
-        <label className="relative block w-full sm:max-w-xs">
-          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-foreground/40" />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar nome, e-mail ou plano"
-            aria-label="Buscar cadastro"
-            className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-3 text-sm text-admin-foreground outline-none placeholder:text-admin-foreground/40 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35"
-          />
-        </label>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <select
+            value={assignment}
+            onChange={(event) => setAssignment(event.target.value as AssignmentFilter)}
+            aria-label="Filtrar por turma"
+            className={SELECT_CLASS}
+          >
+            <option value="unassigned">Não designados</option>
+            <option value="assigned">Designados</option>
+            <option value="all">Todos (turma)</option>
+          </select>
+          <select
+            value={payment}
+            onChange={(event) => setPayment(event.target.value as PaymentFilter)}
+            aria-label="Filtrar por pagamento"
+            className={SELECT_CLASS}
+          >
+            <option value="paid">Pagamento feito</option>
+            <option value="unpaid">Pagamento não feito</option>
+            <option value="all">Todos (pagamento)</option>
+          </select>
+          <label className="relative block w-full sm:w-64">
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-foreground/40" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar nome, e-mail ou plano"
+              aria-label="Buscar cadastro"
+              className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-3 text-sm text-admin-foreground outline-none placeholder:text-admin-foreground/40 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35"
+            />
+          </label>
+        </div>
       </div>
 
       {visible.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-admin-border px-6 py-14 text-center text-sm text-admin-foreground/55">
           {registrations.length === 0
             ? "Ainda não há novos cadastros."
-            : "Nenhum cadastro corresponde à busca."}
+            : "Nenhum cadastro corresponde aos filtros e à busca."}
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">

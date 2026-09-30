@@ -52,6 +52,8 @@ export interface DashboardGrade {
 
 export interface StudentDashboardData {
   firstName: string;
+  /** Pagamento ainda não confirmado e sem turma: a turma só é designada após pagar. */
+  awaitingPayment: boolean;
   currentLevel: string | null;
   completedSessions: number;
   pendingTasks: number;
@@ -129,6 +131,31 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
           )}
         </div>
       </Reveal>
+
+      {data.awaitingPayment && (
+        <Reveal className="mt-6">
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-300 bg-gold-50 p-5"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gold-800">
+                Pagamento pendente
+              </p>
+              <p className="mt-1 text-sm text-gold-800/80">
+                Enquanto o pagamento não for efetuado, você não será designado a nenhuma
+                turma. Assim que ele for confirmado, definiremos sua turma e professor.
+              </p>
+            </div>
+            <Link
+              href="/planos"
+              className="flex-none rounded-xl bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              Ir para o pagamento
+            </Link>
+          </div>
+        </Reveal>
+      )}
 
       {/* Destaque: próxima aula */}
       <Reveal className="mt-7">
