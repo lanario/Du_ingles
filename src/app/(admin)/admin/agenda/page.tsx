@@ -40,7 +40,6 @@ export default async function AdminAgendaPage({
           notice={google}
           showDescription={false}
           unavailableHint
-          className="ml-auto items-end"
         />
       </header>
 
