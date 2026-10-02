@@ -42,12 +42,17 @@ export function GoogleConnect({
   const [error, setError] = useState<string | null>(null);
 
   if (!status.available) {
-    if (!unavailableHint) return null;
     return (
-      <p className={cn("text-xs text-amber-600", className)} role="status">
-        Google Agenda indisponível: configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e
-        TOKEN_ENCRYPTION_KEY neste ambiente.
-      </p>
+      <div className={cn("flex flex-col gap-1", className)}>
+        <Button variant="outline" className="h-9" disabled>
+          Conectar Google Agenda
+        </Button>
+        <p className="text-xs text-amber-600" role="status">
+          {unavailableHint
+            ? "Indisponível: configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e TOKEN_ENCRYPTION_KEY neste ambiente."
+            : "A integração com o Google ainda não está ativa."}
+        </p>
+      </div>
     );
   }
 
