@@ -25,11 +25,12 @@ import type { AppRole } from "@/types/domain";
 /**
  * Espelha as aulas do sistema na agenda Google de cada participante.
  *
- * - Cada pessoa (professor e alunos) tem o SEU evento, na própria agenda.
- * - O Meet é criado junto com o evento do professor (o anfitrião) e vale para
- *   a aula inteira. O do aluno nasce sem link: o Google mostraria o Meet na
- *   hora, e a regra é que o aluno só o veja 30 min antes, dentro da
- *   plataforma (ver `meet-access.ts`).
+ * - Cada pessoa (professor, alunos e coordenação) tem o SEU evento, na própria
+ *   agenda.
+ * - O Meet é criado junto com o evento do anfitrião (o professor; se ele ainda
+ *   não conectou o Google, um admin conectado) e vale para a aula inteira. Os
+ *   demais eventos recebem esse mesmo link no local e na descrição, assim que
+ *   ele existe — sem ninguém precisar abrir a plataforma.
  * - A plataforma é a fonte da verdade: nada aqui lança para quem chamou.
  */
 
@@ -105,8 +106,9 @@ function buildBody(input: {
   teacherName: string;
   studentNames: string[];
   viewer: AppRole;
+  meetUrl: string | null;
 }): CalendarEventBody {
-  const { session, groupName, teacherName, studentNames, viewer } = input;
+  const { session, groupName, teacherName, studentNames, viewer, meetUrl } = input;
   const start = new Date(session.scheduledAt);
   const end = new Date(start.getTime() + session.durationMinutes * 60_000);
 
@@ -115,20 +117,16 @@ function buildBody(input: {
     `Professor(a): ${teacherName}`,
     `Duração: ${session.durationMinutes} min`,
   ];
-  if (viewer === "student") {
-    lines.push(
-      "",
-      `O link do Google Meet é liberado na plataforma ${MEET_OPENS_MINUTES_BEFORE} minutos antes da aula:`,
-      agendaUrl("student"),
-    );
-  } else {
-    if (studentNames.length > 0) lines.push(`Alunos: ${studentNames.join(", ")}`);
-    lines.push("", `Agenda na plataforma: ${agendaUrl(viewer)}`);
+  if (viewer !== "student" && studentNames.length > 0) {
+    lines.push(`Alunos: ${studentNames.join(", ")}`);
   }
+  if (meetUrl) lines.push("", `Google Meet: ${meetUrl}`);
+  lines.push("", `Agenda na plataforma: ${agendaUrl(viewer)}`);
 
   return {
     summary: `${session.title} · ${groupName}`,
     description: lines.join("\n"),
+    ...(meetUrl ? { location: meetUrl } : {}),
     start: { dateTime: start.toISOString(), timeZone: SCHOOL_TZ },
     end: { dateTime: end.toISOString(), timeZone: SCHOOL_TZ },
     reminders: {
@@ -151,7 +149,7 @@ async function upsertEvent(input: {
   profileId: string;
   isHost: boolean;
   body: CalendarEventBody;
-}): Promise<void> {
+}): Promise<{ meetCreated: boolean }> {
   const { accessToken, session, profileId, isHost, body } = input;
   const admin = createAdminSupabaseClient();
 
@@ -164,7 +162,9 @@ async function upsertEvent(input: {
 
   if (link?.google_event_id === PENDING) {
     // Outra execução está criando este evento agora.
-    if (Date.now() - new Date(link.synced_at).getTime() < CLAIM_TTL_MS) return;
+    if (Date.now() - new Date(link.synced_at).getTime() < CLAIM_TTL_MS) {
+      return { meetCreated: false };
+    }
     await admin
       .from("google_event_links")
       .delete()
@@ -192,7 +192,7 @@ async function upsertEvent(input: {
           })
           .eq("session_id", session.id)
           .eq("profile_id", profileId);
-        return;
+        return { meetCreated: false };
       }
     } else {
       await deleteEvent(accessToken, link.google_event_id);
@@ -219,7 +219,7 @@ async function upsertEvent(input: {
       { onConflict: "session_id,profile_id", ignoreDuplicates: true },
     )
     .select("session_id");
-  if (!claimed || claimed.length === 0) return;
+  if (!claimed || claimed.length === 0) return { meetCreated: false };
 
   try {
     const created = await insertEvent(accessToken, body, isHost);
@@ -239,13 +239,14 @@ async function upsertEvent(input: {
           },
           { onConflict: "session_id" },
         );
-      } else {
-        console.error(
-          "[google] o Google não devolveu o link do Meet para a aula",
-          session.id,
-        );
+        return { meetCreated: true };
       }
+      console.error(
+        "[google] o Google não devolveu o link do Meet para a aula",
+        session.id,
+      );
     }
+    return { meetCreated: false };
   } catch (error) {
     await admin
       .from("google_event_links")
@@ -256,12 +257,25 @@ async function upsertEvent(input: {
   }
 }
 
+/** Coordenadores (admins) da escola que conectaram o Google. */
+async function connectedAdmins(organizationId: string): Promise<Recipient[]> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("google_connections")
+    .select("profile_id")
+    .eq("organization_id", organizationId)
+    .eq("status", "active");
+  const people = await resolveRecipients((data ?? []).map((row) => row.profile_id));
+  return people.filter((person) => person.role === "admin");
+}
+
 /* ------------------------------------------------------------ a aula */
 
 /**
- * Cria ou atualiza o evento da aula para o professor e os alunos que
- * conectaram o Google. Com `onlyProfileId`, mexe só no evento dessa pessoa
- * (preenchimento preguiçoso, sem tocar na agenda dos outros).
+ * Cria ou atualiza o evento da aula para o professor, os alunos e os admins
+ * que conectaram o Google. Com `onlyProfileId`, mexe só no evento dessa pessoa
+ * (preenchimento preguiçoso, sem tocar na agenda dos outros) — exceto quando
+ * essa pessoa acabou de criar o Meet: aí os outros recebem o link também.
  */
 export async function syncSession(
   sessionId: string,
@@ -286,11 +300,34 @@ export async function syncSession(
   const teacher = teachers[0];
   if (!teacher) return;
 
+  const coordinators = await connectedAdmins(session.organizationId);
+  const seen = new Set([teacher.id, ...students.map((s) => s.id)]);
   const participants: Recipient[] = [
     teacher,
     ...students.filter((s) => s.id !== teacher.id),
+    ...coordinators.filter((c) => !seen.has(c.id)),
   ];
   const connected = await connectedProfiles(participants.map((p) => p.id));
+
+  const readMeet = async () => {
+    const { data } = await admin
+      .from("session_meet_links")
+      .select("meet_url, host_profile_id")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+    return data ?? null;
+  };
+  let meet = await readMeet();
+
+  // Anfitrião: quem já criou a sala, senão o professor, senão um admin conectado.
+  const hostId =
+    [meet?.host_profile_id, teacher.id, ...coordinators.map((c) => c.id)].find(
+      (id): id is string => Boolean(id) && connected.has(id as string),
+    ) ?? null;
+  // O anfitrião vai primeiro: o link que ele cria entra no evento dos demais.
+  const ordered = [...participants].sort(
+    (a, b) => Number(b.id === hostId) - Number(a.id === hostId),
+  );
 
   const shared = {
     session,
@@ -299,29 +336,40 @@ export async function syncSession(
     studentNames: students.map((s) => s.name),
   };
 
-  for (const person of participants) {
+  let hostCreatedMeet = false;
+  for (const person of ordered) {
     if (options.onlyProfileId && person.id !== options.onlyProfileId) continue;
     if (!connected.has(person.id)) continue;
 
     try {
       const accessToken = await accessTokenFor(person.id, person.role);
       if (!accessToken) continue;
-      await upsertEvent({
+      const isHost = person.id === hostId;
+      const result = await upsertEvent({
         accessToken,
         session,
         profileId: person.id,
-        isHost: person.id === teacher.id,
+        isHost,
         body: buildBody({
           ...shared,
-          viewer: person.id === teacher.id ? person.role : "student",
+          viewer: person.role,
+          meetUrl: meet?.meet_url ?? null,
         }),
       });
+      if (isHost && result.meetCreated) {
+        hostCreatedMeet = true;
+        meet = await readMeet();
+      }
     } catch (error) {
       console.error(`[google] evento da aula ${sessionId} (${person.id}):`, error);
     }
   }
 
-  if (options.onlyProfileId) return;
+  // Alguém criou o Meet numa passada parcial: os outros ainda estão sem o link.
+  if (options.onlyProfileId) {
+    if (hostCreatedMeet) await syncSession(sessionId);
+    return;
+  }
 
   // Quem saiu da aula (aluno desmatriculado, professor trocado) perde o evento.
   const { data: links } = await admin
@@ -334,8 +382,8 @@ export async function syncSession(
       await removeSessionEventFor(sessionId, link.profile_id);
   }
 
-  // Professor sem Google: a aula existe, mas sem link. Avisa (no máx. a cada 3 dias).
-  if (!connected.has(teacher.id)) {
+  // Ninguém para ser anfitrião: a aula existe, mas sem link. Avisa o professor (no máx. a cada 3 dias).
+  if (!hostId) {
     await dispatchNotifications({
       organizationId: session.organizationId,
       recipients: [teacher],
@@ -455,6 +503,15 @@ export function backfillForProfile(profileId: string, role: AppRole): Promise<vo
       const groupIds = (enrollments ?? []).map((row) => row.group_id);
       if (groupIds.length === 0) return;
       query = query.in("group_id", groupIds);
+    } else if (role === "admin") {
+      // A coordenação vê a escola inteira: recebe as aulas de todas as turmas.
+      const { data: connection } = await admin
+        .from("google_connections")
+        .select("organization_id")
+        .eq("profile_id", profileId)
+        .maybeSingle();
+      if (!connection) return;
+      query = query.eq("organization_id", connection.organization_id);
     } else {
       query = query.eq("teacher_id", profileId);
     }
@@ -463,15 +520,32 @@ export function backfillForProfile(profileId: string, role: AppRole): Promise<vo
     const ids = (sessions ?? []).map((row) => row.id);
     if (ids.length === 0) return;
 
-    const { data: existing } = await admin
-      .from("google_event_links")
-      .select("session_id")
-      .eq("profile_id", profileId)
-      .in("session_id", ids);
-    const done = new Set((existing ?? []).map((row) => row.session_id));
+    const [{ data: existing }, { data: meets }] = await Promise.all([
+      admin
+        .from("google_event_links")
+        .select("session_id, synced_at")
+        .eq("profile_id", profileId)
+        .in("session_id", ids),
+      admin
+        .from("session_meet_links")
+        .select("session_id, host_profile_id, created_at")
+        .in("session_id", ids),
+    ]);
+    const syncedAt = new Map(
+      (existing ?? []).map((row) => [row.session_id, new Date(row.synced_at).getTime()]),
+    );
+    const meetOf = new Map((meets ?? []).map((row) => [row.session_id, row]));
 
     for (const id of ids) {
-      if (done.has(id)) continue;
+      const at = syncedAt.get(id);
+      const meet = meetOf.get(id);
+      // Já tem evento, a não ser que o Meet tenha nascido depois dele: aí falta o link.
+      const missingLink =
+        at !== undefined &&
+        meet !== undefined &&
+        meet.host_profile_id !== profileId &&
+        at < new Date(meet.created_at).getTime();
+      if (at !== undefined && !missingLink) continue;
       await syncSession(id, { onlyProfileId: profileId });
     }
   })()
@@ -501,9 +575,25 @@ export async function disconnectAndCleanup(profileId: string): Promise<void> {
   for (const link of links ?? []) {
     await removeSessionEventFor(link.session_id, profileId);
   }
-  // Aulas em que este usuário era o anfitrião ficam sem Meet.
+  // A sala do Meet morre junto com o evento do anfitrião. Outro participante
+  // conectado assume e gera uma sala nova para as aulas futuras.
+  const { data: hosted } = await admin
+    .from("session_meet_links")
+    .select("session_id")
+    .eq("host_profile_id", profileId);
   await admin.from("session_meet_links").delete().eq("host_profile_id", profileId);
   await deleteConnection(profileId);
+
+  const now = Date.now();
+  const hostedIds = (hosted ?? []).map((row) => row.session_id);
+  if (hostedIds.length === 0) return;
+  const { data: upcoming } = await admin
+    .from("class_sessions")
+    .select("id")
+    .in("id", hostedIds)
+    .eq("status", "scheduled")
+    .gte("scheduled_at", new Date(now).toISOString());
+  queueSessionsSync((upcoming ?? []).map((row) => row.id));
 }
 
 /* ------------------------------------------- limpeza antes de apagar */

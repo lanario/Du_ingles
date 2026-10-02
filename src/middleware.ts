@@ -132,6 +132,17 @@ export async function middleware(request: NextRequest) {
       ? (claims["app_role"] as AppRole)
       : null;
 
+  /**
+   * Sessão de recovery: nasce do link de "esqueci minha senha"
+   * (`verifyOtp({ type: "recovery" })` em `/api/auth/confirm`) e o GoTrue
+   * marca isso no próprio JWT via `amr` (authentication methods reference).
+   * Sem essa checagem, o bloco de "já autenticado, sai de /redefinir-senha"
+   * abaixo devolveria quem acabou de clicar no link direto para o painel,
+   * sem nunca deixar a pessoa trocar a senha.
+   */
+  const amr = Array.isArray(claims?.["amr"]) ? (claims["amr"] as { method?: string }[]) : [];
+  const isRecoverySession = amr.some((entry) => entry?.method === "recovery");
+
   if (isProtected && claimRole) {
     /**
      * Só cortamos quando a claim EXISTE e diverge. Ela depende do
@@ -155,6 +166,13 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isProtected && claims && PUBLIC_PATHS.includes(pathname)) {
+    // Quem chegou com uma sessão de recovery está exatamente onde precisa
+    // estar: deixa passar para escolher a nova senha antes de qualquer
+    // redirecionamento de "já autenticado".
+    if (pathname === "/redefinir-senha" && isRecoverySession) {
+      return response;
+    }
+
     // Usuário já autenticado batendo em /login etc. — manda para o painel
     // correto. Se ainda precisar trocar a senha, a rota protegida seguinte
     // vai interceptar e mandar para /definir-senha.

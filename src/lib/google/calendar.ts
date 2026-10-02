@@ -12,6 +12,7 @@ const BASE = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 export interface CalendarEventBody {
   summary: string;
   description: string;
+  location?: string;
   start: { dateTime: string; timeZone: string };
   end: { dateTime: string; timeZone: string };
   reminders: {

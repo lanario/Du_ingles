@@ -35,8 +35,9 @@ export async function requestPasswordResetAction(
   }
 
   const supabase = await createServerSupabaseClient();
+  const siteUrl = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${env.NEXT_PUBLIC_SITE_URL}/api/auth/confirm?next=/redefinir-senha`,
+    redirectTo: `${siteUrl}/api/auth/confirm?next=/redefinir-senha`,
   });
 
   // Sempre "sucesso" aqui, exista ou não o e-mail — anti-enumeração (§9 A07).

@@ -20,7 +20,7 @@ export function Hero() {
             Escola de inglês
           </p>
           <h1 className="text-[2rem] font-bold leading-[1.12] tracking-tight text-balance sm:text-5xl">
-            Aprenda inglês de verdade — no seu ritmo, com professores de verdade.
+            Aprenda inglês de verdade, no seu ritmo, com o método adaptado a você.
           </h1>
           <p className="mt-4 max-w-lg text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
             Aulas 100% ao vivo, nivelamento pelo padrão internacional CEFR e um método

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
   conectado: {
     tone: "ok",
-    text: "Google Agenda conectado. Suas aulas estão sendo enviadas para a sua agenda.",
+    text: "Google Agenda conectado. Suas aulas, com o link do Meet, estão sendo enviadas para a sua agenda.",
   },
   cancelado: { tone: "warn", text: "Conexão cancelada. Nada foi alterado." },
   erro: { tone: "warn", text: "Não foi possível conectar ao Google. Tente de novo." },
@@ -27,18 +27,29 @@ export function GoogleConnect({
   notice,
   className,
   showDescription = true,
+  unavailableHint = false,
 }: {
   status: GoogleStatus;
   /** Valor de `?google=` que o retorno do Google deixou na URL. */
   notice?: string;
   className?: string;
   showDescription?: boolean;
+  /** Mostra um aviso (em vez de esconder o botão) quando as credenciais do Google faltam. */
+  unavailableHint?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  if (!status.available) return null;
+  if (!status.available) {
+    if (!unavailableHint) return null;
+    return (
+      <p className={cn("text-xs text-amber-600", className)} role="status">
+        Google Agenda indisponível: configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e
+        TOKEN_ENCRYPTION_KEY neste ambiente.
+      </p>
+    );
+  }
 
   const message = notice ? NOTICES[notice] : undefined;
 
@@ -76,7 +87,7 @@ export function GoogleConnect({
             </Button>
           </>
         ) : (
-          <a href="/api/google/connect" className={buttonVariants("outline", "h-9")}>
+          <a href="/api/google/connect" className={buttonVariants("primary", "h-9")}>
             {status.revoked ? "Reconectar Google Agenda" : "Conectar Google Agenda"}
           </a>
         )}
@@ -86,7 +97,7 @@ export function GoogleConnect({
         <p className="text-xs text-muted-foreground">
           {status.revoked
             ? "O Google recusou o acesso anterior. Reconecte para voltar a receber as aulas."
-            : "Envia suas aulas para o Google Agenda, com lembrete e link do Meet."}
+            : "Envia suas aulas para o Google Agenda, com lembrete e o link do Meet."}
         </p>
       )}
       {message && (

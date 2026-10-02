@@ -58,22 +58,23 @@ export function MarketingNav() {
   }, [open]);
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-40 transition-colors duration-300",
-        "pt-[env(safe-area-inset-top,0px)]",
-        scrolled
-          ? "border-b border-border/60 bg-white/80 backdrop-blur-md lg:border-transparent lg:bg-transparent lg:backdrop-blur-none"
-          : "bg-transparent",
-      )}
-    >
-      <a
-        href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-40 transition-colors duration-300",
+          "pt-[env(safe-area-inset-top,0px)]",
+          scrolled
+            ? "border-b border-border/60 bg-white/80 backdrop-blur-md lg:border-transparent lg:bg-transparent lg:backdrop-blur-none"
+            : "bg-transparent",
+        )}
       >
-        Pular para o conteúdo
-      </a>
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 lg:h-24">
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+        >
+          Pular para o conteúdo
+        </a>
+        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 lg:h-24">
         <Link href="/" className="flex items-center" aria-label="Du Inglês">
           <Image
             src="/du_ingles_logo.svg"
@@ -109,6 +110,7 @@ export function MarketingNav() {
           <MenuIcon className="h-6 w-6" />
         </button>
       </nav>
+    </header>
 
       <AnimatePresence>
         {open && (
@@ -190,6 +192,6 @@ export function MarketingNav() {
           </div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
