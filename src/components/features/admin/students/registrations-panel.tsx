@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SearchIcon } from "@/components/ui/icons";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { SearchIcon, TrashIcon } from "@/components/ui/icons";
+import type { ActionResult } from "@/types/action-result";
 import type { GroupListItem } from "@/repositories/groups";
 import type { StudentRegistration } from "@/repositories/student-registrations";
 import type { Student } from "./students-utils";
@@ -60,6 +62,7 @@ interface RegistrationsPanelProps {
   students: Student[];
   groups: GroupListItem[];
   onAssign: (student: Student) => void;
+  onDelete: (studentId: string, confirmation: string) => Promise<ActionResult<unknown>>;
 }
 
 export function RegistrationsPanel({
@@ -67,8 +70,10 @@ export function RegistrationsPanel({
   students,
   groups,
   onAssign,
+  onDelete,
 }: RegistrationsPanelProps) {
   const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState<StudentRegistration | null>(null);
   const studentById = useMemo(
     () => new Map(students.map((student) => [student.id, student])),
     [students],
@@ -259,20 +264,47 @@ export function RegistrationsPanel({
                   )}
                 </dl>
 
-                {!student?.enrollment && student && (
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {!student?.enrollment && student && (
+                    <button
+                      type="button"
+                      onClick={() => onAssign(student)}
+                      className="rounded-xl bg-admin-foreground px-4 py-2.5 text-sm font-semibold text-admin-background transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                    >
+                      Designar turma e professor
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => onAssign(student)}
-                    className="mt-4 rounded-xl bg-admin-foreground px-4 py-2.5 text-sm font-semibold text-admin-background transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                    onClick={() => setDeleting(registration)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
                   >
-                    Designar turma e professor
+                    <TrashIcon className="h-4 w-4" />
+                    Excluir cadastro
                   </button>
-                )}
+                </div>
               </article>
             );
           })}
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title="Excluir cadastro"
+        description={`Isso apaga definitivamente o cadastro e a conta de acesso de ${deleting?.fullName ?? "este aluno"}. A ação não pode ser desfeita.`}
+        confirmationText={deleting?.fullName ?? ""}
+        onConfirm={async (typed) => {
+          if (!deleting) return null;
+          const result = await onDelete(deleting.studentId, typed);
+          if (result.success) {
+            setDeleting(null);
+            return null;
+          }
+          return result.error.message;
+        }}
+      />
     </section>
   );
 }

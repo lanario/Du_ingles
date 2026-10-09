@@ -34,6 +34,16 @@ export function Hero() {
             >
               Comece sua experiência de 7 dias
             </a>
+            {/* Só no celular: no desktop o login já está no cabeçalho. */}
+            <p className="mt-4 text-center text-sm text-muted-foreground sm:text-left lg:hidden">
+              Já é aluno?{" "}
+              <a
+                href="/login"
+                className="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4"
+              >
+                Entrar na minha conta
+              </a>
+            </p>
           </div>
 
           {/* Selos de confiança: no celular são a única coisa entre o botão e

@@ -100,15 +100,25 @@ export function MarketingNav() {
           <LettersLink href="/login" label="Já sou aluno" />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Abrir menu"
-          aria-expanded={open}
-          className="-mr-2 grid h-11 w-11 place-items-center rounded-xl text-navy-900 transition-colors active:bg-navy-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
-        >
-          <MenuIcon className="h-6 w-6" />
-        </button>
+        {/* No celular o login fica à vista, fora da gaveta: quem já é aluno
+            não deveria precisar abrir o menu para entrar. */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <Link
+            href="/login"
+            className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Entrar
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Abrir menu"
+            aria-expanded={open}
+            className="-mr-2 grid h-11 w-11 place-items-center rounded-xl text-navy-900 transition-colors active:bg-navy-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <MenuIcon className="h-6 w-6" />
+          </button>
+        </div>
       </nav>
     </header>
 

@@ -16,7 +16,10 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { deactivateUserAction, reactivateUserAction } from "@/actions/admin/users";
 import { moveStudentToGroupAction } from "@/actions/admin/students";
-import { listStudentRegistrationsAction } from "@/actions/admin/student-registrations";
+import {
+  deleteStudentRegistrationAction,
+  listStudentRegistrationsAction,
+} from "@/actions/admin/student-registrations";
 import {
   getStudentFichaDataAction,
   type StudentFichaData,
@@ -249,6 +252,14 @@ export function StudentsView({
 
   async function openDetail(student: Student) {
     setDetailStudent(student);
+  }
+
+  async function deleteRegistration(studentId: string, confirmation: string) {
+    const result = await deleteStudentRegistrationAction(studentId, confirmation);
+    if (result.success) {
+      setRegistrations((current) => current.filter((item) => item.studentId !== studentId));
+    }
+    return result;
   }
 
   async function deactivate(student: Student) {
@@ -685,6 +696,7 @@ export function StudentsView({
             students={students}
             groups={groups}
             onAssign={(student) => setMoveTarget(student)}
+            onDelete={deleteRegistration}
           />
         ))}
 

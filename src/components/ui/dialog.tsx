@@ -55,7 +55,11 @@ export function Dialog({
         ) ?? [],
       );
 
-    focusable()[0]?.focus();
+    // `data-autofocus` deixa o conteúdo escolher o foco inicial (ex.: um campo
+    // de confirmação) em vez de cair no botão de fechar do cabeçalho.
+    (
+      panelRef.current?.querySelector<HTMLElement>("[data-autofocus]") ?? focusable()[0]
+    )?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -83,7 +87,8 @@ export function Dialog({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = overflow;
-      previouslyFocused?.focus();
+      // O elemento que abriu o diálogo pode ter saído do DOM (ex.: card excluído).
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
   }, [open]);
 
