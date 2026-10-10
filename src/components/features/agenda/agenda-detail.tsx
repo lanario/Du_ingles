@@ -376,7 +376,7 @@ export function AgendaDetail({
                             onClick={() => setDuration(minutes)}
                             aria-pressed={duration === minutes}
                             className={cn(
-                              "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
+                              "h-11 sm:h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
                               duration === minutes
                                 ? "border-navy-900 bg-navy-900 text-white"
                                 : "border-border text-foreground/70 hover:bg-muted",
@@ -391,7 +391,7 @@ export function AgendaDetail({
                         <button
                           type="button"
                           onClick={() => setRescheduling(false)}
-                          className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
+                          className="h-11 sm:h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
                         >
                           Voltar
                         </button>
@@ -403,7 +403,7 @@ export function AgendaDetail({
                             if (!id) return;
                             run(() => moveSessionAction(id, date, time, duration));
                           }}
-                          className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                          className="inline-flex h-11 sm:h-10 items-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                         >
                           {pending ? (
                             <>
@@ -429,7 +429,7 @@ export function AgendaDetail({
                         <Link
                           href={roomHref}
                           className={cn(
-                            "inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-opacity",
+                            "inline-flex h-11 sm:h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-opacity",
                             roomMeta.className,
                           )}
                         >
@@ -526,7 +526,7 @@ function PanelAction({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors disabled:opacity-60",
+        "inline-flex h-11 sm:h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors disabled:opacity-60",
         tone === "danger"
           ? "border-destructive/30 text-destructive hover:bg-destructive/10"
           : "border-border text-foreground/80 hover:bg-muted",

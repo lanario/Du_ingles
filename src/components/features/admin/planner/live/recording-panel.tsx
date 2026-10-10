@@ -133,7 +133,7 @@ export function RecordingPanel({
                 disabled={isPending}
                 aria-label="Remover a gravação"
                 title="Remover a gravação"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:border-destructive hover:text-destructive focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-40"
+                className="grid h-11 w-11 shrink-0 sm:h-9 sm:w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:border-destructive hover:text-destructive focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-40"
               >
                 <TrashIcon className="h-4 w-4" />
               </button>

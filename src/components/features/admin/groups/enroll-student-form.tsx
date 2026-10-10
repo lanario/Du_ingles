@@ -111,7 +111,7 @@ export function EnrollStudentForm({
             disabled={full || available.length === 0}
             value={selected}
             onChange={setSelected}
-            className="min-w-56"
+            className="sm:min-w-56"
             placeholder={
               full
                 ? "Turma lotada"
@@ -139,7 +139,7 @@ export function EnrollStudentForm({
           onClick={submit}
           disabled={isPending || full || available.length === 0 || !selected}
           className={cn(
-            "inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-4 text-sm font-semibold text-admin-foreground",
+            "inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-4 text-sm font-semibold text-admin-foreground",
             "shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:pointer-events-none disabled:opacity-50",
           )}

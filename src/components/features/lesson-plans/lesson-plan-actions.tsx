@@ -12,7 +12,7 @@ export function LessonPlanActions({ planId, isOwn }: { planId: string; isOwn: bo
   const router = useRouter();
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <button
         type="button"
         disabled={isPending}
@@ -21,7 +21,7 @@ export function LessonPlanActions({ planId, isOwn }: { planId: string; isOwn: bo
             await duplicateLessonPlanAction(planId);
           })
         }
-        className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+        className="min-h-11 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted sm:min-h-0 disabled:opacity-50"
       >
         Duplicar
       </button>
@@ -36,7 +36,7 @@ export function LessonPlanActions({ planId, isOwn }: { planId: string; isOwn: bo
               router.push("/planos-de-aula");
             });
           }}
-          className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          className="min-h-11 rounded-md border border-destructive/40 px-3 py-1.5 text-sm sm:min-h-0 text-destructive hover:bg-destructive/10 disabled:opacity-50"
         >
           Excluir
         </button>

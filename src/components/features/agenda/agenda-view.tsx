@@ -336,7 +336,7 @@ export function AgendaView({
                 setDirection(cursor > today ? -1 : 1);
                 setCursor(today);
               }}
-              className="h-9 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium transition-colors hover:bg-[var(--agenda-canvas)]"
+              className="h-11 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium sm:h-9 transition-colors hover:bg-[var(--agenda-canvas)]"
             >
               Hoje
             </button>
@@ -374,7 +374,7 @@ export function AgendaView({
             type="button"
             onClick={() => setFiltersOpen((open) => !open)}
             aria-expanded={filtersOpen}
-            className="h-9 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium transition-colors hover:bg-[var(--agenda-canvas)] lg:hidden"
+            className="h-11 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium sm:h-9 transition-colors hover:bg-[var(--agenda-canvas)] lg:hidden"
           >
             Filtros
           </button>
@@ -383,7 +383,7 @@ export function AgendaView({
             <button
               type="button"
               onClick={() => startCreate({ day: cursor, time: "19:00", groupId: null })}
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--agenda-primary)] px-3 text-sm font-semibold text-[var(--agenda-primary-fg)] transition-opacity hover:opacity-90"
+              className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--agenda-primary)] sm:h-9 px-3 text-sm font-semibold text-[var(--agenda-primary-fg)] transition-opacity hover:opacity-90"
             >
               <PlusIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Novo compromisso</span>
@@ -570,7 +570,7 @@ function NavButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--agenda-border)] text-[var(--agenda-muted-fg)] transition-colors hover:bg-[var(--agenda-canvas)] hover:text-[var(--agenda-fg)]"
+      className="grid h-11 w-11 place-items-center rounded-lg border sm:h-9 sm:w-9 border-[var(--agenda-border)] text-[var(--agenda-muted-fg)] transition-colors hover:bg-[var(--agenda-canvas)] hover:text-[var(--agenda-fg)]"
     >
       <ChevronRightIcon className={cn("h-4 w-4", flip && "rotate-180")} />
     </button>

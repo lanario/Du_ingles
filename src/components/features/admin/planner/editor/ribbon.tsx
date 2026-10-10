@@ -183,8 +183,8 @@ function ToolButton({
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className={cn(
-        "relative grid h-9 place-items-center rounded-lg text-sm font-semibold transition-colors",
-        wide ? "px-2.5" : "w-9",
+        "relative grid h-11 sm:h-9 place-items-center rounded-lg text-sm font-semibold transition-colors",
+        wide ? "px-2.5" : "w-11 sm:w-9",
         active
           ? "bg-navy-900 text-white shadow-[0_6px_16px_-8px_rgba(10,31,68,0.9)]"
           : "text-admin-foreground/70 hover:bg-admin-muted hover:text-admin-foreground",
@@ -239,7 +239,7 @@ function Popover({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors",
+          "flex h-11 sm:h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors",
           open
             ? "bg-admin-muted text-admin-foreground"
             : "text-admin-foreground/70 hover:bg-admin-muted hover:text-admin-foreground",

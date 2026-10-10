@@ -20,7 +20,7 @@ export function RequestResetForm({ onBack }: RequestResetFormProps = {}) {
   const [state, formAction, isPending] = useActionState(requestPasswordResetAction, null);
 
   const backClass =
-    "block w-full text-center text-sm text-muted-foreground hover:text-primary hover:underline";
+    "flex min-h-11 w-full items-center justify-center text-sm text-muted-foreground hover:text-primary hover:underline";
   const back = onBack ? (
     <button type="button" onClick={onBack} className={backClass}>
       Voltar para o login

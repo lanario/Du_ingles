@@ -76,14 +76,14 @@ export function TeacherDashboard({ data }: { data: TeacherDashboardData }) {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/planos-de-aula/novo"
-              className="inline-flex h-9 items-center rounded-lg border border-border px-3.5 text-sm font-medium transition-colors hover:border-gold-400 hover:bg-gold-50"
+              className="inline-flex h-11 sm:h-9 items-center rounded-lg border border-border px-3.5 text-sm font-medium transition-colors hover:border-gold-400 hover:bg-gold-50"
             >
               Novo plano de aula
             </Link>
             {nextSession && (
               <Link
                 href={`/aula/${nextSession.id}`}
-                className="inline-flex h-9 items-center rounded-lg bg-navy-900 px-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="inline-flex h-11 sm:h-9 items-center rounded-lg bg-navy-900 px-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
               >
                 Abrir próxima aula
               </Link>

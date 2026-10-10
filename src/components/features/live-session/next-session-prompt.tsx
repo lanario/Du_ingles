@@ -127,12 +127,12 @@ export function NextSessionPrompt({
             {suggestion.durationMinutes} min. Dá para mudar tudo antes de salvar.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {!dismissed && (
             <button
               type="button"
               onClick={() => setDismissed(true)}
-              className="h-9 rounded-lg px-3 text-sm font-medium opacity-60 transition-opacity hover:opacity-100"
+              className="h-11 rounded-lg px-3 text-sm font-medium opacity-60 sm:h-9 transition-opacity hover:opacity-100"
             >
               Agora não
             </button>
@@ -141,7 +141,7 @@ export function NextSessionPrompt({
             type="button"
             onClick={() => setOpen(true)}
             className={cn(
-              "inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-semibold transition-opacity hover:opacity-90",
+              "inline-flex h-11 items-center rounded-lg px-3.5 sm:h-9 text-sm font-semibold transition-opacity hover:opacity-90",
               primary,
             )}
           >
@@ -213,7 +213,7 @@ export function NextSessionPrompt({
                   onClick={() => setDuration(minutes)}
                   aria-pressed={duration === minutes}
                   className={cn(
-                    "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
+                    "h-11 rounded-full border px-3.5 sm:h-9 text-sm font-medium transition-colors",
                     duration === minutes
                       ? "border-navy-900 bg-navy-900 text-white"
                       : "border-border text-foreground/70 hover:bg-muted",
@@ -233,7 +233,7 @@ export function NextSessionPrompt({
               name="notes"
               rows={3}
               placeholder="Onde a turma parou, o que retomar, quem faltou…"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
             />
             <FieldError messages={fields?.["notes"]} />
           </div>
@@ -242,7 +242,7 @@ export function NextSessionPrompt({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
+              className="h-11 rounded-xl border border-border px-4 sm:h-10 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
             >
               Agora não
             </button>
@@ -250,7 +250,7 @@ export function NextSessionPrompt({
               type="submit"
               disabled={isPending}
               className={cn(
-                "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60",
+                "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 sm:h-10 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60",
                 primary,
               )}
             >

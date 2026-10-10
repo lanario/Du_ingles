@@ -113,7 +113,7 @@ export function SubmissionReview({
                         maxPoints={question.points}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="whitespace-pre-wrap text-sm text-foreground/75">
+                        <p className="whitespace-pre-wrap break-words text-sm text-foreground/75">
                           {question.prompt}
                         </p>
                         <AnswerText
@@ -144,7 +144,7 @@ export function SubmissionReview({
               </ol>
             ) : (
               submission.content && (
-                <p className="mt-3 whitespace-pre-wrap rounded-xl bg-muted/50 p-3 text-sm text-foreground/80">
+                <p className="mt-3 whitespace-pre-wrap break-words rounded-xl bg-muted/50 p-3 text-sm text-foreground/80">
                   {submission.content}
                 </p>
               )

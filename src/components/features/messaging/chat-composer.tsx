@@ -140,7 +140,7 @@ export function ChatComposer({
           placeholder={placeholder ?? "Escreva para a turma…"}
           aria-label="Mensagem"
           className={cn(
-            "max-h-42 min-h-10 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm leading-relaxed",
+            "max-h-42 min-h-11 flex-1 resize-none bg-transparent px-2.5 py-2.5 text-base leading-relaxed md:min-h-10 md:py-2 md:text-sm",
             "text-[var(--chat-fg)] placeholder:text-[var(--chat-muted-fg)] focus:outline-none",
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
@@ -153,7 +153,7 @@ export function ChatComposer({
           disabled={!canSend}
           aria-label="Enviar mensagem"
           className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all",
+            "grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-all md:h-10 md:w-10",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--chat-accent)]",
             canSend
               ? "bg-[var(--chat-own)] text-[var(--chat-own-fg)] hover:opacity-90"

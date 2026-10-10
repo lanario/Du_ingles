@@ -175,7 +175,7 @@ export function LessonStudio({
           <BackLink
             preferFallback
             fallbackHref={`${base}/planejador` as Route}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+            className="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             aria-label="Voltar ao planejador"
           >
             <ArrowLeftIcon className="h-4 w-4" />
@@ -195,7 +195,7 @@ export function LessonStudio({
             </p>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {!readOnly && (
               <span className="hidden sm:block">
                 <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
@@ -206,7 +206,7 @@ export function LessonStudio({
               <button
                 type="button"
                 onClick={() => setFormOpen(true)}
-                className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+                className="inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
               >
                 <PencilIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Ficha</span>
@@ -227,7 +227,7 @@ export function LessonStudio({
                   else window.open(url, "_blank");
                 });
               }}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+              className="inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             >
               <DownloadIcon className="h-4 w-4" />
               <span className="hidden sm:inline">PDF</span>
@@ -239,7 +239,7 @@ export function LessonStudio({
                 void flush();
                 setPresenting(true);
               }}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+              className="inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             >
               <EyeIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Apresentar</span>
@@ -253,7 +253,7 @@ export function LessonStudio({
                   setScheduleOpen(true);
                 });
               }}
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-gradient-to-r from-gold-600 to-gold-400 px-3.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-14px_rgba(201,162,39,0.8)] transition-opacity hover:opacity-95"
+              className="inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg bg-gradient-to-r from-gold-600 to-gold-400 px-3.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-14px_rgba(201,162,39,0.8)] transition-opacity hover:opacity-95"
             >
               <CalendarIcon className="h-4 w-4" />
               Agendar
@@ -268,7 +268,7 @@ export function LessonStudio({
         duas viram uma coluna só — o painel de dicas e agendamentos desce
         para depois do documento, que é a ordem de leitura no celular.
       */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* A altura vem daqui: a folha é o que sobra da janela depois da
             barra do painel, do cabeçalho e do respiro de baixo. */}
         <div data-studio-enter className="min-w-0 lg:h-[calc(100dvh-13.5rem)]">
@@ -395,7 +395,7 @@ export function LessonStudio({
             className="lesson-stage fixed inset-0 z-50 overflow-y-auto bg-white"
           >
             {/* Acima da régua da folha (z-20), que gruda logo abaixo desta barra. */}
-            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-admin-border bg-white/90 px-6 py-3 backdrop-blur">
+            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-admin-border bg-white/90 px-3 py-3 backdrop-blur sm:px-6">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-admin-foreground">
                   {plan.title}
@@ -418,7 +418,7 @@ export function LessonStudio({
                       onClick={() => setPresentToolbar((open) => !open)}
                       aria-pressed={presentToolbar}
                       className={cn(
-                        "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
+                        "inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
                         presentToolbar
                           ? "border-navy-900 bg-navy-900 text-white"
                           : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted hover:text-admin-foreground",
@@ -434,7 +434,7 @@ export function LessonStudio({
                   type="button"
                   onClick={closePresenting}
                   aria-label="Sair da apresentação"
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
+                  className="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
                 >
                   <CloseIcon className="h-4 w-4" />
                 </button>

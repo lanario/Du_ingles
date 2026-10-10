@@ -154,7 +154,7 @@ export function EntryRow({
           onChange={onMethodChange}
           disabled={busy}
           aria-label={`Forma de pagamento de ${entry.description}`}
-          className="h-9 w-full min-w-0 flex-1 bg-admin-background text-[13px] sm:w-[9.5rem] sm:flex-none"
+          className="h-11 w-full sm:h-9 min-w-0 flex-1 bg-admin-background text-[13px] sm:w-[9.5rem] sm:flex-none"
           placeholder="Forma"
         >
           <option value="">Não informada</option>
@@ -170,7 +170,7 @@ export function EntryRow({
           onClick={settled ? onReopen : onSettle}
           disabled={busy}
           className={cn(
-            "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-colors",
+            "inline-flex h-11 shrink-0 sm:h-9 items-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-colors",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:opacity-60",
             settled
               ? "border border-admin-border text-admin-foreground/60 hover:border-gold-300 hover:text-admin-foreground"

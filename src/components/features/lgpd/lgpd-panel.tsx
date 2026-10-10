@@ -310,7 +310,7 @@ function RequestHistory({
                     onClick={() => cancel(request.id)}
                     disabled={pendingId === request.id}
                     className={cn(
-                      "mt-2 text-xs underline disabled:opacity-50",
+                      "mt-2 inline-flex min-h-11 items-center text-xs underline disabled:opacity-50",
                       classes.muted,
                     )}
                   >

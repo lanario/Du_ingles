@@ -639,7 +639,7 @@ export function NotificationBell({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          "group relative grid h-10 w-10 place-items-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+          "group relative grid h-11 w-11 md:h-10 md:w-10 place-items-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
           buttonClass,
           open && openClass,
         )}

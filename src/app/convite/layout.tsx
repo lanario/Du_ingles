@@ -7,7 +7,7 @@
  */
 export default function ConviteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-1 items-center justify-center bg-admin-background px-4 py-8 sm:py-12">
+    <main className="flex min-h-dvh flex-1 items-center justify-center bg-admin-background px-4 py-8 sm:py-12">
       <div className="w-full max-w-lg">
         <div className="mb-6 text-center">
           <p className="text-xl font-semibold tracking-tight text-navy-900">Du Inglês</p>

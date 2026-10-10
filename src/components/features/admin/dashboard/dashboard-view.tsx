@@ -431,7 +431,7 @@ export function AdminDashboardView({
                 title="Desempenho dos professores"
                 subtitle="Aulas concluídas, horas e alcance de alunos."
               />
-              <div className="overflow-x-auto">
+              <div className="relative overflow-x-auto">
                 {data.teacherRanking.length === 0 ? (
                   <div className="p-5">
                     <EmptyState>Nenhum professor ativo.</EmptyState>

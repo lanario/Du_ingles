@@ -82,10 +82,10 @@ export function AttendancePanel({
         {rows.map((row) => (
           <li
             key={row.studentId}
-            className="flex items-center justify-between gap-3 px-4 py-2.5"
+            className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
           >
-            <span className="text-sm">{row.studentName}</span>
-            <div className="flex gap-1">
+            <span className="min-w-0 break-words text-sm">{row.studentName}</span>
+            <div className="flex flex-wrap gap-1.5">
               {OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -93,8 +93,8 @@ export function AttendancePanel({
                   onClick={() => setStatus(row.studentId, opt.value)}
                   className={
                     row.status === opt.value
-                      ? "rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-                      : "rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted"
+                      ? "min-h-11 rounded-full bg-primary px-3.5 py-1 text-xs font-medium sm:min-h-0 sm:px-2.5 text-primary-foreground"
+                      : "min-h-11 rounded-full border border-border px-3.5 py-1 text-xs text-muted-foreground sm:min-h-0 sm:px-2.5 hover:bg-muted"
                   }
                 >
                   {opt.label}
@@ -109,7 +109,7 @@ export function AttendancePanel({
           type="button"
           onClick={handleSave}
           disabled={isPending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="min-h-11 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 sm:min-h-0"
         >
           {isPending ? (
             <span className="inline-flex items-center gap-2">

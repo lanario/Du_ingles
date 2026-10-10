@@ -222,7 +222,7 @@ export function MarketingFooter() {
                 </li>
               ))}
               <li>
-                <CookiePreferencesLink className="group relative inline-flex w-fit items-center py-1 text-[13px] font-medium text-navy-300 transition-colors duration-200 hover:text-white focus-visible:text-white focus-visible:outline-none">
+                <CookiePreferencesLink className="group relative inline-flex min-h-11 w-fit items-center py-1 text-[13px] sm:min-h-0 font-medium text-navy-300 transition-colors duration-200 hover:text-white focus-visible:text-white focus-visible:outline-none">
                   Preferências de cookies
                 </CookiePreferencesLink>
               </li>
@@ -280,7 +280,7 @@ function FooterLink({
   children: React.ReactNode;
 }) {
   const linkClassName = [
-    "group relative inline-flex w-fit items-center py-1 text-[13px] font-medium text-navy-300 transition-colors duration-200 hover:text-white focus-visible:text-white focus-visible:outline-none",
+    "group relative inline-flex min-h-11 w-fit items-center py-1 text-[13px] sm:min-h-0 font-medium text-navy-300 transition-colors duration-200 hover:text-white focus-visible:text-white focus-visible:outline-none",
     className,
   ]
     .filter(Boolean)

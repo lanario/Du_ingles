@@ -250,7 +250,7 @@ function RoleOption({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-colors",
+        "flex min-w-0 flex-col items-start gap-1 break-words rounded-xl border p-2.5 text-left transition-colors sm:p-3",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
         selected
           ? "border-gold-400 bg-gold-50 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--gold-500)_35%,transparent)]"
@@ -291,7 +291,7 @@ function PrimaryButton({
     <button
       {...props}
       className={cn(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-5 text-sm font-semibold text-admin-foreground",
+        "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-5 text-sm font-semibold text-admin-foreground",
         "shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:pointer-events-none disabled:opacity-60",
         className,
@@ -409,7 +409,7 @@ function WhatsAppLink({ href, onClick }: { href: string; onClick: () => void }) 
       target="_blank"
       rel="noopener noreferrer"
       onClick={onClick}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
     >
       <MessageIcon className="h-4 w-4" />
       Abrir WhatsApp

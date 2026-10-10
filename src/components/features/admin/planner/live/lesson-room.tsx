@@ -78,7 +78,7 @@ function RoomHeader({
           preferFallback
           fallbackHref={`${base}/planejador` as Route}
           aria-label="Voltar ao planejador"
-          className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+          className="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
         >
           <ArrowLeftIcon className="h-4 w-4" />
         </BackLink>
@@ -112,7 +112,7 @@ function RoomHeader({
           </p>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">{right}</div>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">{right}</div>
       </div>
     </div>
   );
@@ -146,7 +146,7 @@ function BeforeLesson({ session, plans, attendance }: LessonRoomProps) {
         initial={reduceMotion ? false : { opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
-        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"
       >
         <section className="overflow-hidden rounded-2xl border border-admin-border bg-admin-surface">
           <div className="border-b border-admin-border/70 bg-gradient-to-r from-navy-50 to-transparent px-6 py-5">
@@ -356,7 +356,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
             <button
               type="button"
               onClick={() => setProjecting(true)}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+              className="inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg border border-admin-border px-3 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
             >
               <EyeIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Projetar</span>
@@ -365,7 +365,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
               type="button"
               onClick={end}
               disabled={ending}
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-navy-900 px-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg bg-navy-900 px-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             >
               {ending ? (
                 <>
@@ -390,8 +390,8 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
         </p>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="min-w-0 space-y-5">
           {/* A folha fica com a janela menos o cabeçalho e os cartões de
               tarefa/notas logo abaixo; o resto rola normalmente. */}
           <div className="lg:h-[calc(100dvh-24rem)]">
@@ -442,7 +442,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
             className="lesson-stage fixed inset-0 z-50 overflow-y-auto bg-white"
           >
             {/* Acima da régua da folha (z-20), que gruda logo abaixo desta barra. */}
-            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-admin-border bg-white/90 px-6 py-3 backdrop-blur">
+            <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-admin-border bg-white/90 px-3 py-3 backdrop-blur sm:px-6">
               <span className="live-dot relative inline-block h-2.5 w-2.5 rounded-full bg-[var(--success)]" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-admin-foreground">
@@ -463,7 +463,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
                   onClick={() => setProjectToolbar((open) => !open)}
                   aria-pressed={projectToolbar}
                   className={cn(
-                    "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
+                    "inline-flex h-11 items-center sm:h-9 gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
                     projectToolbar
                       ? "border-navy-900 bg-navy-900 text-white"
                       : "border-admin-border text-admin-foreground/70 hover:bg-admin-muted hover:text-admin-foreground",
@@ -477,7 +477,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
                   type="button"
                   onClick={closeProjection}
                   aria-label="Sair da projeção"
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
+                  className="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-lg border border-admin-border text-admin-foreground/60 transition-colors hover:bg-admin-muted"
                 >
                   <CloseIcon className="h-4 w-4" />
                 </button>
@@ -522,8 +522,8 @@ function AfterLesson({ session, live, attendance, nextPlan }: LessonRoomProps) {
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="min-w-0 space-y-5">
           <div className="lg:h-[calc(100dvh-14rem)]">
             <LessonCanvas
               content={(live.content as JSONContent) ?? { type: "doc", content: [] }}

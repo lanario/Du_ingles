@@ -50,7 +50,7 @@ type AssignmentFilter = "unassigned" | "assigned" | "all";
 type PaymentFilter = "paid" | "unpaid" | "all";
 
 const SELECT_CLASS =
-  "rounded-xl border border-admin-border bg-admin-surface px-3 py-2.5 text-sm text-admin-foreground outline-none focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35";
+  "min-h-11 min-w-0 flex-1 rounded-xl border border-admin-border bg-admin-surface px-3 py-2.5 text-sm sm:flex-none text-admin-foreground outline-none focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35";
 
 /** Pagamento feito = assinatura ativa ou em período de experiência já cadastrada. */
 function isPaidStatus(status: StudentRegistration["subscriptionStatus"]): boolean {
@@ -131,7 +131,7 @@ export function RegistrationsPanel({
             <option value="unpaid">Pagamento não feito</option>
             <option value="all">Todos (pagamento)</option>
           </select>
-          <label className="relative block w-full sm:w-64">
+          <label className="relative block w-full min-w-0 sm:w-64">
             <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-foreground/40" />
             <input
               type="search"
@@ -139,7 +139,7 @@ export function RegistrationsPanel({
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar nome, e-mail ou plano"
               aria-label="Buscar cadastro"
-              className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-3 text-sm text-admin-foreground outline-none placeholder:text-admin-foreground/40 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35"
+              className="min-h-11 w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-3 text-sm text-admin-foreground outline-none placeholder:text-admin-foreground/40 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35"
             />
           </label>
         </div>
@@ -171,7 +171,7 @@ export function RegistrationsPanel({
             return (
               <article
                 key={registration.studentId}
-                className="rounded-2xl border border-admin-border bg-admin-surface p-5 shadow-sm"
+                className="min-w-0 rounded-2xl border border-admin-border bg-admin-surface p-4 shadow-sm sm:p-5"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -269,7 +269,7 @@ export function RegistrationsPanel({
                     <button
                       type="button"
                       onClick={() => onAssign(student)}
-                      className="rounded-xl bg-admin-foreground px-4 py-2.5 text-sm font-semibold text-admin-background transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                      className="min-h-11 flex-1 rounded-xl bg-admin-foreground px-4 py-2.5 text-sm sm:flex-none font-semibold text-admin-background transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
                     >
                       Designar turma e professor
                     </button>
@@ -277,7 +277,7 @@ export function RegistrationsPanel({
                   <button
                     type="button"
                     onClick={() => setDeleting(registration)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/40 px-4 py-2.5 sm:flex-none text-sm font-semibold text-destructive transition hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
                   >
                     <TrashIcon className="h-4 w-4" />
                     Excluir cadastro

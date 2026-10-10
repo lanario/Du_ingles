@@ -94,7 +94,7 @@ export function TaskFolderRail({
     <nav aria-label="Pastas do ateliê de tarefas" className="lg:sticky lg:top-4">
       <div
         className={cn(
-          "flex gap-1.5 overflow-x-auto pb-1",
+          "relative flex gap-1.5 overflow-x-auto pb-1",
           "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-2xl lg:border lg:border-admin-border lg:bg-admin-surface lg:p-2",
         )}
       >
@@ -385,7 +385,7 @@ export function TaskFolderFormDialog({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 rounded-xl border border-admin-border px-4 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+            className="h-11 rounded-xl border border-admin-border px-4 sm:h-10 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
           >
             Cancelar
           </button>
@@ -393,7 +393,7 @@ export function TaskFolderFormDialog({
             type="submit"
             disabled={isPending}
             className={cn(
-              "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-5 text-sm font-semibold text-admin-foreground",
+              "inline-flex h-11 items-center justify-center sm:h-10 gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-5 text-sm font-semibold text-admin-foreground",
               "shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 disabled:pointer-events-none disabled:opacity-60",
             )}
@@ -479,7 +479,7 @@ export function MoveTaskTemplateDialog({
         <button
           type="button"
           onClick={onClose}
-          className="h-10 rounded-xl border border-admin-border px-4 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+          className="h-11 rounded-xl border border-admin-border px-4 sm:h-10 text-sm font-medium text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
         >
           Cancelar
         </button>
@@ -488,7 +488,7 @@ export function MoveTaskTemplateDialog({
           disabled={busy || folders.length === 0 || selected === currentFolderId}
           onClick={() => onConfirm(selected)}
           className={cn(
-            "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white",
+            "inline-flex h-11 items-center justify-center sm:h-10 gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white",
             "transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
             "disabled:pointer-events-none disabled:opacity-50",
           )}

@@ -302,7 +302,7 @@ export function GroupFichaModal({
             transition={reduceMotion ? { duration: 0 } : MOLA}
             style={{ ["--tone" as string]: tone }}
             className={cn(
-              "relative mt-[3vh] flex max-h-[88vh] w-full flex-col overflow-hidden rounded-2xl",
+              "relative mt-[3dvh] flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-2xl",
               "border border-admin-border bg-admin-surface",
               "shadow-[0_1px_2px_rgba(11,26,51,0.06),0_40px_80px_-40px_rgba(11,26,51,0.55)]",
               abrindo ? "max-w-md" : "max-w-4xl",

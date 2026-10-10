@@ -137,12 +137,12 @@ export function Dialog({
                 type="button"
                 onClick={onClose}
                 aria-label="Fechar"
-                className="-mr-1 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-md text-muted-foreground sm:-mr-1 sm:h-8 sm:w-8 transition-colors hover:bg-muted hover:text-foreground"
               >
                 <CloseIcon className="h-4 w-4" />
               </button>
             </div>
-            <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
+            <div className="max-h-[70dvh] overflow-y-auto px-5 py-4">{children}</div>
           </motion.div>
         </div>
       )}

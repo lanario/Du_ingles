@@ -145,7 +145,7 @@ export function ExercisePlayer({
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 sm:h-10 rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Voltar e revisar
               </button>
@@ -206,7 +206,7 @@ function QuestionCard({
           {question.type === "fill_blank" ? (
             <FillBlankPrompt question={question} value={value} onChange={onChange} />
           ) : (
-            <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-navy-900">
+            <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-navy-900">
               {question.prompt}
             </p>
           )}
@@ -351,7 +351,7 @@ function FillBlankPrompt({
   if (parts.length === 1) {
     return (
       <div>
-        <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-navy-900">
+        <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-navy-900">
           {question.prompt}
         </p>
         <div className="mt-2">{field}</div>

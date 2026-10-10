@@ -866,7 +866,7 @@ function TeachersTab({ report }: { report: FinancialReport }) {
               </EmptyState>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full min-w-[42rem] text-sm">
                 <thead>
                   <tr className="border-b border-admin-border text-left text-[10px] uppercase tracking-[0.12em] text-admin-foreground/45">

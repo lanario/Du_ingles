@@ -462,7 +462,7 @@ export function MonthView({
 
   return (
     <div className="flex min-h-full flex-col p-2 sm:p-3">
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-[repeat(7,minmax(0,1fr))]">
         {WEEKDAY_SHORT.map((label) => (
           <div
             key={label}
@@ -473,7 +473,7 @@ export function MonthView({
         ))}
       </div>
 
-      <div className="grid flex-1 auto-rows-fr grid-cols-7 gap-1">
+      <div className="grid flex-1 auto-rows-fr grid-cols-[repeat(7,minmax(0,1fr))] gap-1">
         {weeks.map((week, weekIndex) => (
           <Fragment key={week[0] ?? weekIndex}>
             {week.map((day) => {
@@ -499,7 +499,7 @@ export function MonthView({
                     delay: reduceMotion ? 0 : weekIndex * 0.035,
                   }}
                   className={cn(
-                    "flex min-h-[96px] cursor-pointer flex-col rounded-xl border p-1.5 text-left transition-colors",
+                    "flex min-h-[96px] min-w-0 cursor-pointer flex-col rounded-xl border p-1.5 text-left transition-colors",
                     inMonth
                       ? "border-[var(--agenda-border)] bg-[var(--agenda-surface)] hover:border-[var(--agenda-accent)]"
                       : "border-transparent bg-[var(--agenda-canvas)]",

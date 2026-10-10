@@ -19,7 +19,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps = {}) {
   const [state, formAction, isPending] = useActionState(loginAction, null);
 
   const fields = state && !state.success ? state.error.fields : undefined;
-  const forgotClass = "text-sm text-muted-foreground hover:text-primary hover:underline";
+  const forgotClass = "inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-primary hover:underline";
 
   return (
     <form action={formAction} className="space-y-3 text-left" noValidate>

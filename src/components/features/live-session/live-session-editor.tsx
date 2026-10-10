@@ -81,7 +81,7 @@ export function LiveSessionEditor({ session }: { session: LiveSessionDetail }) {
 
   return (
     <div
-      className={projection ? "fixed inset-0 z-50 overflow-y-auto bg-background p-8" : ""}
+      className={projection ? "fixed inset-0 z-50 overflow-y-auto bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:p-8" : ""}
     >
       {lockWarning && (
         <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -91,15 +91,15 @@ export function LiveSessionEditor({ session }: { session: LiveSessionDetail }) {
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className={projection ? "text-2xl font-semibold" : "text-xl font-semibold"}>
+        <h1 className={`min-w-0 break-words ${projection ? "text-2xl font-semibold" : "text-xl font-semibold"}`}>
           {session.title} · {session.groupName}
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <AutosaveIndicator status={status} lastSavedAt={lastSavedAt} />
           <button
             type="button"
             onClick={() => setProjection((p) => !p)}
-            className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+            className="min-h-11 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted sm:min-h-0"
           >
             {projection ? "Sair da projeção" : "Modo projeção"}
           </button>
@@ -107,7 +107,7 @@ export function LiveSessionEditor({ session }: { session: LiveSessionDetail }) {
             type="button"
             onClick={handleEnd}
             disabled={isEnding}
-            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="min-h-11 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 sm:min-h-0"
           >
             {isEnding ? "Encerrando…" : "Encerrar aula"}
           </button>
@@ -129,7 +129,7 @@ export function LiveSessionEditor({ session }: { session: LiveSessionDetail }) {
               rows={3}
               value={homework}
               onChange={(e) => update({ homework: e.target.value })}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -141,7 +141,7 @@ export function LiveSessionEditor({ session }: { session: LiveSessionDetail }) {
               rows={3}
               value={teacherNotes}
               onChange={(e) => update({ teacherNotes: e.target.value })}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
             />
           </div>
         </div>

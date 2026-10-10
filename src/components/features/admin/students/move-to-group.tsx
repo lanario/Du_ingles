@@ -78,7 +78,7 @@ function Content({
   );
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto p-4">
       <motion.div
         role="presentation"
         initial={{ opacity: 0 }}
@@ -97,7 +97,7 @@ function Content({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.97 }}
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        className="relative flex w-full max-w-sm flex-col rounded-2xl border border-admin-border bg-admin-surface p-6 shadow-2xl"
+        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col rounded-2xl border border-admin-border bg-admin-surface p-4 sm:p-6 shadow-2xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -115,7 +115,7 @@ function Content({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="rounded-lg p-1.5 text-admin-foreground/50 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-admin-foreground/50 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
           >
             <CloseIcon className="h-4 w-4" />
           </button>

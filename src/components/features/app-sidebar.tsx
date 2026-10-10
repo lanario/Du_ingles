@@ -665,6 +665,7 @@ function NavMobile({
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
+                    autoFocus
                     aria-label="Fechar navegação"
                     className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-app-shell-foreground/70 transition-colors hover:bg-app-shell-foreground/10 hover:text-app-shell-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
                   >

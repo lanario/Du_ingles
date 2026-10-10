@@ -45,12 +45,12 @@ export function StudentAnswersView({
                 {index + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-navy-900">
+                <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-navy-900">
                   {question.prompt}
                 </p>
                 <AnswerText question={question} raw={raw} />
                 {note && (
-                  <p className="mt-2 whitespace-pre-wrap rounded-xl bg-gold-50 px-3 py-2 text-sm text-gold-700">
+                  <p className="mt-2 whitespace-pre-wrap break-words rounded-xl bg-gold-50 px-3 py-2 text-sm text-gold-700">
                     <span className="font-medium">Comentário do professor: </span>
                     {note}
                   </p>
@@ -93,7 +93,7 @@ export function AnswerText({
   return (
     <p
       className={cn(
-        "mt-2 whitespace-pre-wrap rounded-xl px-3 py-2 text-sm",
+        "mt-2 whitespace-pre-wrap break-words rounded-xl px-3 py-2 text-sm",
         empty
           ? "bg-muted/50 italic text-muted-foreground"
           : verdict === true

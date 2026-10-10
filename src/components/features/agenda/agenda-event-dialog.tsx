@@ -299,7 +299,7 @@ function EventForm({
                 onClick={() => setDuration(minutes)}
                 aria-pressed={duration === minutes}
                 className={cn(
-                  "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
+                  "h-11 sm:h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
                   duration === minutes
                     ? "border-navy-900 bg-navy-900 text-white"
                     : "border-border text-foreground/70 hover:bg-muted",
@@ -344,14 +344,14 @@ function EventForm({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
+            className="h-11 sm:h-10 rounded-xl border border-border px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="inline-flex h-11 sm:h-10 items-center justify-center gap-2 rounded-xl bg-navy-900 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {isPending ? (
               <>

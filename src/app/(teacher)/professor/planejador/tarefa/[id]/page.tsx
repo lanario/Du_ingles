@@ -89,7 +89,7 @@ export default async function ProfessorTarefaPage({ params }: PageProps) {
         />
 
         {assignment.instructions && (
-          <p className="mt-4 whitespace-pre-wrap rounded-2xl border border-admin-border bg-admin-background p-4 text-sm leading-relaxed text-admin-foreground/80">
+          <p className="mt-4 whitespace-pre-wrap break-words rounded-2xl border border-admin-border bg-admin-background p-4 text-sm leading-relaxed text-admin-foreground/80">
             {assignment.instructions}
           </p>
         )}

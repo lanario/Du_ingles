@@ -30,7 +30,7 @@ export function EditUserForm({ user }: { user: UserDetail }) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="phone">Telefone</Label>
           <Input id="phone" name="phone" type="tel" defaultValue={user.phone ?? ""} />

@@ -66,7 +66,7 @@ export function ChatList({
             placeholder="Buscar turma…"
             aria-label="Buscar turma"
             className={cn(
-              "h-10 w-full rounded-xl border border-[var(--chat-border)] bg-[var(--chat-canvas)] pl-9 pr-3 text-sm",
+              "h-11 w-full rounded-xl border border-[var(--chat-border)] bg-[var(--chat-canvas)] pl-9 pr-3 text-base md:h-10 md:text-sm",
               "text-[var(--chat-fg)] placeholder:text-[var(--chat-muted-fg)]",
               "transition-shadow focus:outline-none focus:ring-2 focus:ring-[var(--chat-accent)]",
             )}

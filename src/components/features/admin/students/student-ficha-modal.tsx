@@ -272,7 +272,7 @@ export function StudentFichaModal({
             exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
             transition={reduceMotion ? { duration: 0 } : MOLA}
             className={cn(
-              "relative mt-[3vh] flex max-h-[88vh] w-full flex-col overflow-hidden rounded-2xl",
+              "relative mt-[3dvh] flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-2xl",
               "border border-admin-border bg-admin-surface",
               "shadow-[0_1px_2px_rgba(11,26,51,0.06),0_40px_80px_-40px_rgba(11,26,51,0.55)]",
               abrindo ? "max-w-sm" : "max-w-2xl",

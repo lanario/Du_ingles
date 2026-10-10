@@ -168,7 +168,7 @@ export function RosterPanel({
             type="button"
             onClick={save}
             disabled={isPending}
-            className="inline-flex h-9 items-center rounded-lg bg-navy-900 px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-11 items-center sm:h-9 rounded-lg bg-navy-900 px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isPending ? (
               <span className="inline-flex items-center gap-2">

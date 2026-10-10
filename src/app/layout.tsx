@@ -39,6 +39,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // No Android o teclado virtual encolhe a área da página em vez de cobri-la;
+  // sem isso, o compositor do chat (layout `fixed inset-0`) ficava atrás dele.
+  interactiveWidget: "resizes-content",
   themeColor: "#ffffff",
 };
 

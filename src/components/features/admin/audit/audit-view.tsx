@@ -241,7 +241,7 @@ export function AuditView({ logs, limit }: AuditViewProps) {
             onChange={(event) => setSearch(event.target.value)}
             aria-label="Buscar no histórico"
             placeholder="Buscar por pessoa, turma, valor..."
-            className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-10 text-sm text-admin-foreground outline-none transition-colors placeholder:text-admin-foreground/40 hover:border-gold-300 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35 [&::-webkit-search-cancel-button]:hidden"
+            className="min-h-11 w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-10 text-sm text-admin-foreground outline-none transition-colors placeholder:text-admin-foreground/40 hover:border-gold-300 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35 [&::-webkit-search-cancel-button]:hidden"
           />
           <AnimatePresence>
             {search !== "" && (
@@ -255,7 +255,7 @@ export function AuditView({ logs, limit }: AuditViewProps) {
                   searchRef.current?.focus();
                 }}
                 aria-label="Limpar busca"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-admin-foreground/40 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+                className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-admin-foreground/40 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
               >
                 <CloseIcon className="h-3.5 w-3.5" />
               </motion.button>
@@ -277,7 +277,7 @@ export function AuditView({ logs, limit }: AuditViewProps) {
                 aria-pressed={active}
                 onClick={() => setPeriod(item)}
                 className={cn(
-                  "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                  "relative min-h-11 rounded-lg px-2.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
                   active
                     ? "text-admin-foreground"
@@ -359,7 +359,7 @@ function FilterTab({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3",
+        "relative min-h-11 rounded-lg px-2.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors sm:px-3",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
         active
           ? "text-admin-foreground"
@@ -585,7 +585,7 @@ function AuditRow({
             aria-expanded={open}
             aria-label={open ? "Ocultar detalhes" : "Ver detalhes"}
             className={cn(
-              "h-8 w-8 flex-none self-start rounded-lg text-admin-foreground/40 transition-colors",
+              "h-11 w-11 flex-none self-start rounded-lg sm:h-8 sm:w-8 text-admin-foreground/40 transition-colors",
               "hover:bg-admin-muted hover:text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
               "opacity-40 group-hover:opacity-100 focus-visible:opacity-100",
               open && "opacity-100",

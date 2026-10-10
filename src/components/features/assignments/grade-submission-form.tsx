@@ -139,7 +139,7 @@ export function GradeSubmissionForm({
                   rows={2}
                   defaultValue={initialManualNotes[question.id] ?? ""}
                   placeholder="Resposta certa e/ou explicação para o aluno (opcional)"
-                  className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-base sm:text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
             );
@@ -168,7 +168,7 @@ export function GradeSubmissionForm({
             className="w-28"
           />
         </div>
-        <Button type="submit" disabled={isPending} className="h-10">
+        <Button type="submit" disabled={isPending} className="h-11 sm:h-10">
           {isPending ? (
             <span className="inline-flex items-center gap-2">
               <LogoLoader size={16} label={null} />

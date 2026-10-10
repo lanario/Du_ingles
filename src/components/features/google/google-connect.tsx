@@ -44,7 +44,7 @@ export function GoogleConnect({
   if (!status.available) {
     return (
       <div className={cn("flex flex-col items-start gap-1", className)}>
-        <Button variant="outline" className="h-9 w-fit self-start px-4" disabled>
+        <Button variant="outline" className="h-11 sm:h-9 w-fit self-start px-4" disabled>
           Conectar Google Agenda
         </Button>
         <p className="text-xs text-amber-600" role="status">
@@ -84,7 +84,7 @@ export function GoogleConnect({
             </span>
             <Button
               variant="outline"
-              className="h-9"
+              className="h-11 sm:h-9"
               onClick={disconnect}
               disabled={pending}
             >
@@ -92,7 +92,7 @@ export function GoogleConnect({
             </Button>
           </>
         ) : (
-          <a href="/api/google/connect" className={buttonVariants("primary", "h-9 w-fit px-4")}>
+          <a href="/api/google/connect" className={buttonVariants("primary", "h-11 sm:h-9 w-fit px-4")}>
             {status.revoked ? "Reconectar Google Agenda" : "Conectar Google Agenda"}
           </a>
         )}

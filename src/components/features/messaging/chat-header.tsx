@@ -39,7 +39,7 @@ export function ChatHeader({
           type="button"
           onClick={onBack}
           aria-label="Voltar para a lista de turmas"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--chat-muted-fg)] transition-colors hover:bg-[var(--chat-canvas)] hover:text-[var(--chat-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--chat-accent)] md:hidden"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[var(--chat-muted-fg)] transition-colors hover:bg-[var(--chat-canvas)] hover:text-[var(--chat-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--chat-accent)] md:hidden"
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </button>

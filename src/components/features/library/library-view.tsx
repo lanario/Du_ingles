@@ -494,7 +494,7 @@ export function LibraryView({ entries, groups, selectedGroupId }: LibraryViewPro
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="mt-4 rounded-full border border-navy-700 px-4 py-1.5 text-xs font-semibold text-navy-800 transition-colors hover:bg-navy-800 hover:text-white"
+                className="mt-4 rounded-full border border-navy-700 px-4 py-3 sm:py-1.5 text-xs font-semibold text-navy-800 transition-colors hover:bg-navy-800 hover:text-white"
               >
                 Limpar busca
               </button>

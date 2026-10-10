@@ -216,7 +216,7 @@ export function NotificationPanel({
           </p>
         </div>
 
-        <div className="flex flex-none items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           <AnimatePresence initial={false}>
             {unread > 0 && (
               <motion.button
@@ -228,7 +228,7 @@ export function NotificationPanel({
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 520, damping: 34 }}
                 className={cn(
-                  "flex flex-none items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60",
+                  "flex flex-none items-center gap-1.5 rounded-full border px-2.5 py-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60",
                   adminTheme
                     ? "border-gold-500/50 text-gold-300 hover:border-gold-400 hover:bg-gold-500/15 focus-visible:ring-gold-400 focus-visible:ring-offset-navy-900"
                     : "border-border text-navy-700 hover:border-navy-300 hover:bg-navy-50 focus-visible:ring-ring",
@@ -250,7 +250,7 @@ export function NotificationPanel({
               onClick={onClear}
               disabled={clearing || markingAll}
               className={cn(
-                "flex flex-none items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60",
+                "flex flex-none items-center gap-1 rounded-full border px-2.5 py-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60",
                 adminTheme
                   ? "border-red-300/40 text-red-200 hover:border-red-300/70 hover:bg-red-400/10 focus-visible:ring-red-300 focus-visible:ring-offset-navy-900"
                   : "border-border text-red-700 hover:border-red-300 hover:bg-red-50 focus-visible:ring-red-400",
@@ -272,7 +272,7 @@ export function NotificationPanel({
             onClick={onClose}
             aria-label="Fechar notificações"
             className={cn(
-              "grid h-8 w-8 flex-none place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
+              "grid h-11 w-11 flex-none place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2",
               adminTheme
                 ? "text-navy-100/75 hover:bg-white/10 hover:text-white focus-visible:ring-gold-400"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring",
@@ -762,7 +762,7 @@ function Row({
         aria-label={unread ? "Marcar como lida" : "Marcar como não lida"}
         title={unread ? "Marcar como lida" : "Marcar como não lida"}
         className={cn(
-          "absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full border opacity-0 shadow-sm transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 group-hover/row:opacity-100",
+          "absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-full border opacity-0 shadow-sm [@media(hover:none)]:h-9 [@media(hover:none)]:w-9 [@media(hover:none)]:opacity-100 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 group-hover/row:opacity-100",
           adminTheme
             ? "border-navy-300/30 bg-navy-950 text-navy-100 hover:border-gold-400 hover:text-gold-300 focus-visible:ring-gold-400"
             : "border-border bg-background text-muted-foreground hover:border-navy-300 hover:text-navy-700 focus-visible:ring-ring",

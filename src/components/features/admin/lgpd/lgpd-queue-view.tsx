@@ -143,7 +143,7 @@ function QueueItem({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold">{KIND_LABEL[item.kind]}</p>
-          <p className="mt-0.5 text-sm text-admin-foreground/70">
+          <p className="mt-0.5 break-words text-sm text-admin-foreground/70">
             {item.protocol} · {item.requesterName}
             {item.requesterRole ? ` (${ROLE_LABEL[item.requesterRole]})` : ""} ·{" "}
             {item.requesterEmail}
@@ -163,12 +163,12 @@ function QueueItem({
       </div>
 
       {item.details && (
-        <p className="mt-3 whitespace-pre-line rounded-md bg-muted/60 p-3 text-sm">
+        <p className="mt-3 whitespace-pre-line break-words rounded-md bg-muted/60 p-3 text-sm">
           {item.details}
         </p>
       )}
       {item.resolution && (
-        <p className="mt-3 whitespace-pre-line text-sm">
+        <p className="mt-3 whitespace-pre-line break-words text-sm">
           <span className="font-medium">Resposta: </span>
           {item.resolution}
         </p>
@@ -186,7 +186,7 @@ function QueueItem({
             {item.requesterId && !item.requesterAnonymized && (
               <Link
                 href={`/admin/usuarios/${item.requesterId}` as Route}
-                className="inline-flex h-10 items-center rounded-md px-3 text-sm underline"
+                className="inline-flex h-11 items-center rounded-md px-3 text-sm underline"
               >
                 Abrir cadastro
               </Link>

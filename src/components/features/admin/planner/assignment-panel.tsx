@@ -156,7 +156,7 @@ export function AssignmentPanel({
                     <label
                       key={group.id}
                       className={cn(
-                        "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                        "relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
                         checked
                           ? "border-gold-400 bg-gold-50"
                           : "border-transparent hover:bg-admin-muted",

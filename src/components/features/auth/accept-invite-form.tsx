@@ -276,7 +276,7 @@ function PasswordField({
         aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
         aria-pressed={visible}
         className={cn(
-          "absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2 transition-colors",
+          "absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md transition-colors",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           visible ? "text-foreground" : "text-muted-foreground hover:text-foreground",
         )}

@@ -624,7 +624,7 @@ function Toggle({
   const reduceMotion = useReducedMotion();
 
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-admin-border bg-admin-background p-3 transition-colors hover:border-gold-300">
+    <label className="relative flex cursor-pointer items-start gap-3 rounded-xl border border-admin-border bg-admin-background p-3 transition-colors hover:border-gold-300">
       <input
         type="checkbox"
         name={name}

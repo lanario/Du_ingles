@@ -432,7 +432,7 @@ export function StudentsView({
                   aria-pressed={active}
                   onClick={() => setStatus(item.id)}
                   className={cn(
-                    "relative rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm",
+                    "relative min-h-11 rounded-lg px-2.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors sm:px-3 sm:text-sm",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
                     active
                       ? "text-admin-foreground"
@@ -478,7 +478,7 @@ export function StudentsView({
               onChange={(event) => setSearch(event.target.value)}
               aria-label="Buscar aluno"
               placeholder="Buscar por nome, e-mail, responsável ou turma..."
-              className="w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-10 text-sm text-admin-foreground outline-none transition-colors placeholder:text-admin-foreground/40 hover:border-gold-300 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35 [&::-webkit-search-cancel-button]:hidden"
+              className="min-h-11 w-full rounded-xl border border-admin-border bg-admin-surface py-2.5 pl-10 pr-10 text-sm text-admin-foreground outline-none transition-colors placeholder:text-admin-foreground/40 hover:border-gold-300 focus:border-gold-500 focus-visible:ring-2 focus-visible:ring-gold-500/35 [&::-webkit-search-cancel-button]:hidden"
             />
             <AnimatePresence>
               {search !== "" && (
@@ -492,7 +492,7 @@ export function StudentsView({
                     searchRef.current?.focus();
                   }}
                   aria-label="Limpar busca"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-admin-foreground/40 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+                  className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-admin-foreground/40 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
                 >
                   <CloseIcon className="h-3.5 w-3.5" />
                 </motion.button>
@@ -528,7 +528,7 @@ export function StudentsView({
             >
               <Link
                 href="/admin/usuarios?convite=student"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-3 py-2.5 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 sm:px-4"
               >
                 <PlusIcon className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Novo aluno</span>

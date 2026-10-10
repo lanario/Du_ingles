@@ -81,7 +81,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
       />
 
       {assignment.instructions && (
-        <p className="mt-4 whitespace-pre-wrap rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-relaxed text-foreground/80">
+        <p className="mt-4 whitespace-pre-wrap break-words rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-relaxed text-foreground/80">
           {assignment.instructions}
         </p>
       )}
@@ -143,7 +143,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
               <StatusPill status={mine.status} />
             </div>
             {mine.feedback && (
-              <p className="whitespace-pre-wrap rounded-xl bg-background/70 p-3 text-sm text-foreground/80">
+              <p className="whitespace-pre-wrap break-words rounded-xl bg-background/70 p-3 text-sm text-foreground/80">
                 {mine.feedback}
               </p>
             )}
@@ -174,7 +174,7 @@ export default async function TarefaDetailPage({ params }: PageProps) {
             />
           )
         ) : sent ? (
-          <p className="whitespace-pre-wrap rounded-2xl border border-border bg-muted/40 p-4 text-sm text-foreground/80">
+          <p className="whitespace-pre-wrap break-words rounded-2xl border border-border bg-muted/40 p-4 text-sm text-foreground/80">
             {mine?.content}
           </p>
         ) : (

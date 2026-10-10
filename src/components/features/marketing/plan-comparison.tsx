@@ -37,7 +37,9 @@ export function PlanComparison() {
       </p>
 
       <div
-        className="mt-8 overflow-x-auto rounded-2xl"
+        // `relative`: os `sr-only` da tabela são absolutos e, sem um ancestral
+        // posicionado dentro do scroller, escapam do corte e alargam a página.
+        className="relative mt-8 overflow-x-auto rounded-2xl"
         style={{
           boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--navy-600) 22%, transparent)",
         }}

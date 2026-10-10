@@ -750,7 +750,7 @@ export function PlannerView({
             <button
               type="button"
               onClick={() => setAssignmentOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-admin-border bg-admin-surface px-4 text-sm font-medium text-admin-foreground/80 transition-colors hover:bg-admin-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+              className="inline-flex h-11 items-center sm:h-10 gap-2 rounded-xl border border-admin-border bg-admin-surface px-4 text-sm font-medium text-admin-foreground/80 transition-colors hover:bg-admin-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               <TaskIcon className="h-4 w-4" />
               Nova tarefa
@@ -761,7 +761,7 @@ export function PlannerView({
                 setSchedulePlanId(undefined);
                 setScheduleOpen(true);
               }}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-admin-border bg-admin-surface px-4 text-sm font-medium text-admin-foreground/80 transition-colors hover:bg-admin-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+              className="inline-flex h-11 items-center sm:h-10 gap-2 rounded-xl border border-admin-border bg-admin-surface px-4 text-sm font-medium text-admin-foreground/80 transition-colors hover:bg-admin-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               <CalendarIcon className="h-4 w-4" />
               Agendar aula
@@ -772,7 +772,7 @@ export function PlannerView({
                 setEditing(undefined);
                 setFormOpen(true);
               }}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-4 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+              className="inline-flex h-11 items-center sm:h-10 gap-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-400 px-4 text-sm font-semibold text-admin-foreground shadow-[0_8px_24px_-12px_rgba(201,162,39,0.75)] transition-opacity hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             >
               <PlusIcon className="h-4 w-4" />
               Nova aula
@@ -835,7 +835,7 @@ export function PlannerView({
             ))}
           </Select>
         ) : (
-          <label className="relative flex h-10 w-full max-w-xs items-center">
+          <label className="relative flex h-11 w-full max-w-xs sm:h-10 items-center">
             <SearchIcon className="pointer-events-none absolute left-3 h-4 w-4 text-admin-foreground/40" />
             <input
               value={search}
@@ -844,7 +844,7 @@ export function PlannerView({
                 tab === "atelie" ? "Buscar aula, nível, autor…" : "Buscar tarefa, turma…"
               }
               aria-label={tab === "atelie" ? "Buscar aula" : "Buscar tarefa"}
-              className="h-10 w-full rounded-xl border border-admin-border bg-admin-surface pl-9 pr-3 text-sm text-admin-foreground placeholder:text-admin-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+              className="h-11 w-full rounded-xl sm:h-10 border border-admin-border bg-admin-surface pl-9 pr-3 text-sm text-admin-foreground placeholder:text-admin-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
             />
           </label>
         )}
@@ -865,7 +865,7 @@ export function PlannerView({
                 onClick={() => setTaskView(item.value)}
                 aria-pressed={taskView === item.value}
                 className={cn(
-                  "h-8 rounded-full px-3.5 text-xs font-semibold uppercase tracking-[0.08em] transition-colors",
+                  "h-10 rounded-full px-3.5 sm:h-8 text-xs font-semibold uppercase tracking-[0.08em] transition-colors",
                   taskView === item.value
                     ? "bg-navy-900 text-white"
                     : "text-admin-foreground/60 hover:bg-admin-muted",
@@ -997,7 +997,7 @@ export function PlannerView({
                             setEditing(undefined);
                             setFormOpen(true);
                           }}
-                          className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                          className="inline-flex h-11 items-center sm:h-10 gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                         >
                           <PlusIcon className="h-4 w-4" />
                           Criar primeira aula
@@ -1176,7 +1176,7 @@ export function PlannerView({
                         setSchedulePlanId(undefined);
                         setScheduleOpen(true);
                       }}
-                      className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      className="inline-flex h-11 items-center sm:h-10 gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                     >
                       <CalendarIcon className="h-4 w-4" />
                       Agendar aula
@@ -1344,7 +1344,7 @@ export function PlannerView({
                       <button
                         type="button"
                         onClick={() => setAssignmentOpen(true)}
-                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                        className="inline-flex h-11 items-center sm:h-10 gap-2 rounded-xl bg-navy-900 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                       >
                         <TaskIcon className="h-4 w-4" />
                         Criar primeira tarefa
@@ -1754,7 +1754,7 @@ function IconAction({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "grid h-9 w-9 place-items-center rounded-lg border border-admin-border bg-admin-surface transition-colors",
+        "grid h-11 w-11 place-items-center rounded-lg border sm:h-9 sm:w-9 border-admin-border bg-admin-surface transition-colors",
         danger
           ? "text-red-600 hover:border-red-200 hover:bg-red-50"
           : "text-admin-foreground/60 hover:bg-admin-muted hover:text-admin-foreground",
@@ -1854,7 +1854,7 @@ function SessionRow({
         <Link
           href={`${base}/planejador/aula/${session.id}` as Route}
           className={cn(
-            "inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-semibold transition-opacity hover:opacity-90",
+            "inline-flex h-11 items-center rounded-lg px-3.5 sm:h-9 text-sm font-semibold transition-opacity hover:opacity-90",
             live
               ? "bg-[var(--success)] text-white"
               : session.status === "scheduled"

@@ -273,7 +273,7 @@ function AssignmentCard({ assignment }: { assignment: AssignmentListItem }) {
         rel="noopener noreferrer"
         title="Baixar a folha de exercícios em PDF"
         aria-label={`Baixar PDF de ${assignment.title}`}
-        className="relative z-10 grid h-9 w-9 flex-none place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-navy-200 hover:bg-navy-50 hover:text-navy-800"
+        className="relative z-10 grid h-11 w-11 sm:h-9 sm:w-9 flex-none place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-navy-200 hover:bg-navy-50 hover:text-navy-800"
       >
         <DownloadIcon className="h-4 w-4" />
       </a>
