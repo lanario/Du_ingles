@@ -51,6 +51,10 @@ interface UserMenuProps {
   /** Rail recolhido mostra só a foto; a gaveta do mobile é sempre larga. */
   compact?: boolean;
   className?: string;
+  /** Rótulo curto para o botão no rodapé mobile; mantém nome/e-mail no popover. */
+  navLabel?: string;
+  /** O rodapé mobile já comunica a ação pelo rótulo, sem precisar da seta. */
+  hideChevron?: boolean;
   /**
    * Avisa quem chama quando o menu OU um dos modais (Meu Perfil, Segurança)
    * abre/fecha. O rail hover-expand escuta isto para reconferir seu próprio
@@ -71,6 +75,8 @@ export function UserMenu({
   profile,
   compact = false,
   className,
+  navLabel,
+  hideChevron = false,
   onOpenChange,
 }: UserMenuProps) {
   const [open, setOpen] = useState(false);
@@ -234,11 +240,16 @@ export function UserMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
-          "group flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition-colors",
+          "group flex transition-colors",
+          navLabel
+            ? "min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-0 pb-0.5 text-center text-[10px] font-medium"
+            : "w-full items-center gap-3 rounded-2xl px-2 py-2 text-left",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-          theme === "app"
-            ? "hover:bg-white/10 focus-visible:ring-gold-400 focus-visible:ring-offset-app-shell"
-            : "hover:bg-navy-900/10 focus-visible:ring-navy-900 focus-visible:ring-offset-admin-shell",
+          navLabel
+            ? "text-app-shell-foreground/60 hover:bg-transparent hover:text-app-shell-foreground focus-visible:ring-gold-400 focus-visible:ring-offset-app-shell"
+            : theme === "app"
+              ? "hover:bg-white/10 focus-visible:ring-gold-400 focus-visible:ring-offset-app-shell"
+              : "hover:bg-navy-900/10 focus-visible:ring-navy-900 focus-visible:ring-offset-admin-shell",
           open && (theme === "app" ? "bg-white/10" : "bg-navy-900/10"),
           className,
         )}
@@ -246,42 +257,48 @@ export function UserMenu({
       >
         <AccountAvatar id={userId} name={name || email} src={avatarUrl} size="sm" />
 
-        <span
-          data-nav-label={compact ? "" : undefined}
-          className="min-w-0 flex-1 overflow-hidden"
-        >
+        {navLabel ? (
+          <span className="text-[10px] font-medium">{navLabel}</span>
+        ) : (
           <span
-            className={cn(
-              "block truncate whitespace-nowrap text-sm font-medium",
-              theme === "app"
-                ? "text-app-shell-foreground"
-                : "text-admin-shell-foreground",
-            )}
+            data-nav-label={compact ? "" : undefined}
+            className="min-w-0 flex-1 overflow-hidden"
           >
-            {name || email}
+            <span
+              className={cn(
+                "block truncate whitespace-nowrap text-sm font-medium",
+                theme === "app"
+                  ? "text-app-shell-foreground"
+                  : "text-admin-shell-foreground",
+              )}
+            >
+              {name || email}
+            </span>
+            <span
+              className={cn(
+                "block truncate whitespace-nowrap text-xs",
+                theme === "app"
+                  ? "text-app-shell-foreground/60"
+                  : "text-admin-shell-foreground/70",
+              )}
+            >
+              {ROLE_LABEL[role]}
+            </span>
           </span>
-          <span
+        )}
+
+        {!hideChevron && (
+          <ChevronIcon
+            data-nav-label={compact ? "" : undefined}
             className={cn(
-              "block truncate whitespace-nowrap text-xs",
+              "h-4 w-4 flex-none transition-transform",
+              open ? "rotate-90" : "-rotate-90",
               theme === "app"
                 ? "text-app-shell-foreground/60"
                 : "text-admin-shell-foreground/70",
             )}
-          >
-            {ROLE_LABEL[role]}
-          </span>
-        </span>
-
-        <ChevronIcon
-          data-nav-label={compact ? "" : undefined}
-          className={cn(
-            "h-4 w-4 flex-none transition-transform",
-            open ? "rotate-90" : "-rotate-90",
-            theme === "app"
-              ? "text-app-shell-foreground/60"
-              : "text-admin-shell-foreground/70",
-          )}
-        />
+          />
+        )}
       </button>
 
       {menu}

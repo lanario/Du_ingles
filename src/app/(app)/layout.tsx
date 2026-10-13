@@ -54,7 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             empurre a sidebar para fora da viewport. */}
           <main
             data-scroll-root
-            className="bg-app-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-6 md:px-8"
+            className="bg-app-canvas min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+5.75rem))] pt-6 md:px-8 md:pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]"
           >
             {children}
           </main>

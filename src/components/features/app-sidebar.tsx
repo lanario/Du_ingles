@@ -26,8 +26,8 @@ import {
   HomeIcon,
   type IconProps,
   LibraryIcon,
-  MenuIcon,
   MessageIcon,
+  MoreIcon,
   PlanIcon,
   ProgressIcon,
   TaskIcon,
@@ -263,7 +263,8 @@ interface SidebarProps {
  *
  * - `Sidebar` (>= md): rail de 64px que expande no hover/foco, ocupando a
  *   altura inteira da tela (sem cabeçalho acima).
- * - `NavMobile` (< md): barra superior fina + gaveta lateral por toque.
+ * - `NavMobile` (< md): cabeçalho compacto + barra inferior para os atalhos
+ *   frequentes; a gaveta, aberta em "Mais", guarda o restante da sidebar.
  */
 export function AppSidebar(props: SidebarProps) {
   return (
@@ -582,6 +583,19 @@ function NavMobile({
   const [routeAtOpen, setRouteAtOpen] = useState(pathname);
   const atual = itemAtivo(pathname);
   const sections = sectionsFor(role);
+  const mobilePrimaryItems = [
+    ALL_ITEMS.find((item) => item.href === "/dashboard"),
+    ALL_ITEMS.find((item) => item.href === "/agenda"),
+    ALL_ITEMS.find((item) => item.href === "/tarefas"),
+    ALL_ITEMS.find((item) => item.href === "/turmas"),
+  ].filter((item): item is NavItem => Boolean(item && item.roles.includes(role)));
+  const mobilePrimaryHrefs = new Set(mobilePrimaryItems.map((item) => item.href));
+  const moreSections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !mobilePrimaryHrefs.has(item.href)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   // Navegar fecha a gaveta durante a renderização (não em efeito), assim ela
   // já sai fechada no mesmo passo em que a rota muda — inclui o botão
@@ -606,17 +620,7 @@ function NavMobile({
 
   return (
     <>
-      <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-app-shell-border bg-app-shell/95 px-2 pt-[env(safe-area-inset-top,0px)] text-app-shell-foreground backdrop-blur md:hidden">
-        <button
-          type="button"
-          onClick={abrir}
-          aria-label="Abrir navegação"
-          aria-expanded={open}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-app-shell-foreground/70 transition-colors hover:bg-app-shell-foreground/10 hover:text-app-shell-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
-        >
-          <MenuIcon className="h-6 w-6" />
-        </button>
-
+      <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-app-shell-border bg-app-shell/95 px-3 pt-[env(safe-area-inset-top,0px)] text-app-shell-foreground backdrop-blur md:hidden">
         <Brand compact />
 
         {atual && (
@@ -675,7 +679,10 @@ function NavMobile({
               </div>
 
               <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-2">
-                {sections.map((section, index) => (
+                <p className="px-3 pb-2 pt-1 text-sm font-semibold text-app-shell-foreground">
+                  Mais opções
+                </p>
+                {moreSections.map((section, index) => (
                   <div key={section.id}>
                     {index > 0 && <div className="my-1.5 h-px bg-app-shell-border" />}
                     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-app-shell-foreground/50">
@@ -734,6 +741,80 @@ function NavMobile({
           </div>
         )}
       </AnimatePresence>
+
+      <nav
+        aria-label="Atalhos principais"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-app-shell-border bg-app-shell/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-2 text-app-shell-foreground shadow-[0_-12px_30px_-22px_rgba(10,31,68,0.7)] backdrop-blur md:hidden"
+      >
+        <div className="mx-auto flex max-w-lg items-end justify-between gap-0.5">
+          {mobilePrimaryItems.map((item) => {
+            const active = isActive(pathname, item.href);
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "group flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl pb-0.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400",
+                  active
+                    ? "text-app-shell-foreground"
+                    : "text-app-shell-foreground/60 hover:text-app-shell-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid h-10 w-10 place-items-center rounded-full transition-all duration-200",
+                    active
+                      ? "-translate-y-2 bg-gold-400 text-navy-950 shadow-[0_0_0_4px_var(--app-shell),0_8px_20px_-6px_rgba(201,162,39,0.7)]"
+                      : "text-app-shell-foreground/70 group-hover:bg-white/10 group-hover:text-app-shell-foreground",
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className={cn(active && "-mt-2 font-semibold")}>{item.label}</span>
+              </NavLink>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={abrir}
+            aria-label="Ver mais opções de navegação"
+            aria-expanded={open}
+            className={cn(
+              "group flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl pb-0.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400",
+              open
+                ? "text-app-shell-foreground"
+                : "text-app-shell-foreground/60 hover:text-app-shell-foreground",
+            )}
+          >
+            <span
+              className={cn(
+                "grid h-10 w-10 place-items-center rounded-full transition-all duration-200",
+                open
+                  ? "-translate-y-2 bg-gold-400 text-navy-950 shadow-[0_0_0_4px_var(--app-shell),0_8px_20px_-6px_rgba(201,162,39,0.7)]"
+                  : "text-app-shell-foreground/70 group-hover:bg-white/10 group-hover:text-app-shell-foreground",
+              )}
+            >
+              <MoreIcon className="h-5 w-5" />
+            </span>
+            <span className={cn(open && "-mt-2 font-semibold")}>Mais</span>
+          </button>
+
+          <UserMenu
+            userId={userId}
+            name={fullName}
+            email={email}
+            role={role}
+            avatarUrl={avatarUrl}
+            profile={profile}
+            theme="app"
+            navLabel="Perfil"
+            hideChevron
+          />
+        </div>
+      </nav>
     </>
   );
 }
