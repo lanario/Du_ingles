@@ -27,6 +27,7 @@ export function GoogleConnect({
   notice,
   className,
   showDescription = true,
+  descriptionClassName,
   unavailableHint = false,
 }: {
   status: GoogleStatus;
@@ -34,6 +35,8 @@ export function GoogleConnect({
   notice?: string;
   className?: string;
   showDescription?: boolean;
+  /** Permite recolher só no mobile a explicação que acompanha o botão. */
+  descriptionClassName?: string;
   /** Mostra um aviso (em vez de esconder o botão) quando as credenciais do Google faltam. */
   unavailableHint?: boolean;
 }) {
@@ -92,14 +95,17 @@ export function GoogleConnect({
             </Button>
           </>
         ) : (
-          <a href="/api/google/connect" className={buttonVariants("primary", "h-11 sm:h-9 w-fit px-4")}>
+          <a
+            href="/api/google/connect"
+            className={buttonVariants("primary", "h-11 sm:h-9 w-fit px-4")}
+          >
             {status.revoked ? "Reconectar Google Agenda" : "Conectar Google Agenda"}
           </a>
         )}
       </div>
 
       {showDescription && !status.connected && (
-        <p className="text-xs text-muted-foreground">
+        <p className={cn("text-xs text-muted-foreground", descriptionClassName)}>
           {status.revoked
             ? "O Google recusou o acesso anterior. Reconecte para voltar a receber as aulas."
             : "Envia suas aulas para o Google Agenda, com lembrete e o link do Meet."}

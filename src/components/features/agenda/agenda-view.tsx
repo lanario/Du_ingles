@@ -13,17 +13,18 @@
  *
  * Quatro vistas, porque a mesma agenda responde a perguntas diferentes:
  * "como está o dia de hoje" (dia), "como está a semana da turma" (semana),
- * "quando é a prova" (mês) e "o que vem por aí" (lista — a vista que
- * funciona no celular). O filtro lateral corta por turma e por tipo, e a
- * escolha fica no navegador de quem usa: a coordenação que só acompanha duas
- * turmas não quer reconfigurar isso toda manhã.
+ * "quando é a prova" (mês) e "o que vem por aí" (lista). No celular a
+ * semana não é oferecida — sete colunas comprimem as aulas e roubam espaço da
+ * grade diária. O filtro lateral corta por turma e por tipo, e a escolha fica
+ * no navegador de quem usa: a coordenação que só acompanha duas turmas não
+ * quer reconfigurar isso toda manhã.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { loadAgendaWindowAction } from "@/actions/shared/agenda";
 import { SlideTabs } from "@/components/ui/slide-tabs";
-import { ChevronRightIcon, PlusIcon } from "@/components/ui/icons";
+import { ChevronRightIcon, MenuIcon, PlusIcon } from "@/components/ui/icons";
 import { LogoLoader } from "@/components/ui/logo-loader";
 import { cn } from "@/lib/utils";
 import type { AgendaData, AgendaItem } from "@/repositories/agenda";
@@ -69,6 +70,8 @@ const VIEW_TABS: { label: string; value: AgendaViewMode }[] = [
   { label: "Lista", value: "lista" },
 ];
 
+const MOBILE_VIEW_TABS = VIEW_TABS.filter((tab) => tab.value !== "semana");
+
 const STORAGE_KEY = "du:agenda:v1";
 /** Quanto a janela carregada se estende além do que a vista precisa. */
 const WINDOW_MARGIN_DAYS = 45;
@@ -80,15 +83,34 @@ interface StoredPreferences {
   showSchoolWide?: boolean;
 }
 
+/** A semana continua útil para coordenação no desktop, mas não cabe no telefone. */
+function useNarrowAgenda() {
+  const [narrow, setNarrow] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const update = () => setNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return narrow;
+}
+
 export function AgendaView({
   initial,
   area,
+  fillAvailable = false,
 }: {
   initial: AgendaData;
   /** De qual chrome a tela herda os tokens dos campos de formulário. */
   area: "admin" | "app";
+  /** A página do aluno entrega a altura restante para a grade no mobile. */
+  fillAvailable?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
+  const narrow = useNarrowAgenda();
   const today = todayISO();
 
   const [data, setData] = useState(initial);
@@ -96,6 +118,10 @@ export function AgendaView({
   const [view, setView] = useState<AgendaViewMode>("semana");
   const [cursor, setCursor] = useState(today);
   const [direction, setDirection] = useState(1);
+  // Não muda a preferência salva: quem escolheu Semana no desktop volta a
+  // encontrá-la lá. No telefone a mesma preferência é lida como Dia.
+  const activeView = narrow && view === "semana" ? "dia" : view;
+  const visibleTabs = narrow ? MOBILE_VIEW_TABS : VIEW_TABS;
 
   // Guardar o que está ESCONDIDO (e não o que está visível) faz a turma nova
   // aparecer sozinha para quem já tinha filtro salvo — o contrário some com
@@ -149,17 +175,17 @@ export function AgendaView({
 
   /** Faixa de dias que a vista atual precisa ter em mãos. */
   const needed = useMemo(() => {
-    if (view === "dia") return { from: cursor, to: cursor };
-    if (view === "semana") {
+    if (activeView === "dia") return { from: cursor, to: cursor };
+    if (activeView === "semana") {
       const week = weekOf(cursor);
       return { from: week[0] ?? cursor, to: week[6] ?? cursor };
     }
-    if (view === "mes") {
+    if (activeView === "mes") {
       const weeks = monthMatrix(cursor);
       return { from: weeks[0]?.[0] ?? cursor, to: weeks[5]?.[6] ?? cursor };
     }
     return { from: cursor, to: addDaysISO(cursor, 60) };
-  }, [view, cursor]);
+  }, [activeView, cursor]);
 
   useEffect(() => {
     const loadedFrom = data.window.from.slice(0, 10);
@@ -251,7 +277,7 @@ export function AgendaView({
 
   // Uma chave só para os dois: o que muda a altura do conteúdo da grade é a
   // vista, a data e quantos itens sobraram do filtro.
-  const gridKey = `${view}|${cursor}|${visible.length}`;
+  const gridKey = `${activeView}|${cursor}|${visible.length}`;
   const progressRef = useScrollProgress(scrollerRef, gridKey);
 
   /**
@@ -259,10 +285,12 @@ export function AgendaView({
    * puxar o mês ou a lista para o meio esconderia justamente o começo deles.
    */
   const scrollToNowOffset =
-    (view === "dia" || view === "semana") && today >= needed.from && today <= needed.to
+    (activeView === "dia" || activeView === "semana") &&
+    today >= needed.from &&
+    today <= needed.to
       ? Math.max(0, (nowMinutes() - bounds.start) * PIXELS_PER_MINUTE)
       : null;
-  useScrollToNow(scrollerRef, scrollToNowOffset, `${view}|${cursor}`);
+  useScrollToNow(scrollerRef, scrollToNowOffset, `${activeView}|${cursor}`);
 
   // ------------------------------------------------------------- ações ----
 
@@ -270,13 +298,13 @@ export function AgendaView({
     (step: -1 | 1) => {
       setDirection(step);
       setCursor((current) => {
-        if (view === "dia") return addDaysISO(current, step);
-        if (view === "semana") return addDaysISO(current, step * 7);
-        if (view === "mes") return addMonthsISO(current, step);
+        if (activeView === "dia") return addDaysISO(current, step);
+        if (activeView === "semana") return addDaysISO(current, step * 7);
+        if (activeView === "mes") return addMonthsISO(current, step);
         return addDaysISO(current, step * 30);
       });
     },
-    [view],
+    [activeView],
   );
 
   const openDay = useCallback((day: string) => {
@@ -324,10 +352,17 @@ export function AgendaView({
   // ------------------------------------------------------------ render ----
 
   return (
-    <div className="agenda-theme flex h-[calc(100dvh-8rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-[var(--agenda-border)] bg-[var(--agenda-surface)] text-[var(--agenda-fg)] shadow-[var(--shadow-card)]">
+    <div
+      className={cn(
+        "agenda-theme flex flex-col overflow-hidden rounded-2xl border border-[var(--agenda-border)] bg-[var(--agenda-surface)] text-[var(--agenda-fg)] shadow-[var(--shadow-card)]",
+        fillAvailable
+          ? "h-full min-h-0 md:h-[calc(100dvh-8rem)] md:min-h-[520px]"
+          : "h-[calc(100dvh-8rem)] min-h-[520px]",
+      )}
+    >
       {/* ------------------------------------------------- barra ------- */}
       <header className="relative shrink-0 border-b border-[var(--agenda-border)] px-3 py-2.5 sm:px-4">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:flex-wrap sm:gap-3">
           <div className="flex items-center gap-1">
             <NavButton label="Anterior" onClick={() => navigate(-1)} flip />
             <button
@@ -336,7 +371,7 @@ export function AgendaView({
                 setDirection(cursor > today ? -1 : 1);
                 setCursor(today);
               }}
-              className="h-11 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium sm:h-9 transition-colors hover:bg-[var(--agenda-canvas)]"
+              className="h-10 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium transition-colors hover:bg-[var(--agenda-canvas)] sm:h-9"
             >
               Hoje
             </button>
@@ -345,9 +380,9 @@ export function AgendaView({
 
           {/* Sem `AnimatePresence`: só o que entra é animado. Ver a nota
               sobre `mode="wait"` na área da grade, logo abaixo. */}
-          <div className="min-w-0 flex-1">
+          <div className="hidden min-w-0 flex-1 sm:block">
             <motion.p
-              key={`${view}-${cursor}`}
+              key={`${activeView}-${cursor}`}
               initial={reduceMotion ? false : { opacity: 0, y: direction * 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
@@ -355,41 +390,61 @@ export function AgendaView({
               // "6 De Setembro De 2026"; só a primeira letra é nossa.
               className="truncate text-sm font-semibold first-letter:uppercase sm:text-base"
             >
-              {rangeLabel(view, cursor)}
+              {rangeLabel(activeView, cursor)}
             </motion.p>
           </div>
 
-          {loadingWindow && <LogoLoader size={18} label={null} />}
+          {loadingWindow && (
+            <span className="hidden sm:inline-flex">
+              <LogoLoader size={18} label={null} />
+            </span>
+          )}
 
           <SlideTabs
-            items={VIEW_TABS}
-            value={view}
+            items={visibleTabs}
+            value={activeView}
             onValueChange={(next) => setView(next as AgendaViewMode)}
             tone="surface"
+            fullWidth={narrow}
             label="Vista da agenda"
-            className="shrink-0"
+            className="min-w-0 flex-1 shrink-0 [&_button]:px-2 [&_button]:text-[10px] [&_button]:tracking-[0.08em] sm:flex-none sm:[&_button]:px-4 sm:[&_button]:text-xs sm:[&_button]:tracking-[0.12em]"
           />
 
           <button
             type="button"
             onClick={() => setFiltersOpen((open) => !open)}
             aria-expanded={filtersOpen}
-            className="h-11 rounded-lg border border-[var(--agenda-border)] px-3 text-sm font-medium sm:h-9 transition-colors hover:bg-[var(--agenda-canvas)] lg:hidden"
+            aria-label="Abrir filtros"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[var(--agenda-border)] text-[var(--agenda-fg)] transition-colors hover:bg-[var(--agenda-canvas)] sm:flex sm:h-9 sm:w-auto sm:px-3 sm:text-sm lg:hidden"
           >
-            Filtros
+            <MenuIcon className="h-5 w-5 sm:hidden" />
+            <span className="hidden sm:inline">Filtros</span>
           </button>
 
           {canCreate && (
             <button
               type="button"
               onClick={() => startCreate({ day: cursor, time: "19:00", groupId: null })}
-              className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--agenda-primary)] sm:h-9 px-3 text-sm font-semibold text-[var(--agenda-primary-fg)] transition-opacity hover:opacity-90"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--agenda-primary)] px-3 text-sm font-semibold text-[var(--agenda-primary-fg)] transition-opacity hover:opacity-90 sm:h-9"
             >
               <PlusIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Novo compromisso</span>
               <span className="sm:hidden">Novo</span>
             </button>
           )}
+        </div>
+
+        <div className="mt-1.5 flex min-w-0 items-center gap-2 sm:hidden">
+          <motion.p
+            key={`${activeView}-${cursor}`}
+            initial={reduceMotion ? false : { opacity: 0, y: direction * 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="min-w-0 flex-1 truncate text-xs font-semibold first-letter:uppercase text-[var(--agenda-muted-fg)]"
+          >
+            {rangeLabel(activeView, cursor)}
+          </motion.p>
+          {loadingWindow && <LogoLoader size={16} label={null} />}
         </div>
 
         {/* Fio de progresso da rolagem da grade (GSAP). */}
@@ -469,7 +524,7 @@ export function AgendaView({
              */}
             <div>
               <motion.div
-                key={view}
+                key={activeView}
                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
@@ -477,7 +532,7 @@ export function AgendaView({
               >
                 {data.items.length === 0 ? (
                   <EmptyGrid label="Nada marcado nesta janela da agenda." />
-                ) : view === "dia" ? (
+                ) : activeView === "dia" ? (
                   <DayView
                     day={cursor}
                     columns={dayColumns}
@@ -488,7 +543,7 @@ export function AgendaView({
                     onSelect={(item) => setSelected(find(visible, item))}
                     onCreateAt={canCreate ? startCreate : undefined}
                   />
-                ) : view === "semana" ? (
+                ) : activeView === "semana" ? (
                   <WeekView
                     anchor={cursor}
                     bounds={bounds}
@@ -499,7 +554,7 @@ export function AgendaView({
                     onCreateAt={canCreate ? startCreate : undefined}
                     onPickDay={openDay}
                   />
-                ) : view === "mes" ? (
+                ) : activeView === "mes" ? (
                   <MonthView
                     anchor={cursor}
                     placed={visible}
@@ -570,7 +625,7 @@ function NavButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-11 w-11 place-items-center rounded-lg border sm:h-9 sm:w-9 border-[var(--agenda-border)] text-[var(--agenda-muted-fg)] transition-colors hover:bg-[var(--agenda-canvas)] hover:text-[var(--agenda-fg)]"
+      className="grid h-10 w-10 place-items-center rounded-lg border border-[var(--agenda-border)] text-[var(--agenda-muted-fg)] transition-colors hover:bg-[var(--agenda-canvas)] hover:text-[var(--agenda-fg)] sm:h-9 sm:w-9"
     >
       <ChevronRightIcon className={cn("h-4 w-4", flip && "rotate-180")} />
     </button>

@@ -36,14 +36,21 @@ export default async function AgendaPage({
   if (googleState.connected) queueBackfill(ctx.userId, ctx.realRole);
 
   return (
-    <div className="space-y-5">
-      <header>
+    <div className="flex h-full min-h-0 flex-col gap-3 md:block md:h-auto md:space-y-5">
+      <header className="hidden md:block">
         <h1 className="text-2xl font-semibold">Agenda</h1>
       </header>
 
-      <GoogleConnect status={googleState} notice={google} />
+      <GoogleConnect
+        status={googleState}
+        notice={google}
+        className="shrink-0"
+        descriptionClassName="hidden md:block"
+      />
 
-      <AgendaView initial={agenda} area="app" />
+      <div className="min-h-0 flex-1">
+        <AgendaView initial={agenda} area="app" fillAvailable />
+      </div>
     </div>
   );
 }
