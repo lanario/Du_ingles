@@ -12,6 +12,7 @@ import {
   TERMS_VERSION,
   recordConsent,
 } from "@/lib/consent/record";
+import { listGroupsWithVacancy } from "@/repositories/student-registrations";
 import { getStudentPlan } from "@/repositories/student-plans";
 import { fail, ok, type ActionResult } from "@/types/action-result";
 
@@ -33,6 +34,7 @@ export async function registerStudentAction(
     profession: formData.get("profession") ?? "",
     professionOther: formData.get("professionOther") ?? "",
     planId: formData.get("planId"),
+    groupPreferences: formData.getAll("groupPreferences"),
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
@@ -77,6 +79,18 @@ export async function registerStudentAction(
     plan.billingInterval === "one_time"
   ) {
     return fail("NOT_FOUND", "Este plano não está disponível para cadastro.");
+  }
+
+  const availableGroups = await listGroupsWithVacancy(organizationId);
+  const groupPreferences = input.groupPreferences.map((id) =>
+    availableGroups.find((group) => group.id === id),
+  );
+  if (groupPreferences.some((group) => !group)) {
+    return fail(
+      "CONFLICT",
+      "Alguma turma escolhida ficou sem vagas. Escolha outras opções.",
+      { groupPreferences: ["Alguma turma escolhida ficou sem vagas. Escolha outras opções."] },
+    );
   }
 
   const admin = createAdminSupabaseClient();
@@ -169,6 +183,11 @@ export async function registerStudentAction(
           profession: input.profession,
           professionOther: input.profession === "other" ? input.professionOther : "",
           contactConsent: true,
+          groupPreferences: groupPreferences.flatMap((group) =>
+            group
+              ? [{ groupId: group.id, name: group.name, schedule: group.schedule }]
+              : [],
+          ),
         },
       });
 

@@ -42,6 +42,9 @@ import {
 import { ArrowLeftIcon, CheckIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import {
+  MAX_GROUP_PREFERENCES,
+  formatGroupSchedule,
+  type GroupPreferenceOption,
   REGISTRATION_FOCUS_OPTIONS,
   REGISTRATION_PROFESSION_OPTIONS,
   REGISTRATION_STYLE_OPTIONS,
@@ -61,6 +64,7 @@ interface RegistrationValues {
   profession: string;
   professionOther: string;
   planId: string;
+  groupPreferences: string[];
   email: string;
   password: string;
   confirmPassword: string;
@@ -80,6 +84,7 @@ const INITIAL_VALUES: RegistrationValues = {
   profession: "",
   professionOther: "",
   planId: "",
+  groupPreferences: [],
   email: "",
   password: "",
   confirmPassword: "",
@@ -106,6 +111,13 @@ const STEPS = [
       "Três passos: o nível de acompanhamento, o ritmo das aulas em grupo e o compromisso que faz mais sentido pra você. Você começa com 7 dias de experiência grátis.",
   },
   {
+    label: "Sua turma",
+    hint: "Turmas e horários de preferência",
+    title: "Qual turma e horário ficam melhores pra você?",
+    detail:
+      "Escolha até 3 turmas, da que você mais prefere para a menos. A coordenação confirma a turma final com você — essa escolha não garante a vaga.",
+  },
+  {
     label: "Seu acesso",
     hint: "E-mail, senha e pagamento",
     title: "Crie seus dados de acesso",
@@ -121,6 +133,7 @@ const STEP_FIELDS: readonly (readonly string[])[] = [
   ["fullName", "phone", "isAdult", "guardianName", "guardianPhone", "guardianEmail"],
   ["goal", "focusTopics", "learningStyles", "studySituation", "profession", "professionOther"],
   ["planId"],
+  ["groupPreferences"],
   ["email", "password", "confirmPassword", "consent", "contactConsent"],
 ];
 
@@ -129,10 +142,17 @@ const VISIBLE_FIELDS: readonly (readonly string[])[] = [
   ["fullName", "phone", "isAdult", "guardianName", "guardianPhone", "guardianEmail"],
   ["goal", "studySituation", "profession", "professionOther"],
   [],
+  [],
   ["email", "password", "confirmPassword"],
 ];
 
-export function StudentRegistrationWizard({ plans }: { plans: StudentPlan[] }) {
+export function StudentRegistrationWizard({
+  plans,
+  groups,
+}: {
+  plans: StudentPlan[];
+  groups: GroupPreferenceOption[];
+}) {
   const [state, formAction, isPending] = useActionState(registerStudentAction, null);
   const [values, setValues] = useState(INITIAL_VALUES);
   const [consents, setConsents] = useState({ terms: false, contact: false });
@@ -185,6 +205,10 @@ export function StudentRegistrationWizard({ plans }: { plans: StudentPlan[] }) {
       setLocalError("Escolha um plano para continuar.");
       return;
     }
+    if (step === 3 && groups.length > 0 && values.groupPreferences.length === 0) {
+      setLocalError("Escolha pelo menos uma turma para continuar.");
+      return;
+    }
     if (!formRef.current?.reportValidity()) return;
     goTo(Math.min(step + 1, LAST_STEP));
   }
@@ -202,6 +226,17 @@ export function StudentRegistrationWizard({ plans }: { plans: StudentPlan[] }) {
           ? [value]
           : [...selected.filter((item) => item !== "none"), value];
       return { ...current, [field]: limit ? next.slice(-limit) : next };
+    });
+  }
+
+  function toggleGroup(id: string) {
+    setValues((current) => {
+      const selected = current.groupPreferences;
+      if (selected.includes(id)) {
+        return { ...current, groupPreferences: selected.filter((item) => item !== id) };
+      }
+      if (selected.length >= MAX_GROUP_PREFERENCES) return current;
+      return { ...current, groupPreferences: [...selected, id] };
     });
   }
 
@@ -224,13 +259,16 @@ export function StudentRegistrationWizard({ plans }: { plans: StudentPlan[] }) {
         className="bg-app-canvas flex min-w-0 flex-col"
       >
         {Object.entries(values).map(([name, value]) => {
-          if (visibleFields.includes(name) || name === "focusTopics" || name === "learningStyles") {
+          if (visibleFields.includes(name) || name === "focusTopics" || name === "learningStyles" || name === "groupPreferences") {
             return null;
           }
           return <input key={name} type="hidden" name={name} value={value as string} />;
         })}
         {values.focusTopics.map((value) => (
           <input key={`focus-${value}`} type="hidden" name="focusTopics" value={value} />
+        ))}
+        {values.groupPreferences.map((value) => (
+          <input key={`group-${value}`} type="hidden" name="groupPreferences" value={value} />
         ))}
         {values.learningStyles.map((value) => (
           <input key={`style-${value}`} type="hidden" name="learningStyles" value={value} />
@@ -515,6 +553,60 @@ export function StudentRegistrationWizard({ plans }: { plans: StudentPlan[] }) {
           )}
 
           {step === 3 && (
+            <div className="mt-8 space-y-4">
+              {groups.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-border px-6 py-14 text-center text-sm text-muted-foreground">
+                  Não há turmas com vagas no momento. Fale com a coordenação.
+                </p>
+              ) : (
+                <fieldset>
+                  <legend className="sr-only">Turmas de preferência</legend>
+                  <p className="mb-3 text-sm text-muted-foreground">
+                    {values.groupPreferences.length} de {MAX_GROUP_PREFERENCES} escolhidas — a
+                    ordem em que você toca define a prioridade.
+                  </p>
+                  <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                    {groups.map((group) => {
+                      const rank = values.groupPreferences.indexOf(group.id);
+                      const selected = rank !== -1;
+                      return (
+                        <button
+                          key={group.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => toggleGroup(group.id)}
+                          className={cn(
+                            "flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
+                            selected
+                              ? "border-gold-500 bg-gold-50/60 text-foreground"
+                              : "border-border bg-background text-foreground hover:border-gold-300",
+                          )}
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-semibold">{group.name}</span>
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {formatGroupSchedule(group.schedule)}
+                            </span>
+                          </span>
+                          {selected && (
+                            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-navy-800 text-xs font-bold text-white">
+                              {rank + 1}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {fieldErrors?.groupPreferences?.[0] && (
+                    <FieldError>{fieldErrors.groupPreferences[0]}</FieldError>
+                  )}
+                </fieldset>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
             <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
               <div className="space-y-9">
                 <section className="space-y-4">

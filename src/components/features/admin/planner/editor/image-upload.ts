@@ -19,7 +19,7 @@ import type { Editor } from "@tiptap/react";
  */
 
 const UPLOAD_URL = "/api/lesson-assets/upload";
-const MAX_SIDE = 1600;
+const MAX_SIDE = 2560;
 const QUALITY = 0.85;
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 

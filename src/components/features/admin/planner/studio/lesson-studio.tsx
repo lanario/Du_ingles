@@ -445,7 +445,7 @@ export function LessonStudio({
               initial={reduceMotion ? false : { y: 18, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 30 }}
-              className="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-8"
+              className="mx-auto w-full max-w-[1800px] px-3 py-6 sm:px-6"
             >
               <LessonCanvas
                 content={content}

@@ -2,6 +2,13 @@ import "server-only";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database.types";
 import type { SubscriptionStatus } from "@/repositories/student-subscriptions";
+import type { GroupPreferenceOption } from "@/schemas/student-registration";
+
+export interface RegistrationGroupPreference {
+  groupId: string;
+  name: string;
+  schedule: { weekday: number; start: string; end: string }[];
+}
 
 export interface RegistrationAnswers {
   isAdult: boolean;
@@ -15,6 +22,8 @@ export interface RegistrationAnswers {
   studySituation: string;
   profession: string;
   professionOther: string;
+  /** Turmas desejadas, da mais para a menos preferida (snapshot do envio). */
+  groupPreferences: RegistrationGroupPreference[];
 }
 
 export interface StudentRegistration {
@@ -42,7 +51,61 @@ const EMPTY_ANSWERS: RegistrationAnswers = {
   studySituation: "personal",
   profession: "",
   professionOther: "",
+  groupPreferences: [],
 };
+
+function preferencesOf(input: Json | undefined): RegistrationGroupPreference[] {
+  if (!Array.isArray(input)) return [];
+  return input.flatMap((item) => {
+    if (item === null || Array.isArray(item) || typeof item !== "object") return [];
+    const entry = item as Record<string, Json | undefined>;
+    if (typeof entry.groupId !== "string") return [];
+    const schedule = Array.isArray(entry.schedule)
+      ? entry.schedule.flatMap((slot) => {
+          if (slot === null || Array.isArray(slot) || typeof slot !== "object") return [];
+          const { weekday, start, end } = slot as Record<string, Json | undefined>;
+          return typeof weekday === "number" &&
+            typeof start === "string" &&
+            typeof end === "string"
+            ? [{ weekday, start, end }]
+            : [];
+        })
+      : [];
+    return [
+      {
+        groupId: entry.groupId,
+        name: typeof entry.name === "string" ? entry.name : "Turma",
+        schedule,
+      },
+    ];
+  });
+}
+
+/**
+ * Turmas ativas com vaga, só com o que o aluno pode ver (nome e horários).
+ * A página de cadastro é pública, por isso usa o cliente admin.
+ */
+export async function listGroupsWithVacancy(
+  organizationId: string,
+): Promise<GroupPreferenceOption[]> {
+  const admin = createAdminSupabaseClient();
+  const { data } = await admin
+    .from("groups")
+    .select("id, name, max_students, schedule, end_date, enrollments(count)")
+    .eq("organization_id", organizationId)
+    .eq("is_active", true)
+    .eq("enrollments.status", "active")
+    .order("name");
+
+  const today = new Date().toISOString().slice(0, 10);
+  return (data ?? []).flatMap((row) => {
+    const seatsLeft = row.max_students - (row.enrollments?.[0]?.count ?? 0);
+    const schedule = (row.schedule as GroupPreferenceOption["schedule"] | null) ?? [];
+    if (seatsLeft <= 0 || schedule.length === 0) return [];
+    if (row.end_date && row.end_date < today) return [];
+    return [{ id: row.id, name: row.name, schedule, seatsLeft }];
+  });
+}
 
 function answersOf(value: Json): RegistrationAnswers {
   if (value === null || Array.isArray(value) || typeof value !== "object") {
@@ -66,6 +129,7 @@ function answersOf(value: Json): RegistrationAnswers {
     studySituation: string(row.studySituation) || "personal",
     profession: string(row.profession),
     professionOther: string(row.professionOther),
+    groupPreferences: preferencesOf(row.groupPreferences),
   };
 }
 

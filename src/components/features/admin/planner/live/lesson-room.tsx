@@ -484,7 +484,7 @@ function DuringLesson({ session, live, attendance }: LessonRoomProps) {
               </div>
             </div>
 
-            <div className="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-8">
+            <div className="mx-auto w-full max-w-[1800px] px-3 py-6 sm:px-6">
               <LessonCanvas
                 content={content}
                 onChange={(next) => update({ content: next })}

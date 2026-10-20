@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { SearchIcon, TrashIcon } from "@/components/ui/icons";
+import { formatGroupSchedule } from "@/schemas/student-registration";
 import type { ActionResult } from "@/types/action-result";
 import type { GroupListItem } from "@/repositories/groups";
 import type { StudentRegistration } from "@/repositories/student-registrations";
@@ -250,6 +251,35 @@ export function RegistrationsPanel({
                     label="Estilo de ensino"
                     value={labels(answers.learningStyles, STYLE_LABELS)}
                   />
+                  <div className="sm:col-span-2">
+                    <dt className="text-[10px] font-semibold uppercase tracking-wide text-admin-foreground/45">
+                      Turmas de preferência
+                    </dt>
+                    <dd className="mt-1.5">
+                      {answers.groupPreferences.length === 0 ? (
+                        <span className="text-sm text-admin-foreground">Não informado</span>
+                      ) : (
+                        <ol className="space-y-1.5">
+                          {answers.groupPreferences.map((preference, index) => (
+                            <li
+                              key={preference.groupId}
+                              className="flex items-start gap-2.5 text-sm text-admin-foreground"
+                            >
+                              <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-gold-100 text-[11px] font-bold text-gold-800">
+                                {index + 1}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="font-medium">{preference.name}</span>
+                                <span className="block text-xs text-admin-foreground/60">
+                                  {formatGroupSchedule(preference.schedule)}
+                                </span>
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </dd>
+                  </div>
                   <div className="sm:col-span-2">
                     <Detail
                       label="Objetivo das aulas"

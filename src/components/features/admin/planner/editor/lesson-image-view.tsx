@@ -93,6 +93,40 @@ export function LessonImageView(props: ReactNodeViewProps) {
     }
   }, [editor, getPos]);
 
+  /** Calcula a largura máxima real permitida pela folha / página. */
+  const getMaxPageWidth = useCallback(() => {
+    const figure = figureRef.current;
+    if (!figure) return 1800;
+    const paper = figure.closest(".lesson-paper") as HTMLElement | null;
+    if (paper) {
+      const paperStyle = window.getComputedStyle(paper);
+      const padLeft = parseFloat(paperStyle.paddingLeft) || 0;
+      const padRight = parseFloat(paperStyle.paddingRight) || 0;
+      return Math.max(MIN_WIDTH, Math.floor(paper.clientWidth - padLeft - padRight));
+    }
+    const parentWidth = figure.parentElement?.getBoundingClientRect().width ?? 1200;
+    return Math.max(parentWidth, MIN_WIDTH);
+  }, []);
+
+  /** Expande para o limite máximo da página toda ou retorna ao tamanho padrão. */
+  const toggleFullWidth = useCallback(() => {
+    if (!editable) return;
+    const maxW = getMaxPageWidth();
+    const currentW = liveWidth ?? imageRef.current?.getBoundingClientRect().width ?? 720;
+    const isFull = Math.abs(currentW - maxW) < 24;
+    const nextWidth = isFull ? Math.min(720, maxW) : maxW;
+
+    setLiveWidth(nextWidth);
+    if (imageRef.current) {
+      imageRef.current.style.width = `${nextWidth}px`;
+    }
+    if (!isFull && free) {
+      updateAttributes({ width: nextWidth, offsetX: 0 });
+    } else {
+      updateAttributes({ width: nextWidth });
+    }
+  }, [editable, free, getMaxPageWidth, liveWidth, updateAttributes]);
+
   /**
    * Redimensionar com o ponteiro CAPTURADO pelo punho. Sem a captura, o
    * arrasto que começa dentro do nó vira um drag-and-drop nativo do
@@ -120,9 +154,14 @@ export function LessonImageView(props: ReactNodeViewProps) {
       }
 
       const startX = event.clientX;
-      const startWidth = image.getBoundingClientRect().width;
-      const maxWidth = figure.parentElement?.getBoundingClientRect().width ?? 900;
+      const startY = event.clientY;
+      const startRect = image.getBoundingClientRect();
+      const startWidth = startRect.width;
+      const startHeight = startRect.height;
+      const aspectRatio = startHeight > 0 ? startWidth / startHeight : 1;
+      const maxWidth = getMaxPageWidth();
       const growsLeft = corner === "nw" || corner === "sw";
+      const growsTop = corner === "nw" || corner === "ne";
 
       setDragging(true);
       let next = Math.round(startWidth);
@@ -130,7 +169,9 @@ export function LessonImageView(props: ReactNodeViewProps) {
 
       const onMove = (moveEvent: PointerEvent) => {
         moveEvent.preventDefault();
-        const delta = (moveEvent.clientX - startX) * (growsLeft ? -1 : 1);
+        const dx = (moveEvent.clientX - startX) * (growsLeft ? -1 : 1);
+        const dy = (moveEvent.clientY - startY) * (growsTop ? -1 : 1);
+        const delta = Math.abs(dx) >= Math.abs(dy) ? dx : dy * aspectRatio;
         next = Math.round(clamp(startWidth + delta, MIN_WIDTH, maxWidth));
         if (frame) return;
         frame = window.requestAnimationFrame(() => {
@@ -163,7 +204,7 @@ export function LessonImageView(props: ReactNodeViewProps) {
       handle.addEventListener("pointerup", finish);
       handle.addEventListener("pointercancel", finish);
     },
-    [editable, updateAttributes],
+    [editable, getMaxPageWidth, updateAttributes],
   );
 
   /**
@@ -274,6 +315,22 @@ export function LessonImageView(props: ReactNodeViewProps) {
 
               <button
                 type="button"
+                aria-label="Ajustar à largura total da página"
+                title="Ajustar à largura total da página (ou clique duplo nos cantos)"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  toggleFullWidth();
+                }}
+                className="grid h-7 w-7 place-items-center rounded-full text-xs font-semibold text-admin-foreground/70 transition-colors hover:bg-admin-muted hover:text-admin-foreground"
+              >
+                <span aria-hidden className="text-sm">⤢</span>
+              </button>
+
+              <span className="mx-1 h-4 w-px bg-admin-border" aria-hidden />
+
+              <button
+                type="button"
                 aria-label="Remover imagem"
                 onClick={() => deleteNode()}
                 className="grid h-7 w-7 place-items-center rounded-full text-sm text-red-600 transition-colors hover:bg-red-50"
@@ -294,9 +351,15 @@ export function LessonImageView(props: ReactNodeViewProps) {
               data-image-control
               onDragStart={(event) => event.preventDefault()}
               onPointerDown={(event) => startResize(event, handle.corner)}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleFullWidth();
+              }}
+              title="Arraste para redimensionar · Clique duplo para expandir para a página toda"
               style={{ touchAction: "none" }}
               className={cn(
-                "absolute z-10 h-3.5 w-3.5 rounded-full border-2 border-white bg-navy-900 shadow",
+                "absolute z-10 h-3.5 w-3.5 rounded-full border-2 border-white bg-navy-900 shadow transition-transform hover:scale-125",
                 handle.className,
               )}
             />

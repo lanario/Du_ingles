@@ -844,32 +844,17 @@ input:autofill {
   color: var(--foreground);
   font-size: 16px;
   line-height: 1.75;
-  /*
-   * Medida do texto: cresce com a tela até um teto confortável de leitura.
-   * `min(100%, …)` garante que a folha nunca estoure a coluna — em telas
-   * largas ela usa o espaço, em telas estreitas ela encolhe junto.
-   */
-  max-width: min(100%, 46rem);
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
   min-height: 420px;
-}
-
-@media (min-width: 1024px) {
-  .lesson-sheet {
-    max-width: min(100%, 58rem);
-  }
-}
-
-@media (min-width: 1536px) {
-  .lesson-sheet {
-    max-width: min(100%, 70rem);
-  }
 }
 
 .lesson-sheet-presenting {
   font-size: 20px;
   line-height: 1.8;
-  max-width: min(100%, 62rem);
+  width: 100%;
+  max-width: 100%;
 }
 
 .lesson-sheet > * + * {

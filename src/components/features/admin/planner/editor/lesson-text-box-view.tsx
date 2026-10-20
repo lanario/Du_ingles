@@ -98,7 +98,16 @@ export function LessonTextBoxView(props: ReactNodeViewProps) {
 
       const startX = event.clientX;
       const startWidth = box.getBoundingClientRect().width;
-      const maxWidth = box.parentElement?.getBoundingClientRect().width ?? 900;
+      const paper = box.closest(".lesson-paper") as HTMLElement | null;
+      let maxPageWidth = 1800;
+      if (paper) {
+        const paperStyle = window.getComputedStyle(paper);
+        const padLeft = parseFloat(paperStyle.paddingLeft) || 0;
+        const padRight = parseFloat(paperStyle.paddingRight) || 0;
+        maxPageWidth = Math.floor(paper.clientWidth - padLeft - padRight);
+      }
+      const parentWidth = box.parentElement?.getBoundingClientRect().width ?? 900;
+      const maxWidth = Math.max(maxPageWidth, parentWidth, 900);
       // Ancorada à direita, a caixa cresce para a esquerda: o punho fica do
       // lado de dentro e o gesto tem que acompanhar o que se vê.
       const growsLeft = attrs.align === "right";

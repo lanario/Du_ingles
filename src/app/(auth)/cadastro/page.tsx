@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { StudentRegistrationWizard } from "@/components/features/auth/student-registration-wizard";
 import { getDefaultOrganizationId } from "@/lib/organization";
+import { listGroupsWithVacancy } from "@/repositories/student-registrations";
 import { listPublicPlans } from "@/repositories/student-plans";
 
 export const metadata: Metadata = { title: "Cadastro de aluno" };
 
 export default async function CadastroPage() {
   const organizationId = await getDefaultOrganizationId();
-  const plans = await listPublicPlans(organizationId);
+  const [plans, groups] = await Promise.all([
+    listPublicPlans(organizationId),
+    listGroupsWithVacancy(organizationId),
+  ]);
 
   // Só planos que a action de cadastro aceita (recorrentes e com preço na
   // Stripe). Os identificadores da Stripe ficam no servidor: o formulário só
@@ -23,5 +27,5 @@ export default async function CadastroPage() {
       syncError: null,
     }));
 
-  return <StudentRegistrationWizard plans={registrationPlans} />;
+  return <StudentRegistrationWizard plans={registrationPlans} groups={groups} />;
 }

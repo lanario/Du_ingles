@@ -41,6 +41,28 @@ export const REGISTRATION_PROFESSION_OPTIONS = [
   { value: "other", label: "Outro" },
 ] as const;
 
+export const MAX_GROUP_PREFERENCES = 3;
+
+export interface GroupPreferenceOption {
+  id: string;
+  name: string;
+  schedule: { weekday: number; start: string; end: string }[];
+  seatsLeft: number;
+}
+
+const WEEKDAY_ABBR = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
+/** "seg 19:00–20:30 · qua 19:00–20:30" — grade da turma em uma linha. */
+export function formatGroupSchedule(
+  schedule: { weekday: number; start: string; end: string }[],
+): string {
+  if (schedule.length === 0) return "Horário a combinar";
+  return [...schedule]
+    .sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start))
+    .map((entry) => `${WEEKDAY_ABBR[entry.weekday] ?? "?"} ${entry.start}–${entry.end}`)
+    .join(" · ");
+}
+
 const optionalText = (max: number) =>
   z
     .string()
@@ -112,6 +134,11 @@ export const studentRegistrationSchema = z
     ]),
     professionOther: optionalText(120),
     planId: z.string().uuid("Escolha um plano disponível."),
+    groupPreferences: z
+      .array(z.string().uuid("Escolha turmas disponíveis."))
+      .min(1, "Escolha pelo menos uma turma.")
+      .max(MAX_GROUP_PREFERENCES, "Escolha no máximo 3 turmas.")
+      .refine((ids) => new Set(ids).size === ids.length, "Não repita a mesma turma."),
     email: emailField.transform((value) => value.toLowerCase()),
     password: passwordRules,
     confirmPassword: z.string().min(1, "Confirme a senha."),
