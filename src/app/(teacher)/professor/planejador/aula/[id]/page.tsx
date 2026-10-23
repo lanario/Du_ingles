@@ -11,6 +11,9 @@ import { getNextSessionPlan } from "@/repositories/class-sessions";
 import { AreaProvider, TEACHER_AREA } from "@/components/features/admin/area-context";
 import { LessonRoom } from "@/components/features/admin/planner/live/lesson-room";
 
+// Server Actions desta tela agendam `after()` (PDF, Google): precisam de fôlego.
+export const maxDuration = 60;
+
 export const metadata: Metadata = { title: "Sala de aula" };
 
 interface PageProps {

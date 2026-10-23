@@ -47,7 +47,7 @@ async function ensureCustomer(
       organization_id: organizationId,
       platform: "du-ingles",
     },
-  });
+  }, { idempotencyKey: `customer:${studentId}` });
   return customer.id;
 }
 
@@ -113,7 +113,11 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<strin
     params.payment_intent_data = { metadata };
   }
 
-  const session = await getStripe().checkout.sessions.create(params);
+  // Janela de 10 min: duas abas/cliques no mesmo plano devolvem a mesma sessão.
+  const window = Math.floor(Date.now() / 600_000);
+  const session = await getStripe().checkout.sessions.create(params, {
+    idempotencyKey: `checkout:${input.studentId}:${plan.id}:${trialDays}:${window}`,
+  });
   if (!session.url) throw new Error("A Stripe não devolveu a URL do checkout.");
   await input.onSessionCreated?.(session.id);
   return session.url;

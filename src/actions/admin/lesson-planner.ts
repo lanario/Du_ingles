@@ -600,8 +600,14 @@ export async function deleteSessionAction(
   if (session.status === "in_progress" || session.status === "completed")
     return fail("CONFLICT", "Aula em andamento ou já dada não pode ser excluída.");
 
-  // A notificação sai antes da linha sumir: depois do delete não haveria mais
-  // sessão para o aviso apontar. Só faz sentido para quem esperava a aula.
+  // Foto dos eventos do Google antes do delete: o cascade leva junto as
+  // linhas que dizem quais são.
+  const googleEvents = await snapshotEvents([sessionId]);
+
+  const success = await planner.deletePlannerSession(sessionId, ctx.organizationId);
+  if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir a aula.");
+
+  // Só avisa se a exclusão deu certo, e só quem esperava a aula.
   if (session.status === "scheduled") {
     notifySessionCancelled({
       organizationId: ctx.organizationId,
@@ -613,13 +619,6 @@ export async function deleteSessionAction(
       scheduledAt: session.scheduledAt,
     });
   }
-
-  // Foto dos eventos do Google antes do delete: o cascade leva junto as
-  // linhas que dizem quais são.
-  const googleEvents = await snapshotEvents([sessionId]);
-
-  const success = await planner.deletePlannerSession(sessionId, ctx.organizationId);
-  if (!success) return fail("INTERNAL_ERROR", "Falha ao excluir a aula.");
 
   queueEventCleanup(googleEvents);
 
@@ -739,7 +738,7 @@ export async function startPlannerSessionAction(
 
   // O conteúdo do plano é COPIADO para a sessão (§4.1): editar a aula ao vivo
   // nunca reescreve o plano de origem, que segue servindo às próximas turmas.
-  const success = await live.startSession(sessionId, lessonPlanId);
+  const success = await live.startSession(sessionId, lessonPlanId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao iniciar a aula.");
 
   await auditLog({
@@ -811,7 +810,7 @@ export async function endPlannerSessionAction(
   if (session.status !== "in_progress")
     return fail("CONFLICT", "Esta aula não está em andamento.");
 
-  const success = await live.endSession(sessionId);
+  const success = await live.endSession(sessionId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao encerrar a aula.");
 
   await auditLog({

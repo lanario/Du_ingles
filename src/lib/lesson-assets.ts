@@ -33,7 +33,10 @@ export interface UploadedAsset {
  * aplicada antes) transformaria "colar uma imagem" em erro silencioso num
  * ambiente recém-provisionado — e criar bucket é idempotente.
  */
+let bucketReady = false;
+
 async function ensureBucket(admin: ReturnType<typeof createAdminSupabaseClient>) {
+  if (bucketReady) return;
   const { error } = await admin.storage.createBucket(LESSON_ASSETS_BUCKET, {
     public: false,
     fileSizeLimit: MAX_BYTES,
@@ -41,6 +44,7 @@ async function ensureBucket(admin: ReturnType<typeof createAdminSupabaseClient>)
   });
   // "already exists" é o caminho feliz de todas as chamadas depois da primeira.
   if (error && !/exist/i.test(error.message)) throw error;
+  bucketReady = true;
 }
 
 /** Nome de pasta seguro: só o que a aplicação gera (`plano-<uuid>`). */

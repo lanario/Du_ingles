@@ -36,7 +36,7 @@ export async function startSessionAction(
   if (session.status !== "scheduled")
     return fail("CONFLICT", "Esta aula já foi iniciada.");
 
-  const success = await repo.startSession(sessionId, lessonPlanId);
+  const success = await repo.startSession(sessionId, lessonPlanId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao iniciar a aula.");
 
   await auditLog({
@@ -68,7 +68,7 @@ export async function endSessionAction(sessionId: string): Promise<ActionResult<
   if (session.status !== "in_progress")
     return fail("CONFLICT", "Esta aula não está em andamento.");
 
-  const success = await repo.endSession(sessionId);
+  const success = await repo.endSession(sessionId, ctx.organizationId);
   if (!success) return fail("INTERNAL_ERROR", "Falha ao encerrar a aula.");
 
   await auditLog({

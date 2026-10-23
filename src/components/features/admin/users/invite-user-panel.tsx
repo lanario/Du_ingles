@@ -30,7 +30,8 @@ import {
   UserIcon,
   type IconProps,
 } from "@/components/ui/icons";
-import { formatPhoneDisplay, formatPhoneInput } from "@/lib/phone";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { formatPhoneDisplay } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/domain";
 import type { ComponentType } from "react";
@@ -63,6 +64,18 @@ export function InviteUserPanel({
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [sent, setSent] = useState(false);
+  const resetTimer = useRef<number | null>(null);
+
+  // Reabrir antes dos 250 ms não pode deixar o timer antigo zerar o formulário novo.
+  useEffect(() => {
+    if (open && resetTimer.current !== null) {
+      window.clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+    }
+    return () => {
+      if (resetTimer.current !== null) window.clearTimeout(resetTimer.current);
+    };
+  }, [open]);
 
   const invite = state?.success ? state.data : null;
   const fieldErrors = state && !state.success ? state.error.fields : undefined;
@@ -84,7 +97,7 @@ export function InviteUserPanel({
     onClose();
     // Espera a animação de saída antes de zerar, senão o painel "pisca" de
     // volta para o passo 1 enquanto ainda está visível.
-    window.setTimeout(reset, 250);
+    resetTimer.current = window.setTimeout(reset, 250);
   }
 
   return (
@@ -170,24 +183,17 @@ export function InviteUserPanel({
               <Label htmlFor="invite-phone" className="text-admin-foreground">
                 WhatsApp <span className="text-gold-600">*</span>
               </Label>
-              <div className="flex items-stretch gap-2">
-                <span className="grid h-10 shrink-0 place-items-center rounded-md border border-admin-border bg-admin-muted px-3 text-sm font-medium text-admin-foreground/60">
-                  +55
-                </span>
-                <Input
-                  id="invite-phone"
-                  name="phone"
-                  type="tel"
-                  inputMode="numeric"
-                  value={phone}
-                  onChange={(event) => setPhone(formatPhoneInput(event.target.value))}
-                  placeholder="(21) 99999-8888"
-                  autoComplete="off"
-                  required
-                  aria-invalid={fieldErrors?.["phone"]?.length ? true : undefined}
-                  className="border-admin-border bg-admin-background focus-visible:ring-gold-500"
-                />
-              </div>
+              <PhoneInput
+                id="invite-phone"
+                name="phone"
+                value={phone}
+                onValueChange={setPhone}
+                autoComplete="off"
+                required
+                invalid={Boolean(fieldErrors?.["phone"]?.length)}
+                selectClassName="h-10 rounded-md border-admin-border bg-admin-muted text-admin-foreground focus:ring-gold-500"
+                inputClassName="h-10 rounded-md border-admin-border bg-admin-background py-2 focus:ring-gold-500"
+              />
               <FieldError messages={fieldErrors?.["phone"]} />
               <p className="text-xs text-admin-foreground/55">
                 Com DDD. É este número que recebe o link do cadastro.

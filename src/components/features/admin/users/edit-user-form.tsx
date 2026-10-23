@@ -5,6 +5,7 @@ import { updateUserAction } from "@/actions/admin/users";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import type { UserDetail } from "@/repositories/users";
 import { LogoLoader } from "@/components/ui/logo-loader";
@@ -33,7 +34,17 @@ export function EditUserForm({ user }: { user: UserDetail }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="phone">Telefone</Label>
-          <Input id="phone" name="phone" type="tel" defaultValue={user.phone ?? ""} />
+          <PhoneInput
+            id="phone"
+            name="phone"
+            defaultValue={user.phone ?? ""}
+            invalid={Boolean(state && !state.success && state.error.fields?.["phone"]?.length)}
+            selectClassName="h-10 rounded-md"
+            inputClassName="h-10 rounded-md py-2"
+          />
+          <FieldError
+            messages={state && !state.success ? state.error.fields?.["phone"] : undefined}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="birthDate">Data de nascimento</Label>

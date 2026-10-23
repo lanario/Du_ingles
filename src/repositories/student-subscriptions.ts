@@ -143,10 +143,15 @@ export async function upsertSubscription(
     {
       organization_id: input.organizationId,
       student_id: input.studentId,
-      plan_id: input.planId,
+      // Campos opcionais só entram quando há valor: eventos `subscription.*`
+      // não os trazem e não podem apagar o que o checkout/fatura já gravou
+      // (nem o plano, se o Price foi arquivado numa troca de preço).
+      ...(input.planId ? { plan_id: input.planId } : {}),
       stripe_customer_id: input.stripeCustomerId,
       stripe_subscription_id: input.stripeSubscriptionId,
-      stripe_checkout_session_id: input.stripeCheckoutSessionId ?? null,
+      ...(input.stripeCheckoutSessionId
+        ? { stripe_checkout_session_id: input.stripeCheckoutSessionId }
+        : {}),
       status: input.status,
       current_period_start: input.currentPeriodStart,
       current_period_end: input.currentPeriodEnd,
@@ -155,7 +160,7 @@ export async function upsertSubscription(
       trial_end: input.trialEnd,
       amount_cents: input.amountCents,
       currency: input.currency,
-      hosted_invoice_url: input.hostedInvoiceUrl,
+      ...(input.hostedInvoiceUrl ? { hosted_invoice_url: input.hostedInvoiceUrl } : {}),
     },
     { onConflict: "stripe_subscription_id" },
   );
@@ -174,10 +179,11 @@ export async function attachLatestInvoice(
 ): Promise<void> {
   if (!hostedInvoiceUrl) return;
   const admin = createAdminSupabaseClient();
-  await admin
+  const { error } = await admin
     .from("student_subscriptions")
     .update({ hosted_invoice_url: hostedInvoiceUrl })
     .eq("stripe_subscription_id", stripeSubscriptionId);
+  if (error) throw new Error(`falha ao gravar fatura: ${error.message}`);
 }
 
 export interface SubscriptionSummary {

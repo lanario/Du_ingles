@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { emailField, nameField, phoneIssue } from "@/schemas/field-messages";
+import { emailField, nameField, optionalPhoneField, phoneIssue } from "@/schemas/field-messages";
 
 /**
  * Caixa "li a política e autorizo o contato" (LGPD art. 8: consentimento
@@ -13,12 +13,7 @@ const contactConsentField = z.literal("on", {
 export const createLeadSchema = z.object({
   name: nameField({ requireSurname: false, max: 120 }),
   email: emailField,
-  phone: z
-    .string()
-    .trim()
-    .max(30)
-    .optional()
-    .transform((v) => (v ? v : undefined)),
+  phone: optionalPhoneField,
   message: z
     .string()
     .trim()

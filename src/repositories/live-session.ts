@@ -65,20 +65,27 @@ export async function getLiveSession(
 export async function startSession(
   sessionId: string,
   lessonPlanId: string | null,
+  organizationId: string,
 ): Promise<boolean> {
   const admin = createAdminSupabaseClient();
 
   let content: Json = { type: "doc", content: [] };
   if (lessonPlanId) {
+    // O id vem do cliente: sem o filtro de organização, copiaria o conteúdo de
+    // um plano de outra organização.
     const { data: plan } = await admin
       .from("lesson_plans")
       .select("content")
       .eq("id", lessonPlanId)
-      .single();
-    if (plan) content = plan.content;
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+    if (!plan) return false;
+    content = plan.content;
   }
 
-  const { error } = await admin
+  // Só `scheduled` inicia: um segundo clique/aba não pode regravar `content`
+  // por cima do que o professor já editou.
+  const { data, error } = await admin
     .from("class_sessions")
     .update({
       status: "in_progress",
@@ -86,22 +93,31 @@ export async function startSession(
       lesson_plan_id: lessonPlanId,
       content,
     })
-    .eq("id", sessionId);
+    .eq("id", sessionId)
+    .eq("organization_id", organizationId)
+    .eq("status", "scheduled")
+    .select("id");
 
-  return !error;
+  return !error && (data?.length ?? 0) > 0;
 }
 
-export async function endSession(sessionId: string): Promise<boolean> {
+export async function endSession(
+  sessionId: string,
+  organizationId: string,
+): Promise<boolean> {
   const admin = createAdminSupabaseClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("class_sessions")
     .update({
       status: "completed",
       ended_at: new Date().toISOString(),
       is_published: true,
     })
-    .eq("id", sessionId);
-  return !error;
+    .eq("id", sessionId)
+    .eq("organization_id", organizationId)
+    .eq("status", "in_progress")
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
 
 export async function saveContent(

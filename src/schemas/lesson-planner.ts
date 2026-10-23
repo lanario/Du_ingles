@@ -1,6 +1,18 @@
 import { z } from "zod";
 import { CEFR_LEVELS } from "@/types/domain";
 
+/** `2026-02-31` passa no regex mas faz `fromZonedTime` lançar (erro 500). */
+function isRealDate(value: string): boolean {
+  const [y, m, d] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(y!, m! - 1, d!));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m! - 1 && date.getUTCDate() === d;
+}
+
+function isRealTime(value: string): boolean {
+  const [h, m] = value.split(":").map(Number);
+  return h! <= 23 && m! <= 59;
+}
+
 /**
  * Planejador de aulas (área admin). Reaproveita as tabelas `lesson_plans` e
  * `class_sessions` — o que muda aqui é o alcance: o admin planeja para a
@@ -76,8 +88,14 @@ export const schedulePlannerSessionSchema = z.object({
   lessonPlanId: optionalUuid,
   teacherId: optionalUuid,
   title: z.string().trim().min(2, "Informe o título da aula.").max(200),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data."),
-  time: z.string().regex(/^\d{2}:\d{2}$/, "Escolha o horário."),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data.")
+    .refine(isRealDate, "Essa data não existe."),
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Escolha o horário.")
+    .refine(isRealTime, "Horário inválido."),
   durationMinutes: z.coerce.number().int().min(15).max(240).default(60),
 });
 export type SchedulePlannerSessionInput = z.infer<typeof schedulePlannerSessionSchema>;
@@ -89,8 +107,14 @@ export type SchedulePlannerSessionInput = z.infer<typeof schedulePlannerSessionS
  */
 export const rescheduleSessionSchema = z.object({
   title: optionalText(200),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data."),
-  time: z.string().regex(/^\d{2}:\d{2}$/, "Escolha o horário."),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data.")
+    .refine(isRealDate, "Essa data não existe."),
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Escolha o horário.")
+    .refine(isRealTime, "Horário inválido."),
   durationMinutes: z.coerce.number().int().min(15).max(240),
 });
 export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
@@ -102,8 +126,14 @@ export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
  */
 export const nextSessionSchema = z.object({
   title: z.string().trim().min(2, "Informe o título da próxima aula.").max(200),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data."),
-  time: z.string().regex(/^\d{2}:\d{2}$/, "Escolha o horário."),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data.")
+    .refine(isRealDate, "Essa data não existe."),
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Escolha o horário.")
+    .refine(isRealTime, "Horário inválido."),
   durationMinutes: z.coerce.number().int().min(15).max(240).default(60),
   lessonPlanId: optionalUuid,
   /** Vira `teacher_notes` da nova aula — lembrete privado do professor. */

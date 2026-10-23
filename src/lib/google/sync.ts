@@ -487,7 +487,7 @@ export function backfillForProfile(profileId: string, role: AppRole): Promise<vo
 
     let query = admin
       .from("class_sessions")
-      .select("id")
+      .select("id, scheduled_at")
       .eq("status", "scheduled")
       .gte("scheduled_at", from)
       .lte("scheduled_at", until)
@@ -523,7 +523,7 @@ export function backfillForProfile(profileId: string, role: AppRole): Promise<vo
     const [{ data: existing }, { data: meets }] = await Promise.all([
       admin
         .from("google_event_links")
-        .select("session_id, synced_at")
+        .select("session_id, synced_at, synced_start")
         .eq("profile_id", profileId)
         .in("session_id", ids),
       admin
@@ -533,6 +533,12 @@ export function backfillForProfile(profileId: string, role: AppRole): Promise<vo
     ]);
     const syncedAt = new Map(
       (existing ?? []).map((row) => [row.session_id, new Date(row.synced_at).getTime()]),
+    );
+    const syncedStart = new Map(
+      (existing ?? []).map((row) => [row.session_id, new Date(row.synced_start).getTime()]),
+    );
+    const startOf = new Map(
+      (sessions ?? []).map((row) => [row.id, new Date(row.scheduled_at).getTime()]),
     );
     const meetOf = new Map((meets ?? []).map((row) => [row.session_id, row]));
 
@@ -545,7 +551,11 @@ export function backfillForProfile(profileId: string, role: AppRole): Promise<vo
         meet !== undefined &&
         meet.host_profile_id !== profileId &&
         at < new Date(meet.created_at).getTime();
-      if (at !== undefined && !missingLink) continue;
+      // Horário remarcado cujo PATCH falhou: o evento do Google ficaria errado
+      // para sempre, porque "tem evento" bastava para pular a aula.
+      const staleStart =
+        at !== undefined && syncedStart.get(id) !== startOf.get(id);
+      if (at !== undefined && !missingLink && !staleStart) continue;
       await syncSession(id, { onlyProfileId: profileId });
     }
   })()

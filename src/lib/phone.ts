@@ -55,3 +55,59 @@ export function formatPhoneDisplay(canonical: string): string {
 export function whatsappUrl(canonicalPhone: string, message: string): string {
   return `https://wa.me/${onlyDigits(canonicalPhone)}?text=${encodeURIComponent(message)}`;
 }
+
+/** Países oferecidos no seletor do telefone. O Brasil (+55) é o padrão. */
+export const PHONE_COUNTRIES = [
+  { ddi: "55", flag: "🇧🇷", name: "Brasil" },
+  { ddi: "351", flag: "🇵🇹", name: "Portugal" },
+  { ddi: "1", flag: "🇺🇸", name: "EUA / Canadá" },
+  { ddi: "44", flag: "🇬🇧", name: "Reino Unido" },
+  { ddi: "34", flag: "🇪🇸", name: "Espanha" },
+  { ddi: "39", flag: "🇮🇹", name: "Itália" },
+  { ddi: "49", flag: "🇩🇪", name: "Alemanha" },
+  { ddi: "33", flag: "🇫🇷", name: "França" },
+  { ddi: "54", flag: "🇦🇷", name: "Argentina" },
+  { ddi: "595", flag: "🇵🇾", name: "Paraguai" },
+  { ddi: "598", flag: "🇺🇾", name: "Uruguai" },
+  { ddi: "81", flag: "🇯🇵", name: "Japão" },
+] as const;
+
+export const DEFAULT_DDI = BR_DDI;
+
+/** Máscara do número nacional: BR usa (DD) 99999-9999; os demais, blocos de 3-4. */
+export function formatNationalNumber(ddi: string, value: string): string {
+  if (ddi === BR_DDI) return formatPhoneInput(value);
+  const digits = onlyDigits(value).slice(0, 15 - ddi.length);
+  const groups: string[] = [];
+  for (let index = 0; index < digits.length; index += 3) {
+    groups.push(digits.slice(index, index + 3));
+  }
+  return groups.join(" ");
+}
+
+/** Separa um valor salvo (ou digitado) em DDI + número nacional. */
+export function splitPhone(value: string | null | undefined): {
+  ddi: string;
+  national: string;
+} {
+  const raw = (value ?? "").trim();
+  const digits = onlyDigits(raw);
+  if (!digits) return { ddi: DEFAULT_DDI, national: "" };
+
+  const explicitDdi = raw.startsWith("+") || (digits.startsWith(BR_DDI) && digits.length >= 12);
+  if (explicitDdi) {
+    const country = [...PHONE_COUNTRIES]
+      .sort((a, b) => b.ddi.length - a.ddi.length)
+      .find((entry) => digits.startsWith(entry.ddi));
+    if (country) return { ddi: country.ddi, national: digits.slice(country.ddi.length) };
+    return { ddi: DEFAULT_DDI, national: digits };
+  }
+  return { ddi: DEFAULT_DDI, national: digits };
+}
+
+/** "+55 (21) 96641-8522" — o valor que o formulário envia. Vazio sem número. */
+export function composePhone(ddi: string, national: string): string {
+  const digits = onlyDigits(national);
+  if (!digits) return "";
+  return `+${ddi} ${formatNationalNumber(ddi, digits)}`;
+}

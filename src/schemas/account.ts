@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { passwordRules } from "@/schemas/auth";
-import { confirmPasswordMatches } from "@/schemas/field-messages";
+import { confirmPasswordMatches, optionalPhoneField } from "@/schemas/field-messages";
 
 /**
  * O que a pessoa edita na própria conta. Nome, telefone e nascimento — papel,
@@ -10,17 +10,16 @@ import { confirmPasswordMatches } from "@/schemas/field-messages";
  */
 export const updateMyProfileSchema = z.object({
   fullName: z.string().trim().min(2, "Informe o nome completo.").max(160),
-  phone: z
-    .string()
-    .trim()
-    .max(30)
-    .optional()
-    .transform((v) => v || undefined),
+  phone: optionalPhoneField,
   birthDate: z
     .string()
     .trim()
     .optional()
-    .transform((v) => v || undefined),
+    .transform((v) => v || undefined)
+    .refine(
+      (v) => v === undefined || (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))),
+      "Informe uma data de nascimento válida.",
+    ),
 });
 export type UpdateMyProfileInput = z.infer<typeof updateMyProfileSchema>;
 

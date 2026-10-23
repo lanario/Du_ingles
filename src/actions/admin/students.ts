@@ -38,7 +38,9 @@ export async function moveStudentToGroupAction(
   if (toGroupId === null) {
     if (!currentEnrollmentId) return ok(undefined as never);
 
-    const removed = await unenrollStudent(currentEnrollmentId);
+    const removed = await unenrollStudent(currentEnrollmentId, {
+      organizationId: ctx.organizationId,
+    });
     if (!removed) return fail("INTERNAL_ERROR", "Falha ao remover o aluno da turma.");
 
     await auditLog({

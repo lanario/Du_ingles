@@ -17,6 +17,7 @@ import { DateField } from "@/components/ui/date-field";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { cn } from "@/lib/utils";
 import type { MyProfile } from "@/repositories/users";
 import { LogoLoader } from "@/components/ui/logo-loader";
@@ -66,12 +67,13 @@ export function ProfileForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="phone">Telefone</Label>
-            <Input
+            <PhoneInput
               id="phone"
               name="phone"
-              type="tel"
-              autoComplete="tel"
               defaultValue={profile.phone ?? ""}
+              invalid={Boolean(fields?.["phone"]?.length)}
+              selectClassName="h-10 rounded-md"
+              inputClassName="h-10 rounded-md py-2"
             />
             <FieldError messages={fields?.["phone"]} />
           </div>

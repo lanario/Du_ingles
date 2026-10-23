@@ -392,8 +392,10 @@ export async function removeSessionAction(
   if (session.status !== "scheduled")
     return fail("CONFLICT", "Só é possível desmarcar aula ainda agendada.");
 
-  // O aviso sai antes da linha sumir: depois do delete não haveria mais aula
-  // para o alerta descrever.
+  const success = await planner.cancelPlannerSession(sessionId, ctx.organizationId);
+  if (!success) return fail("CONFLICT", "Só é possível desmarcar aula agendada.");
+
+  // Só avisa depois de confirmada a escrita; os dados vão explícitos.
   notifySessionCancelled({
     organizationId: ctx.organizationId,
     actorId: ctx.userId,
@@ -403,9 +405,6 @@ export async function removeSessionAction(
     title: session.title,
     scheduledAt: session.scheduledAt,
   });
-
-  const success = await planner.cancelPlannerSession(sessionId, ctx.organizationId);
-  if (!success) return fail("CONFLICT", "Só é possível desmarcar aula agendada.");
 
   await auditLog({
     organizationId: ctx.organizationId,

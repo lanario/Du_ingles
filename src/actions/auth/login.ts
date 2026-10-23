@@ -31,7 +31,10 @@ export async function loginAction(
   const ip = await getClientIp();
   // 5 tentativas / 15 min, por IP+e-mail combinados — nem um IP isolado
   // nem um e-mail isolado bloqueia sozinho (§9 A07).
-  const allowed = await checkRateLimit(`${ip}:${email.toLowerCase()}`, "login", 5, 900);
+  // Teto extra por IP: sem ele, dá para testar uma senha em cada e-mail diferente.
+  const allowed =
+    (await checkRateLimit(`${ip}:${email.toLowerCase()}`, "login", 5, 900)) &&
+    (await checkRateLimit(ip, "login_ip", 40, 900));
   if (!allowed) {
     return fail(
       "RATE_LIMITED",

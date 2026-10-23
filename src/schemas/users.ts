@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { APP_ROLES } from "@/types/domain";
 import { passwordRules } from "@/schemas/auth";
-import { confirmPasswordMatches } from "@/schemas/field-messages";
+import { confirmPasswordMatches, optionalPhoneField } from "@/schemas/field-messages";
 
 /**
  * O que o admin ainda edita num usuário existente. Contas de alunos podem ser
@@ -9,17 +9,16 @@ import { confirmPasswordMatches } from "@/schemas/field-messages";
  */
 export const updateUserSchema = z.object({
   fullName: z.string().trim().min(2, "Informe o nome completo.").max(160),
-  phone: z
-    .string()
-    .trim()
-    .max(30)
-    .optional()
-    .transform((v) => v || undefined),
+  phone: optionalPhoneField,
   birthDate: z
     .string()
     .trim()
     .optional()
-    .transform((v) => v || undefined),
+    .transform((v) => v || undefined)
+    .refine(
+      (v) => v === undefined || (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))),
+      "Informe uma data de nascimento válida.",
+    ),
 });
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 

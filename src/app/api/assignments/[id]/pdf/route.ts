@@ -17,6 +17,8 @@ import {
 
 // react-pdf usa APIs de Node (Buffer, fontkit) — não roda no Edge Runtime.
 export const runtime = "nodejs";
+// `after()` (PDF, Google) roda dentro deste limite: sem ele o trabalho é cortado.
+export const maxDuration = 60;
 
 interface RouteParams {
   params: Promise<{ id: string }>;

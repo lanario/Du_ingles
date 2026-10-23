@@ -97,7 +97,17 @@ export function LiveRefresh({ userId }: { userId: string }) {
         },
       );
     }
-    channel.subscribe();
+    // Depois de uma queda (aba dormiu, rede caiu) eventos foram perdidos e o
+    // Realtime não os reenvia: ao reconectar, refaz a página uma vez.
+    let wasSubscribed = false;
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        if (wasSubscribed) schedule();
+        wasSubscribed = true;
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        schedule();
+      }
+    });
 
     document.addEventListener("visibilitychange", onVisibility);
 

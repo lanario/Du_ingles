@@ -56,13 +56,17 @@ export const AVATAR_MIME_TYPES = Object.keys(EXTENSIONS);
  * recém-provisionado (sem a migration aplicada) transforme "trocar a foto"
  * em erro silencioso.
  */
+let bucketReady = false;
+
 async function ensureBucket(admin: ReturnType<typeof createAdminSupabaseClient>) {
+  if (bucketReady) return;
   const { error } = await admin.storage.createBucket(AVATARS_BUCKET, {
     public: false,
     fileSizeLimit: AVATAR_MAX_BYTES,
     allowedMimeTypes: AVATAR_MIME_TYPES,
   });
   if (error && !/exist/i.test(error.message)) throw error;
+  bucketReady = true;
 }
 
 export interface UploadedAvatar {

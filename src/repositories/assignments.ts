@@ -940,7 +940,7 @@ export async function gradeSubmission(
   manualNotes?: ManualNotes,
 ): Promise<boolean> {
   const admin = createAdminSupabaseClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("assignment_submissions")
     .update({
       score,
@@ -966,6 +966,8 @@ export async function gradeSubmission(
         : {}),
     })
     .eq("assignment_id", assignmentId)
-    .eq("student_id", studentId);
-  return !error;
+    .eq("student_id", studentId)
+    .select("assignment_id");
+  // 0 linhas = aluno sem entrega: não há nota a avisar nem a auditar.
+  return !error && (data?.length ?? 0) > 0;
 }

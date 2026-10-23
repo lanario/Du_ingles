@@ -137,7 +137,10 @@ export async function unenrollStudentAction(
   if (!(await canTouchGroup(ctx, groupId)))
     return fail("FORBIDDEN", "Esta turma não é sua.");
 
-  const removed = await unenrollStudent(enrollmentId);
+  const removed = await unenrollStudent(enrollmentId, {
+    groupId,
+    organizationId: ctx.organizationId,
+  });
   if (!removed) return fail("INTERNAL_ERROR", "Falha ao remover matrícula.");
 
   await auditLog({

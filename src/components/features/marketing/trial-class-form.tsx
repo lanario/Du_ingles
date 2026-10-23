@@ -52,14 +52,34 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/** Máscara BR progressiva: (11) 91234-5678. Fixo para de crescer em 10 dígitos. */
+/** Máscara com +55 padrão (editável) e número formatado logo depois. */
 function maskPhone(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === "+") return trimmed;
+  if (trimmed.startsWith("+")) {
+    const match = trimmed.match(/^\+(\d{1,3})\s*(.*)$/);
+    if (!match) return "+";
+    const ddi = match[1] ?? "55";
+    const rest = (match[2] ?? "").replace(/\D/g, "");
+    if (!rest) return `+${ddi}${trimmed.endsWith(" ") ? " " : ""}`;
+    if (ddi === "55") {
+      const br = rest.slice(0, 11);
+      if (br.length <= 2) return `+55 (${br}`;
+      if (br.length <= 6) return `+55 (${br.slice(0, 2)}) ${br.slice(2)}`;
+      if (br.length <= 10) return `+55 (${br.slice(0, 2)}) ${br.slice(2, 6)}-${br.slice(6)}`;
+      return `+55 (${br.slice(0, 2)}) ${br.slice(2, 7)}-${br.slice(7)}`;
+    }
+    const intl = rest.slice(0, 15 - ddi.length);
+    const groups = intl.match(/.{1,3}/g) ?? [];
+    return `+${ddi} ${groups.join(" ")}`;
+  }
   const digits = raw.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (!digits) return "";
+  if (digits.length <= 2) return `+55 (${digits}`;
+  if (digits.length <= 6) return `+55 (${digits.slice(0, 2)}) ${digits.slice(2)}`;
   if (digits.length <= 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
 // ---------------------------------------------------------------------------

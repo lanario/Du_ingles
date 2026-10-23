@@ -1,4 +1,5 @@
 import "server-only";
+import { fetchAllRows } from "@/lib/supabase/paginate";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { CefrLevel } from "@/types/domain";
 
@@ -55,15 +56,23 @@ export async function getAdminReport(): Promise<AdminReport> {
       .from("groups")
       .select("id, name, teacher:teacher_id(full_name)")
       .eq("is_active", true),
-    supabase
-      .from("attendance")
-      .select(
-        "status, student:student_id(id, full_name), session:session_id(status, group_id)",
-      ),
-    supabase
-      .from("class_sessions")
-      .select("teacher_id, duration_minutes, teacher:teacher_id(full_name)")
-      .eq("status", "completed"),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("attendance")
+        .select(
+          "status, student:student_id(id, full_name), session:session_id(status, group_id)",
+        )
+        .order("id")
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("class_sessions")
+        .select("teacher_id, duration_minutes, teacher:teacher_id(full_name)")
+        .eq("status", "completed")
+        .order("id")
+        .range(from, to),
+    ),
     supabase.from("student_profiles").select("current_level"),
   ]);
 

@@ -126,6 +126,13 @@ export function phoneIssue(
   const digits = value.replace(/\D/g, "");
   if (digits.length === 0) return "Informe os números do telefone.";
 
+  // DDI escolhido pelo usuário (+1, +351…): só confere o tamanho total.
+  if (value.trim().startsWith("+") && !digits.startsWith("55")) {
+    if (digits.length < 8) return "Telefone incompleto para este país.";
+    if (digits.length > 15) return "Número longo demais para um telefone.";
+    return null;
+  }
+
   // +55 é o nosso DDI: tira para conferir DDD e número por baixo dele.
   const national =
     digits.startsWith("55") && digits.length > 11 ? digits.slice(2) : digits;
@@ -152,6 +159,19 @@ export function phoneIssue(
 
   return null;
 }
+
+/** Telefone opcional: vazio vira `undefined`; preenchido, precisa ser válido. */
+export const optionalPhoneField = z
+  .string()
+  .trim()
+  .max(30)
+  .optional()
+  .superRefine((value, ctx) => {
+    if (!value) return;
+    const problem = phoneIssue(value);
+    if (problem) ctx.addIssue({ code: "custom", message: problem });
+  })
+  .transform((value) => value || undefined);
 
 export const cpfField = z
   .string()

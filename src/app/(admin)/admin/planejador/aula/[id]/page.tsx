@@ -10,6 +10,9 @@ import { getLiveSession } from "@/repositories/live-session";
 import { getNextSessionPlan } from "@/repositories/class-sessions";
 import { LessonRoom } from "@/components/features/admin/planner/live/lesson-room";
 
+// Server Actions desta tela agendam `after()` (PDF, Google): precisam de fôlego.
+export const maxDuration = 60;
+
 export const metadata: Metadata = { title: "Sala de aula · Planejador" };
 
 interface PageProps {

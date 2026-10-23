@@ -52,12 +52,11 @@ export async function registerStudentAction(
 
   const input = parsed.data;
   const ip = await getClientIp();
-  const allowed = await checkRateLimit(
-    `${ip}:${input.email}`,
-    "student_registration",
-    5,
-    3600,
-  );
+  // Por e-mail não basta: trocar o e-mail burlaria o limite. O teto por IP
+  // barra a criação em massa de contas já confirmadas.
+  const allowed =
+    (await checkRateLimit(`${ip}:${input.email}`, "student_registration", 5, 3600)) &&
+    (await checkRateLimit(ip, "student_registration_ip", 20, 3600));
   if (!allowed) {
     return fail("RATE_LIMITED", "Muitas tentativas. Tente novamente mais tarde.");
   }

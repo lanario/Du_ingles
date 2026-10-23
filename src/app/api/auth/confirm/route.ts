@@ -12,9 +12,12 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/redefinir-senha";
+  // Só caminho interno: `//host` e `https://host` virariam open redirect.
+  const requestedNext = searchParams.get("next") ?? "";
+  const next = /^\/(?![/\\])/.test(requestedNext) ? requestedNext : "/redefinir-senha";
 
-  if (tokenHash && type) {
+  // Esta rota existe só para o link de recuperação de senha.
+  if (tokenHash && type === "recovery") {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     if (!error) {

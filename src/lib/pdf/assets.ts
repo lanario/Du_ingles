@@ -50,9 +50,47 @@ async function readBytes(
     return null;
   }
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  // URL externa vem do JSON do editor (editável): sem esta trava, o servidor
+  // buscaria endereços internos (SSRF) ou baixaria arquivos gigantes.
+  if (!url.startsWith(ASSET_PREFIX) && isPrivateHost(url)) return null;
+
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(15_000),
+    redirect: "error",
+  });
   if (!response.ok) return null;
-  return Buffer.from(await response.arrayBuffer());
+  if (Number(response.headers.get("content-length") ?? 0) > MAX_IMAGE_BYTES) return null;
+  const bytes = Buffer.from(await response.arrayBuffer());
+  return bytes.byteLength > MAX_IMAGE_BYTES ? null : bytes;
+}
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+/** Localhost, IPs privados/loopback/link-local e nomes sem ponto. */
+function isPrivateHost(rawUrl: string): boolean {
+  let host: string;
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return true;
+  }
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal")) {
+    return true;
+  }
+  if (host.includes(":")) return true; // IPv6 literal: não vale o risco
+  const parts = host.split(".").map(Number);
+  if (parts.length === 4 && parts.every((n) => Number.isInteger(n))) {
+    const [a, b] = parts as [number, number, number, number];
+    return (
+      a === 10 ||
+      a === 127 ||
+      a === 0 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    );
+  }
+  return !host.includes(".");
 }
 
 async function prepare(
@@ -63,7 +101,7 @@ async function prepare(
     const bytes = await readBytes(src, organizationId);
     if (!bytes || bytes.byteLength === 0) return null;
 
-    const base = sharp(bytes, { animated: false }).rotate().resize({
+    const base = sharp(bytes, { animated: false, limitInputPixels: 40_000_000 }).rotate().resize({
       width: MAX_SIDE,
       height: MAX_SIDE,
       fit: "inside",

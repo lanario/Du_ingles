@@ -66,10 +66,26 @@ export async function generateSessionPdf(
 
   if (uploadError) return { success: false };
 
-  await admin
+  const { data: previous } = await admin
+    .from("class_sessions")
+    .select("pdf_path")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  const { error: updateError } = await admin
     .from("class_sessions")
     .update({ pdf_path: path, pdf_generated_at: new Date().toISOString() })
     .eq("id", sessionId);
+  if (updateError) {
+    // Sem apontar para o arquivo novo ele é órfão.
+    await admin.storage.from("session-pdfs").remove([path]);
+    return { success: false };
+  }
+
+  // Cada regeração cria um arquivo novo; o anterior ficaria no Storage para sempre.
+  if (previous?.pdf_path && previous.pdf_path !== path) {
+    await admin.storage.from("session-pdfs").remove([previous.pdf_path]);
+  }
 
   return { success: true, path };
 }

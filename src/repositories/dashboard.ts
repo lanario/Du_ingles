@@ -1,5 +1,6 @@
 import "server-only";
 import { formatInTimeZone } from "date-fns-tz";
+import { fetchAllRows } from "@/lib/supabase/paginate";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { measureDataQuery } from "@/lib/observability/performance";
 import type { CefrLevel } from "@/types/domain";
@@ -164,10 +165,14 @@ export async function getAdminDashboard(organizationId: string): Promise<AdminDa
 
   const results = await Promise.all([
     measureDataQuery("adminDashboard.profiles", () =>
-      admin
+      fetchAllRows((from, to) =>
+        admin
         .from("profiles")
         .select("id, full_name, role, is_active, deleted_at, created_at")
-        .eq("organization_id", organizationId),
+        .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
     ),
     measureDataQuery("adminDashboard.groups", () =>
       admin
@@ -179,22 +184,34 @@ export async function getAdminDashboard(organizationId: string): Promise<AdminDa
       admin.from("courses").select("id, is_active").eq("organization_id", organizationId),
     ),
     measureDataQuery("adminDashboard.enrollments", () =>
-      admin
+      fetchAllRows((from, to) =>
+        admin
         .from("enrollments")
         .select("id, student_id, group_id, status, enrolled_at")
-        .eq("organization_id", organizationId),
+        .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
     ),
     measureDataQuery("adminDashboard.sessions", () =>
-      admin
+      fetchAllRows((from, to) =>
+        admin
         .from("class_sessions")
         .select("id, group_id, teacher_id, status, scheduled_at, duration_minutes, title")
-        .eq("organization_id", organizationId),
+        .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
     ),
     measureDataQuery("adminDashboard.attendance", () =>
-      admin
+      fetchAllRows((from, to) =>
+        admin
         .from("attendance")
         .select("status, student_id, session_id")
-        .eq("organization_id", organizationId),
+        .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
     ),
     measureDataQuery("adminDashboard.assignments", () =>
       admin
@@ -203,10 +220,14 @@ export async function getAdminDashboard(organizationId: string): Promise<AdminDa
         .eq("organization_id", organizationId),
     ),
     measureDataQuery("adminDashboard.submissions", () =>
-      admin
+      fetchAllRows((from, to) =>
+        admin
         .from("assignment_submissions")
         .select("assignment_id, student_id, status, score")
-        .eq("organization_id", organizationId),
+        .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
     ),
     measureDataQuery("adminDashboard.studentProfiles", () =>
       admin
@@ -215,10 +236,14 @@ export async function getAdminDashboard(organizationId: string): Promise<AdminDa
         .eq("organization_id", organizationId),
     ),
     measureDataQuery("adminDashboard.leads", () =>
-      admin
+      fetchAllRows((from, to) =>
+        admin
         .from("leads")
         .select("id, source, created_at")
-        .eq("organization_id", organizationId),
+        .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
     ),
   ]);
 

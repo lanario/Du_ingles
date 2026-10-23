@@ -6,6 +6,9 @@ import { queueBackfill } from "@/lib/google/sync";
 import { getAgenda } from "@/repositories/agenda";
 import { AgendaView } from "@/components/features/agenda/agenda-view";
 
+// Server Actions desta tela agendam `after()` (PDF, Google): precisam de fôlego.
+export const maxDuration = 60;
+
 export const metadata: Metadata = { title: "Agenda" };
 
 /**

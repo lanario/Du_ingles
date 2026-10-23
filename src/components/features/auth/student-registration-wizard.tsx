@@ -39,8 +39,16 @@ import {
   splitMoney,
   type StudentPlan,
 } from "@/components/features/admin/plans/plans-utils";
-import { ArrowLeftIcon, CheckIcon, ChevronRightIcon } from "@/components/ui/icons";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  EyeOffIcon,
+} from "@/components/ui/icons";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { cn } from "@/lib/utils";
+import { phoneIssue } from "@/schemas/field-messages";
 import {
   MAX_GROUP_PREFERENCES,
   formatGroupSchedule,
@@ -158,6 +166,7 @@ export function StudentRegistrationWizard({
   const [consents, setConsents] = useState({ terms: false, contact: false });
   const [step, setStep] = useState(0);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [emailTouched, setEmailTouched] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -197,9 +206,23 @@ export function StudentRegistrationWizard({
     event.preventDefault();
     setLocalError(null);
 
-    if (step === 0 && !values.isAdult) {
-      setLocalError("Informe se você tem 18 anos ou mais.");
-      return;
+    if (step === 0) {
+      const phoneProblem = phoneIssue(values.phone, { allowInternational: true });
+      if (phoneProblem) {
+        setLocalError(phoneProblem);
+        return;
+      }
+      if (!values.isAdult) {
+        setLocalError("Informe se você tem 18 anos ou mais.");
+        return;
+      }
+      if (values.isAdult === "no") {
+        const guardianProblem = phoneIssue(values.guardianPhone, { allowInternational: true });
+        if (guardianProblem) {
+          setLocalError(`Telefone do responsável: ${guardianProblem}`);
+          return;
+        }
+      }
     }
     if (step === 2 && !chosenPlan) {
       setLocalError("Escolha um plano para continuar.");
@@ -211,6 +234,23 @@ export function StudentRegistrationWizard({
     }
     if (!formRef.current?.reportValidity()) return;
     goTo(Math.min(step + 1, LAST_STEP));
+  }
+
+  function submitStep(event: FormEvent<HTMLFormElement>) {
+    if (!EMAIL_RE.test(values.email.trim())) {
+      event.preventDefault();
+      setEmailTouched(true);
+      return;
+    }
+    if (passwordStrength(values.password).score < 4) {
+      event.preventDefault();
+      setLocalError("A senha precisa ter 8+ caracteres, maiúscula, minúscula e número.");
+      return;
+    }
+    if (values.password !== values.confirmPassword) {
+      event.preventDefault();
+      setLocalError("As senhas não coincidem.");
+    }
   }
 
   function toggleChoice(
@@ -255,7 +295,7 @@ export function StudentRegistrationWizard({
       <form
         ref={formRef}
         action={formAction}
-        onSubmit={step < LAST_STEP ? nextStep : undefined}
+        onSubmit={step < LAST_STEP ? nextStep : submitStep}
         className="bg-app-canvas flex min-w-0 flex-col"
       >
         {Object.entries(values).map(([name, value]) => {
@@ -307,16 +347,14 @@ export function StudentRegistrationWizard({
                       placeholder="Seu nome e sobrenome"
                     />
                   </Field>
-                  <Field label="Telefone / WhatsApp" error={fieldErrors?.phone?.[0]}>
-                    <input
+                  <Field label="Telefone / WhatsApp" error={fieldErrors?.phone?.[0]} htmlFor="reg-phone">
+                    <PhoneInput
+                      id="reg-phone"
                       name="phone"
-                      type="tel"
-                      autoComplete="tel"
                       required
                       value={values.phone}
-                      onChange={(event) => set("phone", event.target.value)}
-                      className={INPUT}
-                      placeholder="(11) 99999-9999"
+                      onValueChange={(value) => set("phone", value)}
+                      invalid={Boolean(fieldErrors?.phone?.[0])}
                     />
                   </Field>
                 </div>
@@ -368,15 +406,15 @@ export function StudentRegistrationWizard({
                     <Field
                       label="Telefone do responsável"
                       error={fieldErrors?.guardianPhone?.[0]}
+                      htmlFor="reg-guardian-phone"
                     >
-                      <input
+                      <PhoneInput
+                        id="reg-guardian-phone"
                         name="guardianPhone"
-                        type="tel"
-                        autoComplete="tel"
                         required
                         value={values.guardianPhone}
-                        onChange={(event) => set("guardianPhone", event.target.value)}
-                        className={INPUT}
+                        onValueChange={(value) => set("guardianPhone", value)}
+                        invalid={Boolean(fieldErrors?.guardianPhone?.[0])}
                       />
                     </Field>
                     <Field
@@ -617,7 +655,15 @@ export function StudentRegistrationWizard({
                   />
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="md:col-span-2">
-                      <Field label="E-mail" error={fieldErrors?.email?.[0]}>
+                      <Field
+                        label="E-mail"
+                        error={
+                          fieldErrors?.email?.[0] ??
+                          (emailTouched && values.email && !EMAIL_RE.test(values.email.trim())
+                            ? "Informe um e-mail válido, como voce@exemplo.com."
+                            : undefined)
+                        }
+                      >
                         <input
                           name="email"
                           type="email"
@@ -625,39 +671,40 @@ export function StudentRegistrationWizard({
                           required
                           value={values.email}
                           onChange={(event) => set("email", event.target.value)}
+                          onBlur={() => setEmailTouched(true)}
+                          aria-invalid={emailTouched && !!values.email && !EMAIL_RE.test(values.email.trim())}
                           className={INPUT}
                           placeholder="voce@exemplo.com"
                         />
                       </Field>
                     </div>
-                    <Field label="Senha" error={fieldErrors?.password?.[0]}>
-                      <input
-                        name="password"
-                        type="password"
-                        autoComplete="new-password"
-                        required
-                        minLength={8}
-                        maxLength={72}
-                        value={values.password}
-                        onChange={(event) => set("password", event.target.value)}
-                        className={INPUT}
-                      />
-                      <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        Mínimo de 8 caracteres, com maiúscula, minúscula e número.
-                      </span>
-                    </Field>
+                    <div>
+                      <Field label="Senha" error={fieldErrors?.password?.[0]}>
+                        <PasswordInput
+                          name="password"
+                          required
+                          minLength={8}
+                          maxLength={72}
+                          value={values.password}
+                          onChange={(value) => set("password", value)}
+                        />
+                      </Field>
+                      <PasswordStrength password={values.password} />
+                    </div>
                     <Field
                       label="Confirme sua senha"
-                      error={fieldErrors?.confirmPassword?.[0]}
+                      error={
+                        fieldErrors?.confirmPassword?.[0] ??
+                        (values.confirmPassword && values.confirmPassword !== values.password
+                          ? "As senhas não coincidem."
+                          : undefined)
+                      }
                     >
-                      <input
+                      <PasswordInput
                         name="confirmPassword"
-                        type="password"
-                        autoComplete="new-password"
                         required
                         value={values.confirmPassword}
-                        onChange={(event) => set("confirmPassword", event.target.value)}
-                        className={INPUT}
+                        onChange={(value) => set("confirmPassword", value)}
                       />
                     </Field>
                   </div>
@@ -1015,18 +1062,122 @@ const INPUT =
 function Field({
   label,
   error,
+  htmlFor,
   children,
 }: {
   label: string;
   error?: string;
+  htmlFor?: string;
   children: ReactNode;
 }) {
+  if (htmlFor) {
+    return (
+      <div className="block space-y-1.5 text-sm font-medium text-foreground">
+        <label htmlFor={htmlFor} className="block">
+          {label}
+        </label>
+        {children}
+        {error && <FieldError>{error}</FieldError>}
+      </div>
+    );
+  }
   return (
     <label className="block space-y-1.5 text-sm font-medium text-foreground">
       {label}
       {children}
       {error && <FieldError>{error}</FieldError>}
     </label>
+  );
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function passwordStrength(password: string) {
+  const checks = [
+    password.length >= 8,
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+  ];
+  return { checks, score: checks.filter(Boolean).length };
+}
+
+const STRENGTH_LEVELS = [
+  { label: "Muito fraca", bar: "bg-destructive" },
+  { label: "Fraca", bar: "bg-destructive" },
+  { label: "Razoável", bar: "bg-amber-500" },
+  { label: "Boa", bar: "bg-amber-500" },
+  { label: "Forte", bar: "bg-emerald-500" },
+];
+
+const STRENGTH_RULES = ["8+ caracteres", "minúscula", "maiúscula", "número"];
+
+function PasswordStrength({ password }: { password: string }) {
+  const { checks, score } = passwordStrength(password);
+  const level = STRENGTH_LEVELS[password ? score : 0] ?? STRENGTH_LEVELS[0]!;
+  return (
+    <div className="mt-2 space-y-1.5" aria-live="polite">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className={cn("h-1.5 flex-1 rounded-full bg-border", password && i <= score && level.bar)}
+          />
+        ))}
+      </div>
+      <p className="text-xs font-normal text-muted-foreground">
+        {password ? `Senha ${level.label.toLowerCase()}` : "Crie uma senha forte"}
+      </p>
+      <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs font-normal">
+        {STRENGTH_RULES.map((rule, i) => (
+          <li
+            key={rule}
+            className={cn(checks[i] ? "text-emerald-600" : "text-muted-foreground")}
+          >
+            {checks[i] ? "✓" : "•"} {rule}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PasswordInput({
+  name,
+  value,
+  onChange,
+  ...rest
+}: {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  const Icon = visible ? EyeOffIcon : EyeIcon;
+  return (
+    <span className="relative block">
+      <input
+        {...rest}
+        name={name}
+        type={visible ? "text" : "password"}
+        autoComplete="new-password"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(INPUT, "pr-11")}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+        aria-pressed={visible}
+        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground transition hover:text-foreground"
+      >
+        <Icon className="size-5" />
+      </button>
+    </span>
   );
 }
 

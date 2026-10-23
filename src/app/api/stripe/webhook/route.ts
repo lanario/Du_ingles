@@ -143,16 +143,14 @@ async function persistSubscription(
   const owner = await resolveStudent(subscription.metadata, customerId, fallbackEmail);
   if (!owner) {
     // Sem dono não há linha a criar: inventar um aluno seria pior do que
-    // deixar o admin conciliar o pagamento na mão.
-    console.error(
-      `[stripe-webhook] assinatura ${subscription.id} sem aluno identificável.`,
-    );
-    return null;
+    // deixar o admin conciliar o pagamento na mão. Lança para a Stripe
+    // reentregar (o aluno pode ainda estar sendo criado) e o erro ficar visível.
+    throw new Error(`assinatura ${subscription.id} sem aluno identificável`);
   }
 
   const period = periodOf(subscription);
 
-  await upsertSubscription({
+  const saved = await upsertSubscription({
     organizationId: plan?.organizationId ?? owner.organizationId,
     studentId: owner.studentId,
     planId: plan?.id ?? null,
@@ -169,6 +167,8 @@ async function persistSubscription(
     currency: subscription.currency ?? plan?.currency ?? "brl",
     hostedInvoiceUrl: null,
   });
+  // `false` = erro de banco: lançar faz a Stripe reentregar em vez de perder a cobrança.
+  if (!saved) throw new Error(`falha ao gravar assinatura ${subscription.id}`);
 
   return {
     studentId: owner.studentId,
@@ -234,7 +234,10 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
-        await persistSubscription(event.data.object, null, null);
+        // Reler o objeto atual em vez de gravar o payload do evento: a Stripe
+        // não garante ordem e reentregas antigas regrediriam o status.
+        const current = await getStripe().subscriptions.retrieve(event.data.object.id);
+        await persistSubscription(current, null, null);
         break;
       }
 

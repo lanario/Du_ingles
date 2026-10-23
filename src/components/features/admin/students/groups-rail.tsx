@@ -11,7 +11,7 @@
  * arraste.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { GroupsIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -78,8 +78,28 @@ export function GroupsRail({
     };
   }
 
+  const railRef = useRef<HTMLDivElement>(null);
+
+  // Roda do mouse (vertical) rola a barra na horizontal. Listener nativo: o do
+  // React é passivo e não deixa chamar preventDefault.
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    function onWheel(event: WheelEvent) {
+      if (!el || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      const max = el.scrollWidth - el.clientWidth;
+      const atEdge =
+        (event.deltaY < 0 && el.scrollLeft <= 0) || (event.deltaY > 0 && el.scrollLeft >= max - 1);
+      if (max <= 0 || atEdge) return;
+      event.preventDefault();
+      el.scrollLeft += event.deltaY;
+    }
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   return (
-    <div className="mb-5 -mx-4 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6">
+    <div ref={railRef} className="mb-5 -mx-4 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6">
       <div className="flex w-max items-center gap-2">
         <button
           type="button"

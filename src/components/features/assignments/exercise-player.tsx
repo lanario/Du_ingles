@@ -58,7 +58,8 @@ export function ExercisePlayer({
   const progress = total === 0 ? 0 : Math.round((answered / total) * 100);
 
   useEffect(() => {
-    if (!touched.current) return;
+    // Depois do envio definitivo o rascunho atrasado regravaria por cima dele.
+    if (!touched.current || isPending || state?.success) return;
 
     setSaveState("saving");
     const timer = setTimeout(async () => {
@@ -70,7 +71,7 @@ export function ExercisePlayer({
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [answers, assignmentId]);
+  }, [answers, assignmentId, isPending, state]);
 
   function setAnswer(questionId: string, value: string) {
     touched.current = true;

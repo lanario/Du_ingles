@@ -10,6 +10,8 @@ import { agendaPath } from "@/lib/google/paths";
 import { backfillForProfile } from "@/lib/google/sync";
 
 export const runtime = "nodejs";
+// `after()` (PDF, Google) roda dentro deste limite: sem ele o trabalho é cortado.
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 function sameState(a: string, b: string): boolean {

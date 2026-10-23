@@ -193,6 +193,37 @@ async function activateEnrollment(
 ): Promise<EnrollResult> {
   const admin = createAdminSupabaseClient();
 
+  // Os ids vêm do cliente: confirmar organização, estado e lotação aqui (a
+  // transferência já fazia isso; a matrícula nova não).
+  const [{ data: group }, { data: student }] = await Promise.all([
+    admin
+      .from("groups")
+      .select("max_students, is_active")
+      .eq("id", groupId)
+      .eq("organization_id", organizationId)
+      .maybeSingle(),
+    admin
+      .from("profiles")
+      .select("id")
+      .eq("id", studentId)
+      .eq("organization_id", organizationId)
+      .eq("role", "student")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .maybeSingle(),
+  ]);
+  if (!group) return { success: false, message: "Turma não encontrada." };
+  if (!student) return { success: false, message: "Aluno não encontrado ou inativo." };
+  if (!group.is_active) return { success: false, message: "A turma está inativa." };
+
+  const { count: taken } = await admin
+    .from("enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId)
+    .eq("status", "active");
+  if ((taken ?? 0) >= group.max_students)
+    return { success: false, message: "A turma está lotada." };
+
   const { data: existing } = await admin
     .from("enrollments")
     .select("id")
@@ -461,14 +492,18 @@ export async function transferStudent(
  */
 export async function unenrollStudent(
   enrollmentId: string,
+  scope: { groupId?: string; organizationId: string },
 ): Promise<{ studentId: string; groupId: string } | null> {
   const admin = createAdminSupabaseClient();
-  const { data, error } = await admin
+  // Escopo obrigatório: o id da matrícula vem do cliente, e sem ele um
+  // professor cancelaria matrícula de qualquer turma/organização.
+  let query = admin
     .from("enrollments")
     .update({ status: "cancelled" })
     .eq("id", enrollmentId)
-    .select("student_id, group_id")
-    .maybeSingle();
+    .eq("organization_id", scope.organizationId);
+  if (scope.groupId) query = query.eq("group_id", scope.groupId);
+  const { data, error } = await query.select("student_id, group_id").maybeSingle();
 
   if (error || !data) return null;
   return { studentId: data.student_id, groupId: data.group_id };

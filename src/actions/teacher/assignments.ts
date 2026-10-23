@@ -101,6 +101,13 @@ export async function gradeSubmissionAction(
     .eq("id", assignmentId)
     .maybeSingle();
   if (!owned) return fail("NOT_FOUND", "Tarefa não encontrada.");
+  if (owned.max_score != null && parsed.data.score > owned.max_score) {
+    return fail(
+      "VALIDATION_ERROR",
+      `A nota máxima desta tarefa é ${owned.max_score}.`,
+      { score: [`Use um valor entre 0 e ${owned.max_score}.`] },
+    );
+  }
 
   const answerKey = await repo.getAssignmentAnswerKey(assignmentId);
   const questions = readQuestions(owned.instructions);

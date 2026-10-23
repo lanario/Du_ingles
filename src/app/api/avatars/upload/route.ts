@@ -9,7 +9,11 @@ import {
   deleteAvatar,
   uploadAvatar,
 } from "@/lib/avatars";
-import { getProfileAvatarPath, setProfileAvatar } from "@/repositories/users";
+import {
+  getProfileAvatarPath,
+  getUserRoleAndOrg,
+  setProfileAvatar,
+} from "@/repositories/users";
 
 export const runtime = "nodejs";
 
@@ -37,6 +41,13 @@ export async function POST(request: Request) {
 
   if (target !== ctx.userId && ctx.realRole !== "admin") {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+  }
+  if (target !== ctx.userId) {
+    // Admin só mexe em quem é da própria organização.
+    const targetUser = await getUserRoleAndOrg(target);
+    if (targetUser?.organizationId !== ctx.organizationId) {
+      return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+    }
   }
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Arquivo ausente." }, { status: 400 });

@@ -74,7 +74,7 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, email, role, organization_id, must_change_password, full_name, avatar_url, phone, birth_date",
+      "id, email, role, organization_id, must_change_password, full_name, avatar_url, phone, birth_date, is_active, deleted_at",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -85,6 +85,9 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     profileError?.code,
   );
   if (profileError) throw new Error("Falha ao carregar o perfil da sessão.");
+  // Desativado/anonimizado: o cookie de sessão antigo não vale mais, mesmo que
+  // o refresh token ainda não tenha sido revogado.
+  if (profile && (profile.is_active === false || profile.deleted_at)) return null;
 
   const claimRole = typeof claims["app_role"] === "string" ? claims["app_role"] : null;
   const claimOrg = typeof claims["org_id"] === "string" ? claims["org_id"] : null;

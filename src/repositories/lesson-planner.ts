@@ -500,7 +500,9 @@ export async function reschedulePlannerSession(
   title?: string,
 ): Promise<boolean> {
   const admin = createAdminSupabaseClient();
-  const { error } = await admin
+  // `select` para detectar 0 linhas: aula que já começou/encerrou/cancelou não
+  // casa com o filtro de status e isso não é erro para o PostgREST.
+  const { data, error } = await admin
     .from("class_sessions")
     .update({
       scheduled_at: scheduledAt,
@@ -510,8 +512,9 @@ export async function reschedulePlannerSession(
     })
     .eq("id", id)
     .eq("organization_id", organizationId)
-    .eq("status", "scheduled");
-  return !error;
+    .eq("status", "scheduled")
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
 
 /**
@@ -527,13 +530,14 @@ export async function cancelPlannerSession(
   organizationId: string,
 ): Promise<boolean> {
   const admin = createAdminSupabaseClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("class_sessions")
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("organization_id", organizationId)
-    .eq("status", "scheduled");
-  return !error;
+    .eq("status", "scheduled")
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
 
 /**

@@ -6,6 +6,7 @@ import { createLeadAction } from "@/actions/leads/create-lead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { FieldError, FormBanner } from "@/components/ui/form-message";
 import { LogoLoader } from "@/components/ui/logo-loader";
 
@@ -47,7 +48,16 @@ export function ContactForm() {
 
       <div className="space-y-1.5">
         <Label htmlFor="phone">Telefone (opcional)</Label>
-        <Input id="phone" name="phone" type="tel" autoComplete="tel" />
+        <PhoneInput
+          id="phone"
+          name="phone"
+          invalid={Boolean(state && !state.success && state.error.fields?.["phone"]?.length)}
+          selectClassName="h-10 rounded-md"
+          inputClassName="h-10 rounded-md py-2"
+        />
+        <FieldError
+          messages={state && !state.success ? state.error.fields?.["phone"] : undefined}
+        />
       </div>
 
       <div className="space-y-1.5 sm:col-span-2">

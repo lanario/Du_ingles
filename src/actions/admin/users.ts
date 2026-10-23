@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { auditLog } from "@/lib/audit";
 import { notifyPasswordReset, notifyRoleChanged } from "@/lib/notifications/events";
 import * as usersService from "@/services/users";
+import { getUserRoleAndOrg } from "@/repositories/users";
 import {
   updateUserSchema,
   changeUserRoleSchema,
@@ -13,12 +14,20 @@ import {
 import { fail, ok, type ActionResult } from "@/types/action-result";
 import type { AppRole } from "@/types/domain";
 
+/** O id vem do cliente: admin só age sobre usuário da própria organização. */
+async function inMyOrg(organizationId: string, userId: string): Promise<boolean> {
+  const target = await getUserRoleAndOrg(userId);
+  return target?.organizationId === organizationId;
+}
+
 export async function updateUserAction(
   userId: string,
   _prev: ActionResult<never> | null,
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
+  if (!(await inMyOrg(ctx.organizationId, userId)))
+    return fail("NOT_FOUND", "Usuário não encontrado.");
 
   const parsed = updateUserSchema.safeParse({
     fullName: formData.get("fullName"),
@@ -35,6 +44,8 @@ export async function updateUserAction(
 
   const result = await usersService.updateUser(userId, parsed.data);
   if (!result.success) return fail("INTERNAL_ERROR", result.message);
+  // A vitrine pública de professores é cacheada por 1 h; nome/foto mudaram.
+  revalidateTag("public-teachers");
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -51,6 +62,8 @@ export async function updateUserAction(
 
 export async function deactivateUserAction(userId: string): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
+  if (!(await inMyOrg(ctx.organizationId, userId)))
+    return fail("NOT_FOUND", "Usuário não encontrado.");
   try {
     usersService.assertNotSelf(ctx.userId, userId);
   } catch (e) {
@@ -77,6 +90,8 @@ export async function deactivateUserAction(userId: string): Promise<ActionResult
 
 export async function reactivateUserAction(userId: string): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
+  if (!(await inMyOrg(ctx.organizationId, userId)))
+    return fail("NOT_FOUND", "Usuário não encontrado.");
 
   const result = await usersService.reactivateUser(userId);
   if (!result.success) return fail("INTERNAL_ERROR", result.message);
@@ -98,6 +113,8 @@ export async function reactivateUserAction(userId: string): Promise<ActionResult
 
 export async function softDeleteUserAction(userId: string): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
+  if (!(await inMyOrg(ctx.organizationId, userId)))
+    return fail("NOT_FOUND", "Usuário não encontrado.");
   try {
     usersService.assertNotSelf(ctx.userId, userId);
   } catch (e) {
@@ -126,6 +143,8 @@ export async function changeUserRoleAction(
   formData: FormData,
 ): Promise<ActionResult<never>> {
   const ctx = await requireRole(["admin"]);
+  if (!(await inMyOrg(ctx.organizationId, userId)))
+    return fail("NOT_FOUND", "Usuário não encontrado.");
   try {
     usersService.assertNotSelf(ctx.userId, userId);
   } catch (e) {

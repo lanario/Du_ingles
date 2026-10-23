@@ -27,8 +27,13 @@ type Scope = "overview" | "students" | "teachers" | "pedagogy";
 
 const SCOPES: Scope[] = ["overview", "students", "teachers", "pedagogy"];
 
+/** Primeiros caracteres que o Excel/Sheets leem como fórmula (inclui TAB e CR). */
+const FORMULA_START = ["=", "+", "-", "@", String.fromCharCode(9), String.fromCharCode(13)];
+
 function csvEscape(value: string | number): string {
-  const text = String(value);
+  let text = String(value);
+  // Nome/plano vêm de cadastro público: `=HYPERLINK(...)` viraria fórmula no Excel.
+  if (typeof value === "string" && FORMULA_START.includes(text.charAt(0))) text = `'${text}`;
   return /[";\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

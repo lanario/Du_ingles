@@ -1,4 +1,5 @@
 import "server-only";
+import { fromZonedTime } from "date-fns-tz";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { categoryOf, type FinanceKind } from "@/schemas/finance";
 import { DEFAULT_REPORT_WINDOW, type ReportWindow } from "@/schemas/reports";
@@ -378,8 +379,14 @@ export async function getFinancialReport(
       .select("teacher_id, duration_minutes, scheduled_at")
       .eq("organization_id", organizationId)
       .eq("status", "completed")
-      .gte("scheduled_at", `${bounds.first}T00:00:00Z`)
-      .lte("scheduled_at", `${bounds.last}T23:59:59Z`),
+      // Mês civil de Brasília: em UTC, aula das 21h–23h59 do último dia cairia no mês seguinte.
+      .gte("scheduled_at", fromZonedTime(`${bounds.first}T00:00:00`, "America/Sao_Paulo").toISOString())
+      .lt(
+        "scheduled_at",
+        new Date(
+          fromZonedTime(`${bounds.last}T00:00:00`, "America/Sao_Paulo").getTime() + 86_400_000,
+        ).toISOString(),
+      ),
     admin
       .from("teacher_profiles")
       .select("profile_id, hourly_rate")

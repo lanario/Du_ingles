@@ -18,6 +18,9 @@ import { GroupSessions } from "@/components/features/admin/groups/group-sessions
 import { GroupObjectives } from "@/components/features/admin/groups/group-objectives";
 import { SectionTitle } from "@/components/features/admin/dashboard/primitives";
 
+// Server Actions desta tela agendam `after()` (PDF, Google): precisam de fôlego.
+export const maxDuration = 60;
+
 export const metadata: Metadata = { title: "Turma" };
 
 interface PageProps {

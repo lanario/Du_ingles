@@ -1,6 +1,18 @@
 import { z } from "zod";
 import { AGENDA_AUDIENCES, AGENDA_EVENT_KINDS } from "@/types/domain";
 
+/** `2026-02-31` passa no regex mas faz `fromZonedTime` lançar (erro 500). */
+function isRealDate(value: string): boolean {
+  const [y, m, d] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(y!, m! - 1, d!));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m! - 1 && date.getUTCDate() === d;
+}
+
+function isRealTime(value: string): boolean {
+  const [h, m] = value.split(":").map(Number);
+  return h! <= 23 && m! <= 59;
+}
+
 /**
  * Compromissos da agenda que não são aula. A aula tem schema próprio
  * (`schemas/lesson-planner.ts`) porque nasce da grade da turma; aqui é o
@@ -11,8 +23,14 @@ import { AGENDA_AUDIENCES, AGENDA_EVENT_KINDS } from "@/types/domain";
  * evita que um erro de fuso vire uma reunião marcada três horas antes.
  */
 
-const dateField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data.");
-const timeField = z.string().regex(/^\d{2}:\d{2}$/, "Escolha o horário.");
+const dateField = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha a data.")
+    .refine(isRealDate, "Essa data não existe.");
+const timeField = z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Escolha o horário.")
+    .refine(isRealTime, "Horário inválido.");
 
 const optionalText = (max: number) =>
   z
