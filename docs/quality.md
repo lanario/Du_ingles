@@ -47,18 +47,15 @@ passaram em um check Prettier direcionado. Não aplicar formatação em massa.
 
 ## Segurança de dependências
 
-Auditoria `npm audit` inicial reportou 49 vulnerabilidades (36 moderadas, 12
-altas, 1 crítica). A resolução compatível atualizou Next e eslint-config-next
-para 15.5.28 e sharp para 0.35.5, sem `--force`; a auditoria seguinte tinha 48
-(37 moderadas, 11 altas) e zero críticas. `npm audit --omit=dev --audit-level=high`
-reportou 41 (37 moderadas, 4 altas). Permanecem avisos de Tiptap/ProseMirror,
-PostCSS e dependências transitivas. Como o editor usa `ReactNodeViewProps.selected`
-e houve alteração de comportamento dessa API em uma linha posterior, uma
-atualização maior da família Tiptap exige validação própria. Não use `npm audit
-fix --force`; atualize/alivie os itens restantes em tarefa de dependências com
-verificação de compatibilidade e editor. Uma tentativa normal de alinhar
-Tiptap 3.30.6 terminou em `ERESOLVE` por conflito de peers; não se usou
-`--force`/`--legacy-peer-deps` e a tentativa não alterou manifest/lock.
+`npm audit` está em 0 vulnerabilidades (era 41). Tiptap e `@tiptap/pm` foram
+alinhados em 3.32.0 (inclui `prosemirror-view` 1.42.7, correção de XSS no colar)
+removendo as entradas `@tiptap/*` do lock antes de `npm install`, o que evita o
+`ERESOLVE` de peers exatos. O `postcss` embutido no Next 15 (8.4.31) é
+substituído por `overrides` (`next.postcss: ^8.5.31`); remova o override ao
+migrar para uma versão do Next que já traga PostCSS corrigido. O CI agora falha
+em `npm audit --omit=dev --audit-level=high`. Não use `npm audit fix --force`.
+Validar o editor de aulas manualmente após atualizar Tiptap (uso de
+`ReactNodeViewProps.selected`).
 
 ## Harness e revisão
 
