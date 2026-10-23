@@ -17,6 +17,7 @@
  * dos blocos, fio de progresso, cabeçalho que encolhe).
  */
 
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
@@ -100,6 +101,7 @@ export function GroupFichaModal({
   const [erro, setErro] = useState<string | null>(null);
   const [condensado, setCondensado] = useState(false);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   const corpoRef = useRef<HTMLDivElement>(null);
   const internoRef = useRef<HTMLDivElement>(null);
   const fioRef = useRef<HTMLSpanElement>(null);
@@ -276,10 +278,13 @@ export function GroupFichaModal({
     };
   }, [ficha]);
 
+  useFocusTrap(dialogRef, Boolean(group));
+
   return (
     <AnimatePresence>
       {group ? (
         <motion.div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={`Turma ${group.name}`}

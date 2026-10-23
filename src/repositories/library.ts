@@ -66,7 +66,9 @@ export async function listLibraryEntries(
     // `endSession()`, que grava `completed` no mesmo update — o filtro é a
     // garantia de que uma aula cancelada depois de encerrada não reapareça.
     .eq("status", "completed")
-    .order("scheduled_at", { ascending: false });
+    .order("scheduled_at", { ascending: false })
+    // Teto: a estante lista tudo de uma vez e cresce sem parar; as mais novas vêm primeiro.
+    .limit(500);
 
   if (groupId) query = query.eq("group_id", groupId);
 

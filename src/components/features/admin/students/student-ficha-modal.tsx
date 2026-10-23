@@ -13,6 +13,7 @@
  *    blocos, fio de progresso em scrub, cabeçalho que encolhe)
  */
 
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
@@ -84,6 +85,7 @@ export function StudentFichaModal({
   const [session, setSession] = useState(0);
   const temFicha = ficha !== null;
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   const corpoRef = useRef<HTMLDivElement>(null);
   const internoRef = useRef<HTMLDivElement>(null);
   const fioRef = useRef<HTMLSpanElement>(null);
@@ -246,10 +248,13 @@ export function StudentFichaModal({
 
   const abrindo = fase === "abrindo";
 
+  useFocusTrap(dialogRef, Boolean(student));
+
   return (
     <AnimatePresence>
       {student ? (
         <motion.div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={`Aluno ${student.fullName}`}

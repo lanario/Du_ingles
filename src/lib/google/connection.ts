@@ -73,6 +73,7 @@ export async function connectedProfiles(ids: readonly string[]): Promise<Set<str
 }
 
 async function markRevoked(profileId: string, organizationId: string, role: AppRole) {
+  tokenCache.delete(profileId);
   const admin = createAdminSupabaseClient();
   await admin
     .from("google_connections")
@@ -91,6 +92,10 @@ async function markRevoked(profileId: string, organizationId: string, role: AppR
     }),
   });
 }
+
+/** Por instância do servidor; 10 min é bem abaixo da vida útil de 1 h do token. */
+const TOKEN_CACHE_MS = 10 * 60_000;
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
 /**
  * Access token novo, ou `null` se o usuário não tem conexão ativa. Se o Google
@@ -112,9 +117,16 @@ export async function accessTokenFor(
     .maybeSingle();
   if (!data || data.status !== "active") return null;
 
+  // O token vale 1 h: um backfill de dezenas de aulas pedia um novo a cada evento.
+  const cached = tokenCache.get(profileId);
+  if (cached && cached.expiresAt > Date.now()) return cached.token;
+
   try {
-    return await refreshAccessToken(decryptSecret(data.refresh_token_enc));
+    const token = await refreshAccessToken(decryptSecret(data.refresh_token_enc));
+    tokenCache.set(profileId, { token, expiresAt: Date.now() + TOKEN_CACHE_MS });
+    return token;
   } catch (error) {
+    tokenCache.delete(profileId);
     if (error instanceof GoogleAuthError) {
       await markRevoked(profileId, data.organization_id, role);
     } else {
@@ -129,6 +141,7 @@ export async function accessTokenFor(
  * são apagados por `disconnectAndCleanup` (sync.ts), que roda antes desta.
  */
 export async function deleteConnection(profileId: string): Promise<void> {
+  tokenCache.delete(profileId);
   const admin = createAdminSupabaseClient();
   const { data } = await admin
     .from("google_connections")

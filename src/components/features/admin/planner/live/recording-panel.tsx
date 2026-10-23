@@ -13,7 +13,7 @@
  * leva alguns minutos processando o vídeo depois que a chamada acaba.
  */
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { saveSessionRecordingAction } from "@/actions/admin/lesson-planner";
 import { CheckIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
@@ -35,6 +35,14 @@ export function RecordingPanel({
   const [draft, setDraft] = useState(initialUrl ?? "");
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
+  const savedTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (savedTimer.current !== null) window.clearTimeout(savedTimer.current);
+    },
+    [],
+  );
   const [isPending, startTransition] = useTransition();
 
   const dirty = draft.trim() !== (saved ?? "");
@@ -61,7 +69,8 @@ export function RecordingPanel({
       setSaved(result.data.recordingUrl);
       setDraft(result.data.recordingUrl ?? "");
       setJustSaved(true);
-      window.setTimeout(() => setJustSaved(false), 2600);
+      if (savedTimer.current !== null) window.clearTimeout(savedTimer.current);
+      savedTimer.current = window.setTimeout(() => setJustSaved(false), 2600);
     });
   }
 

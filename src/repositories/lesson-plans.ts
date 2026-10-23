@@ -117,8 +117,13 @@ export async function updateLessonPlanContent(
   content: Json,
 ): Promise<boolean> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.from("lesson_plans").update({ content }).eq("id", id);
-  return !error;
+  // `select` expõe o caso em que a RLS filtrou a linha: sem ele "0 linhas" vira sucesso.
+  const { data, error } = await supabase
+    .from("lesson_plans")
+    .update({ content })
+    .eq("id", id)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
 
 export async function updateLessonPlanMeta(
@@ -126,7 +131,7 @@ export async function updateLessonPlanMeta(
   input: UpdateLessonPlanMetaInput,
 ): Promise<boolean> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("lesson_plans")
     .update({
       title: input.title,
@@ -135,8 +140,9 @@ export async function updateLessonPlanMeta(
       duration_minutes: input.durationMinutes,
       is_shared: input.isShared,
     })
-    .eq("id", id);
-  return !error;
+    .eq("id", id)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
 
 export async function duplicateLessonPlan(
@@ -174,6 +180,10 @@ export async function duplicateLessonPlan(
 
 export async function deleteLessonPlan(id: string): Promise<boolean> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.from("lesson_plans").delete().eq("id", id);
-  return !error;
+  const { data, error } = await supabase
+    .from("lesson_plans")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
