@@ -352,6 +352,25 @@ export function TierBuilder({
     [plans, tier, frequency, interval],
   );
 
+  // Passo guiado: o próximo grupo de opções ainda sem escolha pulsa e é levado
+  // ao centro da tela, até sobrar só o botão do resultado.
+  const guideStep = !tier ? 1 : !frequency ? 2 : !interval ? 3 : null;
+  const firstGuide = useRef(true);
+  useEffect(() => {
+    if (firstGuide.current) {
+      firstGuide.current = false;
+      return;
+    }
+    if (guideStep === null) return;
+    const timer = window.setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      rootRef.current
+        ?.querySelector('[data-guide="true"]')
+        ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [guideStep]);
+
   // Cascata de entrada do grid de níveis — o único bloco sempre visível, os
   // demais entram por `AnimatePresence` quando o passo anterior é resolvido.
   useEffect(() => {
@@ -381,7 +400,10 @@ export function TierBuilder({
           title="Sua experiência"
           subtitle="O nível de acompanhamento que você quer ter."
         />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          data-guide={guideStep === 1}
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {availableTiers.map((item) => (
             <TierCard
               key={item}
@@ -404,7 +426,10 @@ export function TierBuilder({
                 title="Seu ritmo"
                 subtitle="Quantas aulas em grupo por semana."
               />
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div
+                data-guide={guideStep === 2}
+                className="mt-4 grid gap-3 sm:grid-cols-3"
+              >
                 {availableFrequencies.map((item) => (
                   <FrequencyCard
                     key={item}
@@ -426,7 +451,10 @@ export function TierBuilder({
                 title="Seu compromisso"
                 subtitle="A periodicidade da cobrança — mais tempo, mais economia."
               />
-              <div className="mt-4 grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]">
+              <div
+                data-guide={guideStep === 3}
+                className="mt-4 grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]"
+              >
                 {availableCommitments.map((item) => (
                   <CommitmentCard
                     key={item}

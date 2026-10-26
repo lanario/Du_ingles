@@ -522,6 +522,30 @@ input:autofill {
   }
 }
 
+/* Passo guiado do construtor de planos: as opções ainda sem escolha pulsam. */
+[data-guide="true"] > button[aria-pressed="false"] {
+  animation: plan-guide-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes plan-guide-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+    border-color: #facc15;
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.35);
+    border-color: #facc15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-guide="true"] > button[aria-pressed="false"] {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.35);
+  }
+}
+
 /*
  * Botão de escolha de plano: amarelo, com um anel de luz girando na borda para
  * guiar o olho (e o clique) do aluno. O anel é um ::before com gradiente cônico
