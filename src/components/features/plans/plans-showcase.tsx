@@ -714,6 +714,20 @@ function ResultCard({
   const left = seatsLeft(plan);
   const soldOut = left === 0;
 
+  // Leva o botão para o centro da tela assim que o plano resultante aparece (e
+  // a cada troca de plano), depois da animação de abertura da seção.
+  const ctaRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      ctaRef.current?.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "center",
+      });
+    }, 550);
+    return () => window.clearTimeout(timer);
+  }, [plan.id]);
+
   const alternatives = TIER_ORDER.filter((item) => item !== tier).map((item) => ({
     tier: item,
     plan: findTierPlan(allPlans, item, frequency, interval),
@@ -829,6 +843,7 @@ function ResultCard({
           )}
 
           <button
+            ref={ctaRef}
             type="button"
             onClick={onSubscribe}
             disabled={disabled || current || soldOut}
@@ -837,6 +852,7 @@ function ResultCard({
               "inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 sm:w-auto",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
+              !current && !soldOut && "plan-cta",
             )}
             style={
               current
@@ -853,11 +869,7 @@ function ResultCard({
                       border:
                         "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
                     }
-                  : {
-                      background: tone,
-                      color: "var(--navy-950)",
-                      border: `1px solid ${tone}`,
-                    }
+                  : undefined
             }
           >
             {pending && <LogoLoader size={16} label={null} />}
@@ -1133,6 +1145,7 @@ function LoosePlanCard({
             "inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
+            !current && !soldOut && "plan-cta",
           )}
           style={
             current
@@ -1149,18 +1162,7 @@ function LoosePlanCard({
                     border:
                       "1px solid color-mix(in srgb, var(--navy-500) 18%, transparent)",
                   }
-                : plan.isFeatured
-                  ? {
-                      background: tone,
-                      color: "var(--navy-950)",
-                      border: `1px solid ${tone}`,
-                    }
-                  : {
-                      background: "color-mix(in srgb, var(--navy-600) 40%, transparent)",
-                      color: "white",
-                      border:
-                        "1px solid color-mix(in srgb, var(--navy-500) 40%, transparent)",
-                    }
+                : undefined
           }
         >
           {pending && <LogoLoader size={16} label={null} />}

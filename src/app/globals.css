@@ -523,6 +523,86 @@ input:autofill {
 }
 
 /*
+ * Botão de escolha de plano: amarelo, com um anel de luz girando na borda para
+ * guiar o olho (e o clique) do aluno. O anel é um ::before com gradiente cônico
+ * recortado por máscara; `@property` deixa o ângulo animável.
+ */
+@property --plan-cta-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.plan-cta {
+  position: relative;
+  isolation: isolate;
+  background: #facc15;
+  color: var(--navy-950);
+  border: 1px solid #fde047;
+  box-shadow: 0 0 22px -4px rgba(250, 204, 21, 0.6);
+  animation: plan-cta-pulse 2.2s ease-in-out infinite;
+}
+
+.plan-cta::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: calc(0.75rem + 4px);
+  padding: 3px;
+  background: conic-gradient(
+    from var(--plan-cta-angle),
+    transparent 0deg,
+    #ffffff 70deg,
+    #facc15 140deg,
+    transparent 220deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: plan-cta-spin 1.8s linear infinite;
+  pointer-events: none;
+}
+
+.plan-cta:hover:not(:disabled) {
+  background: #fde047;
+  transform: translateY(-1px);
+}
+
+.plan-cta:disabled {
+  animation: none;
+  box-shadow: none;
+}
+
+.plan-cta:disabled::before {
+  display: none;
+}
+
+@keyframes plan-cta-spin {
+  to {
+    --plan-cta-angle: 360deg;
+  }
+}
+
+@keyframes plan-cta-pulse {
+  50% {
+    box-shadow: 0 0 34px 0 rgba(250, 204, 21, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-cta,
+  .plan-cta::before {
+    animation: none;
+  }
+}
+
+/*
  * Maquete do painel no hero: fica inclinada em 3D e se alinha ao passar o
  * mouse. É CSS puro (nada de framer-motion na landing) e vive aqui, e não em
  * utilitários arbitrários, porque `transform` no Tailwind v4 é composto a
