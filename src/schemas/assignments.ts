@@ -152,10 +152,20 @@ export const questionsFieldSchema = z
     const result = questionDraftListSchema.safeParse(parsed);
     if (!result.success) {
       const first = result.error.issues[0];
+      const index = first?.path[0];
+      // Mensagens internas do zod ("Invalid input: expected …") não ajudam o
+      // professor: o que importa é qual questão está errada.
+      const detail = first?.message.startsWith("Invalid input")
+        ? "preencha todos os campos da questão."
+        : first?.message;
       ctx.addIssue({
         code: "custom",
-        message: first?.message ?? "Revise as questões.",
+        message:
+          typeof index === "number"
+            ? `Questão ${index + 1}: ${detail}`
+            : (detail ?? "Revise as questões."),
       });
+      console.error("[questions] validação falhou", result.error.issues);
       return z.NEVER;
     }
     return result.data;
