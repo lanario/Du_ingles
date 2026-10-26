@@ -56,6 +56,25 @@ export function Pricing() {
 
   const matched = tier && frequency && interval ? { tier, frequency, interval } : null;
 
+  // Passo guiado: o próximo grupo de opções sem escolha pulsa e vai ao centro
+  // da tela. Não rola na abertura da página, só depois da primeira escolha.
+  const guideStep = !tier ? 1 : !frequency ? 2 : !interval ? 3 : null;
+  const firstGuide = useRef(true);
+  useEffect(() => {
+    if (firstGuide.current) {
+      firstGuide.current = false;
+      return;
+    }
+    if (guideStep === null) return;
+    const timer = window.setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      rootRef.current
+        ?.querySelector('[data-guide="true"]')
+        ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [guideStep]);
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -92,7 +111,10 @@ export function Pricing() {
               title="Sua experiência"
               subtitle="O nível de acompanhamento que você quer ter."
             />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              data-guide={guideStep === 1}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
               {TIER_ORDER.map((item) => (
                 <TierCard
                   key={item}
@@ -112,7 +134,10 @@ export function Pricing() {
                   title="Seu ritmo"
                   subtitle="Quantas aulas em grupo por semana."
                 />
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div
+                  data-guide={guideStep === 2}
+                  className="mt-4 grid gap-3 sm:grid-cols-3"
+                >
                   {WEEKLY_FREQUENCIES.map((item) => (
                     <FrequencyCard
                       key={item}
@@ -134,7 +159,10 @@ export function Pricing() {
                   title="Seu compromisso"
                   subtitle="A periodicidade da cobrança — mais tempo, mais economia."
                 />
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div
+                  data-guide={guideStep === 3}
+                  className="mt-4 grid gap-3 sm:grid-cols-3"
+                >
                   {COMMITMENT_INTERVALS.map((item) => (
                     <CommitmentCard
                       key={item}
@@ -439,6 +467,19 @@ function ResultCard({
   const savings = commitmentSavingsCents(tier, frequency, interval);
   const features = tierFeatures(tier);
 
+  // Leva o botão ao centro da tela quando o plano montado aparece.
+  const ctaRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      ctaRef.current?.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "center",
+      });
+    }, 550);
+    return () => window.clearTimeout(timer);
+  }, [tier, frequency, interval]);
+
   const alternatives = TIER_ORDER.filter((item) => item !== tier).map((item) => ({
     tier: item,
     priceCents: commitmentPriceCents(item, frequency, interval),
@@ -536,13 +577,9 @@ function ResultCard({
 
         <div className="relative mt-auto pt-6">
           <a
+            ref={ctaRef}
             href="/cadastro"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 sm:w-auto"
-            style={{
-              background: tone,
-              color: "var(--navy-950)",
-              border: `1px solid ${tone}`,
-            }}
+            className="plan-cta inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-200 sm:w-auto"
           >
             Começar agora
           </a>
