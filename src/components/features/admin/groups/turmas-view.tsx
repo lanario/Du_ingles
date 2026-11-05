@@ -170,13 +170,26 @@ export function TurmasView({
     };
   }, [groups]);
 
+  const availableTeachers = useMemo(
+    () => teacherBuckets(groups, teachers),
+    [groups, teachers],
+  );
+  const visibleTeacherFilter = useMemo<TeacherFilter>(
+    () =>
+      teacherFilter.type === "teacher" &&
+      !availableTeachers.some((teacher) => teacher.id === teacherFilter.id)
+        ? { type: "all" }
+        : teacherFilter,
+    [teacherFilter, availableTeachers],
+  );
+
   /** O professor escolhido delimita tudo o que vem depois — abas e níveis contam dentro dele. */
   const inTeacher = useMemo(
     () =>
-      teacherFilter.type === "teacher"
-        ? groups.filter((group) => group.teacherId === teacherFilter.id)
+      visibleTeacherFilter.type === "teacher"
+        ? groups.filter((group) => group.teacherId === visibleTeacherFilter.id)
         : groups,
-    [groups, teacherFilter],
+    [groups, visibleTeacherFilter],
   );
 
   const statusCounts: Record<StatusFilter, number> = {
@@ -236,7 +249,7 @@ export function TurmasView({
     search.trim() !== "" ||
     status !== "all" ||
     levelFilter !== "all" ||
-    teacherFilter.type !== "all";
+    visibleTeacherFilter.type !== "all";
 
   function clearFilters() {
     setSearch("");
@@ -467,8 +480,8 @@ export function TurmasView({
       </div>
 
       <GroupsFilterRail
-        teachers={teacherBuckets(groups)}
-        teacherFilter={teacherFilter}
+        teachers={availableTeachers}
+        teacherFilter={visibleTeacherFilter}
         onTeacherChange={setTeacherFilter}
         total={groups.length}
         levels={levelBuckets}

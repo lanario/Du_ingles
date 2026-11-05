@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { FormBanner } from "@/components/ui/form-message";
 import type { AppRole } from "@/types/domain";
 import { LogoLoader } from "@/components/ui/logo-loader";
+import { UserActionErrorBanner } from "./user-lifecycle-actions";
 
 export function ChangeRoleForm({
   userId,
@@ -21,7 +22,14 @@ export function ChangeRoleForm({
     <form action={formAction} className="flex items-end gap-3">
       {state && !state.success && (
         <div className="basis-full">
-          <FormBanner tone="error">{state.error.message}</FormBanner>
+          {state.error.details?.activeGroups ? (
+            <UserActionErrorBanner
+              message={state.error.message}
+              activeGroups={state.error.details.activeGroups}
+            />
+          ) : (
+            <FormBanner tone="error">{state.error.message}</FormBanner>
+          )}
         </div>
       )}
       <div className="space-y-1.5">

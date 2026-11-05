@@ -539,6 +539,7 @@ export async function listAssignmentTemplates(
 
 export interface AssignmentTemplateAccess {
   ownerId: string;
+  isShared: boolean;
   title: string;
   instructions: Json | null;
   answerKey: Json | null;
@@ -553,13 +554,14 @@ export async function getAssignmentTemplateForAssign(
   const admin = createAdminSupabaseClient();
   const { data } = await admin
     .from("assignment_templates")
-    .select("owner_id, title, instructions, answer_key, max_score")
+    .select("owner_id, is_shared, title, instructions, answer_key, max_score")
     .eq("id", id)
     .eq("organization_id", organizationId)
     .maybeSingle();
   if (!data) return null;
   return {
     ownerId: data.owner_id,
+    isShared: Boolean(data.is_shared),
     title: data.title,
     instructions: data.instructions,
     answerKey: data.answer_key,

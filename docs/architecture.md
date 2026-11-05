@@ -47,6 +47,14 @@ para mudanças PostgreSQL, seguir também
 justificativas de comportamento. Não alterar cache, CSP, Server Actions ou
 fronteiras Server/Client sem verificar contratos e testes relevantes.
 
+## PDF do plano/sessão
+
+JSON Tiptap -> `attachImages` (`src/lib/pdf/assets.ts`: lê o Storage com a
+service key após `isValidAssetPath`; URL externa com redirect manual e
+`isPrivateHost` por salto; `sharp` converte para PNG/JPEG) -> renderer
+`src/lib/pdf/tiptap-nodes.tsx` (@react-pdf), com geometria por `colWidth`.
+Limites conhecidos: `docs/quality.md`.
+
 ## Integrações
 
 Há Route Handlers para uploads/arquivos, PDFs, sessões, exports, Stripe e

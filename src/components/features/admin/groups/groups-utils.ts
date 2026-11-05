@@ -10,6 +10,7 @@
 
 import type { MouseEvent } from "react";
 import type { GroupDetail } from "@/repositories/groups";
+import type { UserListItem } from "@/repositories/users";
 import type { ScheduleEntry } from "@/schemas/groups";
 
 export {
@@ -190,17 +191,28 @@ export interface TeacherBucket {
   count: number;
 }
 
-/** Professores presentes nas turmas, com quantas cada um responde. */
-export function teacherBuckets(groups: Group[]): TeacherBucket[] {
+/** Professores ativos com ao menos uma turma ativa, em ordem de quantidade. */
+export function teacherBuckets(
+  groups: readonly Pick<Group, "teacherId" | "teacherName" | "isActive">[],
+  teachers: readonly Pick<UserListItem, "id" | "fullName" | "isActive" | "deletedAt">[],
+): TeacherBucket[] {
+  const activeTeachers = new Map(
+    teachers
+      .filter((teacher) => teacher.isActive && teacher.deletedAt === null)
+      .map((teacher) => [teacher.id, teacher.fullName]),
+  );
   const byId = new Map<string, TeacherBucket>();
   for (const group of groups) {
-    if (!group.teacherId) continue;
+    if (!group.isActive || !group.teacherId) continue;
+    const teacherName = activeTeachers.get(group.teacherId);
+    if (!teacherName) continue;
+
     const bucket = byId.get(group.teacherId);
     if (bucket) bucket.count += 1;
     else
       byId.set(group.teacherId, {
         id: group.teacherId,
-        name: group.teacherName,
+        name: teacherName,
         count: 1,
       });
   }

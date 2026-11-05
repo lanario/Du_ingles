@@ -441,7 +441,7 @@ export async function assignTemplateToGroupsAction(
     ctx.organizationId,
   );
   if (!template) return fail("NOT_FOUND", "Tarefa padrão não encontrada.");
-  if (!isAdmin(ctx) && template.ownerId !== ctx.userId)
+  if (!isAdmin(ctx) && template.ownerId !== ctx.userId && !template.isShared)
     return fail("FORBIDDEN", "Esta tarefa padrão não é sua.");
 
   if (!(await canTouchGroups(ctx, parsed.data.groupIds)))

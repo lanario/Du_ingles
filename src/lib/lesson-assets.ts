@@ -52,6 +52,18 @@ export function safeScope(scope: string): string {
   return /^[a-zA-Z0-9-]{1,64}$/.test(scope) ? scope : "geral";
 }
 
+/**
+ * Valida o caminho DECODIFICADO contra o formato exato gerado no upload
+ * (`org/escopo/uuid.ext`). Barra codificada (`%2f`), `..`, `\`, segmento vazio
+ * e controle caem todos fora da regex.
+ */
+const ASSET_PATH_RE =
+  /^[A-Za-z0-9-]{1,64}\/[A-Za-z0-9-]{1,64}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:png|jpg|webp|gif)$/;
+
+export function isValidAssetPath(path: string): boolean {
+  return ASSET_PATH_RE.test(path);
+}
+
 export async function uploadLessonImage(
   organizationId: string,
   scope: string,

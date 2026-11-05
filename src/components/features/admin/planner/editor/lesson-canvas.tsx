@@ -296,7 +296,7 @@ export function LessonCanvas({
         className={cn(
           "lesson-paper overflow-y-auto",
           fill && !presenting && "lesson-paper-fill",
-          presenting ? "px-4 py-8 sm:px-8 xl:px-10" : "px-4 py-8 sm:px-8 xl:px-12",
+          presenting ? "px-4 py-8 sm:px-8 xl:px-10" : "px-6 py-8",
         )}
       >
         <EditorContent editor={editor} />

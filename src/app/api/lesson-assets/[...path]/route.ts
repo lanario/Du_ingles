@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionContext } from "@/lib/auth/session";
-import { getLessonAssetUrl } from "@/lib/lesson-assets";
+import { getLessonAssetUrl, isValidAssetPath } from "@/lib/lesson-assets";
 
 export const runtime = "nodejs";
 
@@ -25,7 +25,13 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 
-  const signedUrl = await getLessonAssetUrl(path.join("/"));
+  // Segmentos podem chegar com `/` ou `..` decodificados (%2f..%2f): valida o caminho inteiro.
+  const assetPath = path.join("/");
+  if (!isValidAssetPath(assetPath)) {
+    return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
+  }
+
+  const signedUrl = await getLessonAssetUrl(assetPath);
   if (!signedUrl) {
     return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
   }

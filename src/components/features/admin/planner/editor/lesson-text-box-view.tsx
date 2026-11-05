@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { BOX_TONES, type LessonAlign, type LessonBoxTone } from "./extensions";
-import { clamp, freeAnchorStyle, freeTransform, useFreeMove } from "./free-placement";
+import { clamp, freeAnchorStyle, freeTransform, paperContentWidth, useFreeMove } from "./free-placement";
 
 const MIN_WIDTH = 120;
 
@@ -107,7 +107,11 @@ export function LessonTextBoxView(props: ReactNodeViewProps) {
         maxPageWidth = Math.floor(paper.clientWidth - padLeft - padRight);
       }
       const parentWidth = box.parentElement?.getBoundingClientRect().width ?? 900;
-      const maxWidth = Math.max(maxPageWidth, parentWidth, 900);
+      // Fora da apresentação o teto é a folha (= coluna do PDF); sem piso de 900.
+      const sheetW = box.closest(".lesson-sheet-presenting") ? null : paperContentWidth(box);
+      const maxWidth = sheetW
+        ? Math.max(MIN_WIDTH, sheetW)
+        : Math.max(maxPageWidth, parentWidth, 900);
       // Ancorada à direita, a caixa cresce para a esquerda: o punho fica do
       // lado de dentro e o gesto tem que acompanhar o que se vê.
       const growsLeft = attrs.align === "right";

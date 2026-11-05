@@ -50,6 +50,42 @@ export function freeTransform(
   return `translate(calc(${anchor} + ${offset.x}px), ${offset.y}px)`;
 }
 
+/**
+ * Largura útil do papel (sem o padding), em px: a base que o PDF usa para
+ * escalar largura/deslocamento da imagem (`colWidth`). Null se não há papel.
+ */
+export function paperContentWidth(from: Element | null | undefined): number | null {
+  const paper = from?.closest(".lesson-paper") as HTMLElement | null;
+  if (!paper) return null;
+  // Folha de largura fixa (não apresentação): a base é a própria folha, não a janela.
+  const sheet = from?.closest(".lesson-sheet:not(.lesson-sheet-presenting)") as HTMLElement | null;
+  if (sheet) return Math.round(sheet.clientWidth) || null;
+  const style = window.getComputedStyle(paper);
+  const inner =
+    paper.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+  return inner > 0 ? Math.round(inner) : null;
+}
+
+/**
+ * Atributos a gravar ao fixar o papel atual no nó. Sem papel (null) a chave
+ * é omitida: `colWidth: null` apagaria um valor válido já gravado.
+ */
+export function colWidthPatch(
+  prev: { colWidth?: number | null; offsetX?: number | null; offsetY?: number | null },
+  nextCol: number | null,
+): { colWidth?: number; offsetX?: number; offsetY?: number } {
+  if (!nextCol) return {};
+  const old = Number(prev.colWidth);
+  // Sem colWidth antigo os offsets ainda valem para o papel atual: não mexe.
+  if (!(old > 0) || old === nextCol) return { colWidth: nextCol };
+  const k = nextCol / old;
+  return {
+    colWidth: nextCol,
+    offsetX: Math.round((Number(prev.offsetX) || 0) * k),
+    offsetY: Math.round((Number(prev.offsetY) || 0) * k),
+  };
+}
+
 /** Lado ao qual a figura solta se prende dentro da âncora de altura zero. */
 export function freeAnchorStyle(align: string | null): CSSProperties {
   if (align === "right") return { right: 0 };

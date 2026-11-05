@@ -112,7 +112,7 @@ export function GroupsFilterRail({
           {teachers.length === 0 && (
             <span className="inline-flex items-center gap-2 rounded-xl border border-dashed border-admin-border px-3 py-2 text-sm text-admin-foreground/45">
               <UserIcon className="h-4 w-4" />
-              Nenhum professor com turma
+              Nenhum professor ativo com turma ativa
             </span>
           )}
         </div>

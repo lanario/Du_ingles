@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Du Inglês Reel</title>
+<meta name="viewport" content="width=1080, height=1920">
+<style>
+@font-face { font-family: "Geist"; src: url("./assets/geist-100-900.woff2") format("woff2"); font-weight: 100 900; }
+/* ACCENT = dourado = "o que é seu" (seu objetivo, seu nível, sua aula, seu botão). Navy = estrutura e tinta.
+   Todos os dados de aluno/professor/horários são FICTÍCIOS (aluno Alan; professor = Prof. Lucas, como registrado na plataforma). */
+:root {
+  --ground: #ffffff; --cream: #f1e5bf; --navy: #0b1a33; --navy-900: #0f2c5c; --deep: #07142c;
+  --ink: #0b1a33; --ink-soft: #5a6b85; --gold: #c9a227; --gold-300: #e6cf86; --gold-700: #957b28;
+  --border: #e3e7ee; --muted: #f3f5f9; --success: #3fbf7f; --success-ink: #2e9a63; --live: #d64545;
+  --font: "Geist", "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #fff; }
+#main { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: var(--ground); color: var(--ink); font-family: var(--font); font-weight: 500; }
+.scene { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; }
+.ground { position: absolute; left: -300px; top: -300px; width: 1680px; height: 2520px; }
+.g1 { background: radial-gradient(900px 1100px at 30% 30%, #ecd9a0 0%, #f3e7c4 32%, rgba(255,253,247,0) 70%), radial-gradient(800px 900px at 85% 80%, #f6edd2 0%, rgba(255,255,255,0) 70%), #fffdf8; }
+.g2 { background: radial-gradient(700px 800px at 62% 44%, #e8d391 0%, #f4e9c8 35%, rgba(255,253,247,0) 72%), #fffdf8; }
+.g3 { background: radial-gradient(1000px 900px at 20% 70%, #ecd9a0 0%, #f5ebcd 34%, rgba(255,253,247,0) 70%), radial-gradient(600px 600px at 90% 20%, #f7efd8 0%, rgba(255,255,255,0) 70%), #fffdf8; }
+.g4 { background: radial-gradient(900px 1000px at 75% 35%, #ead699 0%, #f4e8c6 36%, rgba(255,253,247,0) 72%), #fffdf8; }
+.g5 { background: radial-gradient(900px 900px at 50% 48%, #e6cf86 0%, #f2e4bb 34%, rgba(255,253,247,0) 70%), #fffdf8; }
+.g6 { background: radial-gradient(1100px 1000px at 50% 40%, #f1e5bf 0%, #f7eed6 40%, #fffdf8 75%); }
+.g7 { background: radial-gradient(1000px 900px at 80% 25%, #ecd9a0 0%, #f5ebcd 34%, rgba(255,253,247,0) 70%), radial-gradient(800px 800px at 10% 85%, #f3e6c0 0%, rgba(255,255,255,0) 70%), #fffdf8; }
+.h { position: absolute; left: 0; width: 1080px; text-align: center; white-space: pre; font-weight: 700; letter-spacing: -0.035em; color: var(--ink); }
+.card { position: absolute; background: #fff; border: 2px solid var(--border); border-radius: 40px; box-shadow: 0 80px 120px -60px rgba(10,31,68,.55), 0 4px 10px rgba(10,31,68,.06); }
+.panel { position: absolute; background: #fffefb; border: 2px solid var(--border); border-radius: 44px; box-shadow: 0 90px 140px -70px rgba(10,31,68,.6), 0 4px 12px rgba(10,31,68,.06); overflow: hidden; }
+.tab { font-variant-numeric: tabular-nums; }
+.caps { text-transform: uppercase; letter-spacing: .14em; font-weight: 600; }
+.ab { position: absolute; }
+.av { border-radius: 50%; background: var(--navy); color: var(--gold-300); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.kpi { position: absolute; width: 440px; height: 176px; border: 2px solid var(--border); border-radius: 30px; background: #fff; }
+.kpi .l { position: absolute; left: 30px; top: 28px; font-size: 21px; color: var(--ink-soft); }
+.kpi .v { position: absolute; left: 30px; top: 62px; font-size: 62px; font-weight: 650; letter-spacing: -.02em; }
+.kpi .s { position: absolute; left: 30px; top: 132px; font-size: 22px; color: var(--ink-soft); }
+.row { position: absolute; left: 0; right: 0; height: 112px; border-top: 2px solid var(--border); }
+.date { position: absolute; left: 40px; top: 20px; width: 72px; height: 72px; border-radius: 18px; border: 2px solid var(--border); background: var(--muted); text-align: center; }
+.ev { position: absolute; border-radius: 14px; padding: 8px 12px; font-size: 24px; line-height: 28px; font-weight: 650; overflow: hidden; }
+.ev small { display: block; font-size: 19px; font-weight: 500; opacity: .75; }
+.sbi { position: absolute; left: 56px; font-size: 36px; color: rgba(255,255,255,.75); display: flex; align-items: center; gap: 24px; }
+.sbc { position: absolute; left: 56px; font-size: 20px; color: rgba(255,255,255,.45); }
+.trow { position: absolute; left: 32px; right: 32px; height: 132px; border: 2px solid var(--border); border-radius: 26px; background: #fff; }
+.trow .t { position: absolute; left: 116px; top: 26px; font-size: 36px; font-weight: 650; letter-spacing: -.01em; }
+.trow .s { position: absolute; left: 116px; top: 78px; font-size: 25px; color: var(--ink-soft); }
+.trow .i { position: absolute; left: 28px; top: 34px; width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="main">
+
+  <!-- ===== BEAT 1 HOOK: a pergunta, e o campo real do cadastro digitando o objetivo ===== -->
+  <section id="s1" class="scene">
+    <div id="cam1" class="cam">
+      <div class="ground g1" id="g1"></div>
+      <div id="q1" class="h" style="top:600px;font-size:118px;line-height:130px">Qual é o seu</div>
+      <div id="q2" class="h" style="top:730px;font-size:118px;line-height:130px">objetivo?</div>
+      <div id="field" class="card" data-ui="captured" style="left:60px;top:1030px;width:960px;height:250px;border-radius:36px">
+        <div style="position:absolute;left:52px;top:42px;font-size:34px;font-weight:500;color:var(--ink-soft)">Objetivo das aulas</div>
+        <div id="fieldline" style="position:absolute;left:40px;right:40px;top:104px;height:104px;border-radius:24px;border:3px solid var(--gold);background:#fffcf2"></div>
+        <div id="typed" style="position:absolute;left:68px;top:126px;font-size:50px;line-height:60px;font-weight:600;color:var(--ink)">Entrevista de emprego em inglês</div>
+        <div id="caret" style="position:absolute;left:68px;top:128px;width:5px;height:58px;background:var(--gold)"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 2 TURN: a órbita CEFR; o B2 acende ===== -->
+  <section id="s2" class="scene" style="visibility:hidden">
+    <div id="cam2" class="cam">
+      <div class="ground g2"></div>
+      <div id="h2a" class="h" style="top:250px;font-size:96px;line-height:108px">Seu nível,</div>
+      <div id="h2b" class="h" style="top:358px;font-size:96px;line-height:108px">medido pelo CEFR.</div>
+      <svg style="position:absolute;left:0;top:0" width="1080" height="1920">
+        <circle cx="540" cy="1040" r="360" fill="none" stroke="#c9d3e4" stroke-width="3"/>
+        <circle cx="540" cy="1040" r="400" fill="none" stroke="#d9c58a" stroke-width="2" stroke-dasharray="4 12"/>
+        <circle cx="540" cy="1040" r="150" fill="none" stroke="#e2cf93" stroke-width="2"/>
+      </svg>
+      <div id="nodes"></div>
+      <div id="chip" style="position:absolute;left:540px;top:1040px;width:0;height:0">
+        <div id="chipIn" style="position:absolute;left:-215px;top:-56px;width:430px;height:112px;border-radius:56px;background:var(--navy-900);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;font-size:31px;line-height:37px;font-weight:600;box-shadow:0 30px 60px -24px rgba(10,31,68,.7)"><span>Entrevista de emprego<br><span style="color:var(--gold-300)">em inglês</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 3 PAINEL: a área do aluno (rebuild da tela real, dados fictícios) + menu lateral ===== -->
+  <section id="s3d" class="scene" style="visibility:hidden">
+    <div id="cam3d" class="cam">
+      <div class="ground g7"></div>
+      <div id="h3da" class="h" style="top:220px;font-size:92px;line-height:104px">Tudo da sua jornada,</div>
+      <div id="h3db" class="h" style="top:324px;font-size:92px;line-height:104px">num lugar só.</div>
+      <div id="dash" class="panel" data-ui="captured" style="left:40px;top:480px;width:1000px;height:1180px">
+        <div class="ab caps" style="left:52px;top:52px;font-size:22px;color:var(--gold-700)">Área do aluno</div>
+        <div class="ab" style="left:52px;top:88px;font-size:66px;font-weight:700;letter-spacing:-.03em">Olá, Alan</div>
+        <div class="ab" style="left:52px;top:172px;font-size:27px;color:var(--ink-soft)">Sua próxima aula é segunda-feira, 26/10 às 19:00.</div>
+        <div class="ab" style="right:48px;top:96px;height:68px;padding:0 12px 0 26px;border-radius:34px;border:2px solid var(--gold-300);background:#fbf5e2;color:var(--gold-700);font-size:27px;line-height:64px">Nível atual <span id="dashB2" style="display:inline-block;margin-left:10px;padding:0 16px;height:44px;line-height:44px;border-radius:22px;background:var(--navy);color:var(--gold-300);font-weight:700;font-size:26px;vertical-align:middle">B2</span></div>
+        <div id="dnext" class="ab" style="left:40px;right:40px;top:236px;height:270px;border-radius:32px;background:var(--navy);color:#fff;overflow:hidden">
+          <div class="ab" style="left:0;right:0;top:0;height:7px;background:linear-gradient(90deg,#957b28,#e6cf86,#957b28)"></div>
+          <div class="ab caps" style="left:40px;top:40px;font-size:22px;color:var(--gold-300)">Próxima aula</div>
+          <div class="ab" style="left:40px;top:80px;font-size:46px;font-weight:700;letter-spacing:-.02em">Speaking: Job Interviews</div>
+          <div class="ab" style="left:40px;top:146px;font-size:27px;color:rgba(255,255,255,.65)">Turma B2 · Noite · 60 min</div>
+          <div class="ab" style="left:40px;top:200px;font-size:24px;color:rgba(255,255,255,.85)">O link do Google Meet é liberado 30 minutos antes da aula.</div>
+          <div class="ab tab" style="right:40px;top:28px;font-size:74px;font-weight:700;letter-spacing:-.02em">19:00</div>
+          <div class="ab" style="right:40px;top:150px;font-size:24px;color:var(--gold-300)">Segunda-feira, 26 de outubro</div>
+        </div>
+        <div class="kpi" style="left:40px;top:540px"><div class="l caps">Aulas concluídas</div><div class="v tab" id="k1">24</div><div class="s">com presença registrada</div></div>
+        <div class="kpi" style="left:516px;top:540px"><div class="l caps">Tarefas pendentes</div><div class="v tab" style="color:var(--gold-700)">1</div><div class="s">aguardando sua entrega</div></div>
+        <div class="kpi" style="left:40px;top:740px"><div class="l caps">Frequência</div><div class="v tab" id="k3">92%</div><div class="s">média nas suas turmas</div></div>
+        <div class="kpi" style="left:516px;top:740px"><div class="l caps">Nota média</div><div class="v tab" id="k4">9,4</div><div class="s">das tarefas corrigidas</div></div>
+        <div class="ab" style="left:40px;right:40px;top:944px;height:200px;border:2px solid var(--border);border-radius:30px;background:#fff;overflow:hidden">
+          <div class="ab" style="left:32px;top:22px;font-size:27px;font-weight:650">Próximas aulas</div>
+          <div class="ab" style="right:32px;top:24px;font-size:23px;color:var(--navy-900)">Ver tarefas</div>
+          <div class="row" style="top:76px;height:124px"><div class="date" style="left:30px;top:22px"><div style="font-size:15px;color:var(--ink-soft);margin-top:8px">OUT</div><div style="font-size:28px;font-weight:700">26</div></div><div class="ab" style="left:132px;top:26px;font-size:30px;font-weight:600">Speaking: Job Interviews</div><div class="ab" style="left:132px;top:68px;font-size:23px;color:var(--ink-soft)">Turma B2 · Noite · 60 min</div><div class="ab tab" style="right:32px;top:42px;font-size:29px;font-weight:600">19:00</div></div>
+        </div>
+      </div>
+      <!-- menu lateral real (Início, Agenda, Tarefas...) -->
+      <div id="dim" class="ab" style="left:0;top:0;width:1080px;height:1920px;background:rgba(7,20,44,.38)"></div>
+      <div id="sb" data-ui="captured" class="ab" style="left:0;top:0;width:560px;height:1920px;background:#0b1f45;box-shadow:40px 0 80px rgba(7,20,44,.4)">
+        <div class="ab" style="left:56px;top:300px;width:88px;height:88px;border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center"><img src="./assets/logo-crop.svg" style="width:66px"></div>
+        <div class="ab" style="left:166px;top:302px;font-size:38px;font-weight:700;color:#fff">Du Inglês</div>
+        <div class="ab caps" style="left:166px;top:352px;font-size:19px;color:rgba(255,255,255,.6)">Área do aluno</div>
+        <div class="sbc caps" style="top:470px">Estudo</div>
+        <div id="sbbar" class="ab" style="left:24px;top:520px;width:8px;height:60px;border-radius:4px;background:var(--gold)"></div>
+        <div class="sbi" style="top:526px;color:#fff">⌂ <span>Início</span></div>
+        <div id="sbAgenda" class="sbi" style="top:616px">▦ <span>Agenda</span></div>
+        <div class="sbi" style="top:706px">☑ <span>Tarefas</span></div>
+        <div class="sbi" style="top:796px">▥ <span>Meu progresso</span></div>
+        <div class="sbc caps" style="top:900px">Turmas</div>
+        <div class="sbi" style="top:950px">⚇ <span>Turmas</span></div>
+        <div class="sbi" style="top:1040px">▤ <span>Biblioteca</span></div>
+        <div class="sbi" style="top:1130px">◌ <span>Mensagens</span></div>
+      </div>
+      <svg id="cur3" style="position:absolute;left:0;top:0;overflow:visible" width="60" height="80" viewBox="0 0 30 40"><path d="M1 1 L1 30 L8.5 23 L13.5 35 L18.5 33 L13.5 21.5 L23.5 21.5 Z" fill="#0b1a33" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 4 AGENDA: semana preenchida com as aulas da Marina (fictício) ===== -->
+  <section id="s4a" class="scene" style="visibility:hidden">
+    <div id="cam4a" class="cam">
+      <div class="ground g3"></div>
+      <div id="h4aa" class="h" style="top:220px;font-size:92px;line-height:104px">Sua agenda,</div>
+      <div id="h4ab" class="h" style="top:324px;font-size:92px;line-height:104px">no seu ritmo.</div>
+      <div id="cal" class="panel" data-ui="captured" style="left:30px;top:470px;width:1020px;height:1240px">
+        <div class="ab" style="left:28px;top:28px;width:54px;height:54px;border:2px solid var(--border);border-radius:14px;text-align:center;line-height:50px;font-size:28px;color:var(--ink-soft)">‹</div>
+        <div class="ab" style="left:92px;top:28px;height:54px;padding:0 20px;border:2px solid var(--border);border-radius:14px;line-height:50px;font-size:24px">Hoje</div>
+        <div class="ab" style="left:200px;top:28px;width:54px;height:54px;border:2px solid var(--border);border-radius:14px;text-align:center;line-height:50px;font-size:28px;color:var(--ink-soft)">›</div>
+        <div class="ab" style="left:274px;top:36px;font-size:29px;font-weight:650">26 – 29 de outubro</div>
+        <div class="ab caps" style="right:28px;top:30px;height:50px;padding:0 26px;border-radius:25px;background:var(--navy);color:#fff;font-size:20px;line-height:50px">Semana</div>
+        <div class="ab" style="left:0;right:0;top:108px;border-top:2px solid var(--border)"></div>
+        <div id="grid"></div>
+      </div>
+      <!-- popover de detalhe da aula -->
+      <div id="pop" class="card" data-ui="captured" style="left:320px;top:1080px;width:600px;height:330px;border-radius:30px;border-left:8px solid var(--gold)">
+        <div class="ab caps" style="left:34px;top:30px;font-size:19px;color:var(--ink-soft)"><span style="display:inline-block;width:12px;height:12px;border-radius:6px;background:var(--navy-900);margin-right:10px"></span>Aula</div>
+        <div class="ab caps" style="right:30px;top:24px;height:36px;padding:0 14px;border-radius:18px;background:#fbf3d9;color:var(--gold-700);font-size:17px;line-height:36px">Hoje</div>
+        <div class="ab" style="left:34px;top:70px;font-size:38px;font-weight:700;letter-spacing:-.02em">Speaking: Job Interviews</div>
+        <div class="ab" style="left:34px;top:134px;font-size:23px;line-height:40px;color:var(--ink-soft)">Quando<br>Turma<br>Professor</div>
+        <div class="ab" style="left:176px;top:134px;font-size:23px;line-height:40px">26 de outubro · 19:00–20:00 · 1h<br>B2 · Noite<br>Lucas Pereira</div>
+        <div class="ab" style="left:34px;top:270px;font-size:20px;color:var(--ink-soft)">Clique para abrir o detalhe</div>
+      </div>
+      <svg id="cur4" style="position:absolute;left:0;top:0;overflow:visible" width="60" height="80" viewBox="0 0 30 40"><path d="M1 1 L1 30 L8.5 23 L13.5 35 L18.5 33 L13.5 21.5 L23.5 21.5 Z" fill="#0b1a33" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 5 PROOF: o professor monta a aula pro objetivo (professor fictício) ===== -->
+  <section id="s3" class="scene" style="visibility:hidden">
+    <div id="cam3" class="cam">
+      <div class="ground g3"></div>
+      <div id="h3a" class="h" style="top:230px;font-size:92px;line-height:104px">Seu professor monta</div>
+      <div id="h3b" class="h" style="top:334px;font-size:92px;line-height:104px">a aula pro seu objetivo.</div>
+      <div id="tilt" style="position:absolute;left:0;top:0;width:1080px;height:1920px;perspective:2400px">
+        <div id="next" data-ui="captured" style="position:absolute;left:50px;top:640px;width:980px;height:420px;border-radius:44px;background:var(--navy);color:#fff;overflow:hidden;box-shadow:0 90px 140px -60px rgba(10,31,68,.75)">
+          <div style="position:absolute;left:0;right:0;top:0;height:8px;background:linear-gradient(90deg,#957b28,#e6cf86,#957b28)"></div>
+          <div class="caps" style="position:absolute;left:60px;top:62px;font-size:28px;color:var(--gold-300)">Próxima aula</div>
+          <div class="caps" style="position:absolute;left:320px;top:56px;height:42px;padding:0 18px;border-radius:21px;background:rgba(255,255,255,.1);color:var(--success);font-size:24px;line-height:42px"><span style="display:inline-block;width:14px;height:14px;border-radius:7px;background:var(--success);margin-right:10px"></span>Ao vivo</div>
+          <div id="b2pill" style="position:absolute;right:56px;top:46px;width:120px;height:64px;border-radius:32px;background:var(--gold);color:var(--navy);font-size:36px;font-weight:700;line-height:64px;text-align:center">B2</div>
+          <div id="ltitle" style="position:absolute;left:60px;top:150px;font-size:66px;font-weight:700;letter-spacing:-.025em;white-space:nowrap">Speaking: Job Interviews</div>
+          <div style="position:absolute;left:60px;top:250px;font-size:36px;color:rgba(255,255,255,.65)">Turma B2 · Noite · 60 min</div>
+          <div class="tab" style="position:absolute;left:60px;top:318px;font-size:56px;font-weight:600">19:00 <span style="font-size:32px;font-weight:500;color:var(--gold-300)">segunda, 26 de outubro</span></div>
+        </div>
+      </div>
+      <div id="prof" class="card" data-ui="captured" style="left:90px;top:1130px;width:900px;height:330px;border-radius:40px">
+        <div class="ab" style="left:48px;top:52px;width:150px;height:150px;border-radius:75px;box-shadow:0 0 0 6px #fff,0 0 0 12px var(--gold);overflow:hidden"><img src="./assets/prof-lucas.jpg" style="width:150px;height:150px;object-fit:cover"></div>
+        <div class="caps" style="position:absolute;left:66px;top:186px;width:114px;height:36px;border-radius:18px;background:var(--navy);color:var(--gold-300);font-size:18px;line-height:36px;text-align:center;letter-spacing:.08em">Ao vivo</div>
+        <div style="position:absolute;left:240px;top:56px;font-size:54px;font-weight:700;letter-spacing:-.02em">Prof. Lucas</div>
+        <div class="caps" style="position:absolute;right:48px;top:64px;height:44px;padding:0 18px;border-radius:22px;background:rgba(214,69,69,.1);color:var(--live);font-size:22px;line-height:44px"><span style="display:inline-block;width:14px;height:14px;border-radius:7px;background:var(--live);margin-right:10px"></span>Live</div>
+        <div style="position:absolute;left:240px;top:134px;right:48px;font-size:34px;line-height:46px;color:var(--ink-soft)">Nível B2 · Conversação: Negociações em Inglês <span style="color:var(--gold-700);font-weight:600">(acontecendo agora!)</span></div>
+        <div style="position:absolute;left:48px;right:48px;top:252px;border-top:2px solid var(--border);padding-top:20px;font-size:30px;font-weight:600;color:var(--navy-900)">Quero uma aula assim: começar minha experiência →</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 6 TAREFAS: lista real da área do aluno (dados fictícios) ===== -->
+  <section id="s6t" class="scene" style="visibility:hidden">
+    <div id="cam6t" class="cam">
+      <div class="ground g4"></div>
+      <div id="h6ta" class="h" style="top:220px;font-size:92px;line-height:104px">Tarefas sob medida</div>
+      <div id="h6tb" class="h" style="top:324px;font-size:92px;line-height:104px">pra cada aula.</div>
+      <div id="tasks" class="panel" data-ui="captured" style="left:40px;top:480px;width:1000px;height:1000px">
+        <div class="ab" style="left:44px;top:44px;font-size:58px;font-weight:700;letter-spacing:-.03em">Tarefas</div>
+        <div class="ab" style="left:44px;top:120px;font-size:27px;color:var(--ink-soft)">Responda aqui mesmo. O que venceu aparece primeiro.</div>
+        <div class="ab" style="left:44px;top:182px;height:60px;padding:0 22px;border:2px solid var(--border);border-radius:16px;line-height:56px;font-size:24px;color:var(--ink-soft)"><b style="font-size:32px;color:var(--ink)">1</b> tarefa a fazer</div>
+        <div class="ab" style="left:316px;top:182px;height:60px;padding:0 22px;border:2px solid #bfe3cf;background:#eef8f2;border-radius:16px;line-height:56px;font-size:24px;color:var(--ink-soft)"><b style="font-size:32px;color:var(--success-ink)">3</b> corrigidas</div>
+        <div class="ab caps" style="left:44px;top:290px;font-size:22px;color:var(--navy-900)">A fazer</div>
+        <div class="trow" style="top:334px"><div class="i" style="background:#fbf3d9;color:var(--gold-700);font-size:34px">☐</div><div class="t">Tell me about yourself</div><div class="s">Speaking: Job Interviews · 5 questões</div><div class="ab caps" style="right:26px;top:44px;height:42px;padding:0 16px;border-radius:21px;background:#fbf3d9;color:var(--gold-700);font-size:18px;line-height:42px">Vence amanhã</div></div>
+        <div class="ab caps" style="left:44px;top:504px;font-size:22px;color:var(--navy-900)">Corrigidas <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink-soft)">· com nota e comentário do professor</span></div>
+        <div id="trow2" class="trow" style="top:548px"><div class="i" style="background:#eef8f2;color:var(--success-ink);font-size:36px">✓</div><div class="t">Present Perfect Practice</div><div class="s">Turma B2 · 20 questões</div><div class="ab tab" style="right:30px;top:44px;font-size:36px;font-weight:700;color:var(--success-ink)">9,4 / 10</div></div>
+        <div class="trow" style="top:698px"><div class="i" style="background:#eef8f2;color:var(--success-ink);font-size:36px">✓</div><div class="t">Job Interview Vocabulary</div><div class="s">Turma B2 · 15 questões</div><div class="ab tab" style="right:30px;top:44px;font-size:36px;font-weight:700;color:var(--success-ink)">9,0 / 10</div></div>
+        <div class="trow" style="top:848px"><div class="i" style="background:#eef8f2;color:var(--success-ink);font-size:36px">✓</div><div class="t">Small Talk at Work</div><div class="s">Turma B2 · 12 questões</div><div class="ab tab" style="right:30px;top:44px;font-size:36px;font-weight:700;color:var(--success-ink)">9,8 / 10</div></div>
+      </div>
+      <svg id="cur6" style="position:absolute;left:0;top:0;overflow:visible" width="60" height="80" viewBox="0 0 30 40"><path d="M1 1 L1 30 L8.5 23 L13.5 35 L18.5 33 L13.5 21.5 L23.5 21.5 Z" fill="#0b1a33" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 7 PROOF: a resposta corrigida e comentada (fictício) ===== -->
+  <section id="s4" class="scene" style="visibility:hidden">
+    <div id="cam4" class="cam">
+      <div class="ground g4"></div>
+      <div id="h4a" class="h" style="top:250px;font-size:86px;line-height:108px">Corrigido e comentado,</div>
+      <div id="h4b" class="h" style="top:350px;font-size:86px;line-height:108px">um a um.</div>
+      <div id="task" class="card" data-ui="captured" style="left:50px;top:600px;width:980px;height:860px;border-radius:44px">
+        <div class="ab" style="left:56px;top:54px;width:84px;height:84px;border-radius:42px;overflow:hidden;box-shadow:0 0 0 4px var(--gold)"><img src="./assets/prof-lucas.jpg" style="width:84px;height:84px;object-fit:cover"></div>
+        <div style="position:absolute;left:166px;top:56px;font-size:36px;font-weight:700">Prof. Lucas</div>
+        <div style="position:absolute;left:166px;top:102px;font-size:28px;color:var(--ink-soft)">corrigiu sua tarefa · Present Perfect Practice</div>
+        <div style="position:absolute;left:56px;right:56px;top:178px;border-top:2px solid var(--border)"></div>
+        <div style="position:absolute;left:56px;top:216px;font-size:30px;color:var(--ink-soft)">Tell me about your experience.</div>
+        <div id="answer" style="position:absolute;left:56px;top:330px;font-size:64px;line-height:76px;font-weight:600;white-space:nowrap;letter-spacing:-.02em">I <span id="wrong" style="position:relative;display:inline-block;color:var(--ink)">work<span id="strike" style="position:absolute;left:-4px;right:-4px;top:40px;height:7px;border-radius:4px;background:var(--live);transform-origin:0 50%"></span></span> here since 2019.</div>
+        <div id="fix" style="position:absolute;left:88px;top:256px;height:68px;padding:0 24px;border-radius:34px;background:var(--gold);color:var(--navy);font-size:40px;line-height:68px;font-weight:700">have worked</div>
+        <div id="note" style="position:absolute;left:56px;right:56px;top:470px;height:300px;border-radius:30px;background:#fbf6e6;border:2px solid #efe0ae">
+          <div style="position:absolute;left:40px;top:34px;width:16px;height:232px;border-radius:8px;background:var(--gold)"></div>
+          <div style="position:absolute;left:86px;right:40px;top:36px;font-size:40px;line-height:54px;color:var(--ink)"><b>Present perfect</b>: a ação começou no passado e continua até hoje. Na entrevista, use assim.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 8 PROOF: a plataforma avisa que o objetivo foi concluído ===== -->
+  <section id="s5" class="scene" style="visibility:hidden">
+    <div id="cam5" class="cam">
+      <div class="ground g5"></div>
+      <div id="n1" class="card" data-ui="captured" style="left:60px;top:1040px;width:960px;height:220px;border-radius:40px">
+        <div style="position:absolute;left:44px;top:50px;width:120px;height:120px;border-radius:60px;background:#fbf3d9;display:flex;align-items:center;justify-content:center"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#957b28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></div>
+        <div class="caps" style="position:absolute;left:196px;top:50px;font-size:24px;color:var(--gold-700)">Objetivo</div>
+        <div style="position:absolute;right:48px;top:50px;font-size:28px;color:var(--ink-soft)">há 3 meses</div>
+        <div style="position:absolute;left:196px;top:88px;font-size:46px;font-weight:700;letter-spacing:-.02em">Novo objetivo de aprendizado</div>
+        <div style="position:absolute;left:196px;top:148px;font-size:34px;color:var(--ink-soft)">Entrevista de emprego em inglês</div>
+      </div>
+      <div id="n2" class="card" data-ui="captured" style="left:40px;top:760px;width:1000px;height:250px;border-radius:44px;border-color:#e8d48f">
+        <div id="checkc" style="position:absolute;left:46px;top:56px;width:138px;height:138px;border-radius:69px;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#0b1a33" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg></div>
+        <div class="caps" style="position:absolute;left:218px;top:58px;font-size:26px;color:#2e9a63">Objetivo</div>
+        <div style="position:absolute;right:52px;top:58px;font-size:30px;color:var(--ink-soft)">agora</div>
+        <div style="position:absolute;left:218px;top:98px;font-size:64px;font-weight:700;letter-spacing:-.03em">Objetivo concluído</div>
+        <div style="position:absolute;left:218px;top:176px;font-size:36px;color:var(--ink-soft)">Entrevista de emprego em inglês</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BEAT 9 CTA: a marca chega no lugar do check; o botão dourado é apertado ===== -->
+  <section id="s6" class="scene" style="visibility:hidden">
+    <div id="cam6" class="cam">
+      <div class="ground g6"></div>
+      <img id="logo" src="./assets/logo-crop.svg" style="position:absolute;left:340px;top:520px;width:400px;height:345px">
+      <div id="e1" class="h" style="top:960px;font-size:72px;line-height:84px">Fale com a gente e comece</div>
+      <div id="e2" class="h" style="top:1044px;font-size:72px;line-height:84px">a falar inglês essa semana.</div>
+      <div id="btnw" style="position:absolute;left:110px;top:1240px;width:860px;height:150px">
+        <div id="btn" style="position:absolute;inset:0;border-radius:75px;background:var(--gold);color:var(--navy);font-size:44px;font-weight:700;letter-spacing:.06em;line-height:150px;text-align:center;box-shadow:0 40px 70px -30px rgba(149,123,40,.8)">EXPERIMENTE POR 7 DIAS</div>
+      </div>
+      <svg id="cursor" style="position:absolute;left:0;top:0;overflow:visible" width="60" height="80" viewBox="0 0 30 40"><path d="M1 1 L1 30 L8.5 23 L13.5 35 L18.5 33 L13.5 21.5 L23.5 21.5 Z" fill="#0b1a33" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+</div>
+
+<script src="./runtime/vendor/gsap.min.js"></script>
+<script src="./runtime/motion.js"></script>
+<script>
+const M = Motion.film({ fps: 30, duration: 33, width: 1080, height: 1920, clock: 'smooth' });
+const GOLD = '#c9a227';
+/* início de cada beat (frames) */
+const B = { hook: 0, cefr: 96, dash: 198, agenda: 366, prof: 500, tasks: 620, fix: 722, notif: 842, cta: 924 };
+
+/* nós da órbita CEFR (texto real do site); B2 é o nível do Alan */
+const LV = [['A1','Iniciante',30],['A2','Básico',90],['B1','Intermediário',150],['B2','Intermediário superior',210],['C1','Avançado',270],['C2','Proficiente',330]];
+const host = document.getElementById('nodes');
+LV.forEach(([c, t, a]) => {
+  const x = 540 + 360 * Math.cos(a * Math.PI / 180), y = 1040 + 360 * Math.sin(a * Math.PI / 180);
+  host.insertAdjacentHTML('beforeend',
+    `<div id="n${c}" style="position:absolute;left:${x - 70}px;top:${y - 70}px;width:140px;height:140px">
+       <div id="d${c}" style="position:absolute;inset:0;border-radius:70px;background:#fff;border:4px solid ${c === 'C2' ? '#e2cf93' : '#9fb3d6'};box-shadow:0 20px 40px -20px rgba(10,31,68,.45);font:700 48px/132px Geist,Inter,sans-serif;text-align:center;color:${c === 'C2' ? '#957b28' : '#0f2c5c'}">${c}</div>
+       <div id="t${c}" style="position:absolute;left:-130px;width:400px;top:${c==='B2'?-52:152}px;text-align:center;font:500 28px/36px Geist,Inter,sans-serif;color:#5a6b85;white-space:nowrap">${t}</div>
+     </div>`);
+});
+
+/* grade da agenda: 4 dias, 08:00–21:00 (aulas fictícias do Alan) */
+const GX = 96, GY = 196, CW = 231, HH = 78;   // gutter, topo da grade, largura do dia, altura da hora
+const grid = document.getElementById('grid');
+let gh = '';
+[['SEG', 26], ['TER', 27], ['QUA', 28], ['QUI', 29]].forEach(([d, n], i) => {
+  const x = GX + i * CW;
+  gh += `<div class="ab" style="left:${x}px;top:122px;width:${CW}px;text-align:center;font-size:19px;color:var(--ink-soft);letter-spacing:.08em">${d}</div>`;
+  gh += n === 26 ? `<div class="ab" style="left:${x + CW / 2 - 24}px;top:146px;width:48px;height:48px;border-radius:24px;background:var(--navy);color:#fff;text-align:center;line-height:48px;font-size:24px;font-weight:700">${n}</div>`
+                 : `<div class="ab" style="left:${x}px;top:150px;width:${CW}px;text-align:center;font-size:26px;font-weight:700">${n}</div>`;
+  gh += `<div class="ab" style="left:${x}px;top:${GY}px;width:0;height:${13 * HH}px;border-left:2px solid #edf0f5"></div>`;
+});
+for (let h = 8; h <= 20; h++) {
+  const y = GY + (h - 8) * HH;
+  gh += `<div class="ab tab" style="left:18px;top:${y - 12}px;font-size:18px;color:var(--ink-soft)">${String(h).padStart(2, '0')}:00</div>`;
+  gh += `<div class="ab" style="left:${GX}px;right:0;top:${y}px;border-top:2px solid #edf0f5"></div>`;
+}
+gh += `<div class="ab" style="left:${GX - 6}px;top:${GY + 4.5 * HH - 6}px;width:12px;height:12px;border-radius:6px;background:var(--live)"></div><div class="ab" style="left:${GX}px;width:${CW}px;top:${GY + 4.5 * HH}px;border-top:3px solid var(--live)"></div>`;
+const EV = [  // [id, dia, início, duração(h), título, sub, estilo]
+  ['ev1', 1, 8, 1, 'Aula individual', '08:00–09:00', 'done'],
+  ['ev2', 2, 10, 1, 'Simulado: entrevista', '10:00–11:00', 'exam'],
+  ['ev3', 0, 19, 1, 'Speaking: Job Interviews', '19:00–20:00', 'gold'],
+  ['ev4', 2, 19, 1, 'Grammar: Past Perfect', '19:00–20:00', 'gold'],
+  ['ev5', 3, 20, 1, 'Conversação', '20:00–21:00', 'gold'],
+  ['ev6', 0, 9, 1, 'Listening: Podcasts', '09:00–10:00', 'done'],
+  ['ev7', 3, 12, 1, 'Vocabulário: RH', '12:00–13:00', 'gold'],
+];
+const STY = { gold: 'background:#faf3dc;border:2px solid #e8d48f;border-left:6px solid #c9a227;color:#0b1a33',
+              done: 'background:#e8f4ee;border:2px solid #bfe3cf;border-left:6px solid #2e9a63;color:#0b1a33',
+              exam: 'background:#fbeaea;border:2px solid #f0c4c4;border-left:6px solid #d64545;color:#0b1a33' };
+EV.forEach(([id, d, s, dur, t, sub, st]) => {
+  gh += `<div id="${id}" class="ev" style="left:${GX + d * CW + 6}px;top:${GY + (s - 8) * HH + 4}px;width:${CW - 12}px;height:${dur * HH - 8}px;${STY[st]}">${t}<small>${sub}</small></div>`;
+});
+grid.innerHTML = gh;
+
+/* a luz do chão nunca para */
+document.querySelectorAll('.ground').forEach((g, i) => { if (g.id !== 'g1') { g.id = 'gr' + i; M.kf('#gr' + i, 'x', [[0, 60], [990, -220]]); M.kf('#gr' + i, 'y', [[0, -40], [990, 110]]); } });
+
+/* BEAT 1 HOOK */
+M.drift('#cam1', { prop: 'scale', from: 1, to: 1.05, start: 0, end: 96 });
+M.kf('#g1', 'x', [[0, 0], [96, -90]]);
+M.words('#q1', { at: 0, mech: 'rise', dist: 90, gaps: [4, 5], frames: 12, smear: true });
+M.words('#q2', { at: 12, mech: 'rise', dist: 90, frames: 14, smear: true, words: [{ scale: 1.5 }], accent: { color: GOLD, frames: 30, word: 0 } });
+M.enter('#field', { at: 26, frames: 14, ease: 'softLand', from: { y: 120, scale: .94 }, smear: { axis: 'y', px: 30, frames: 3 } });
+M.type('#typed', { at: 38, style: 'prompt', seed: 7, caret: '#caret', caretGap: 4, accentNewest: { color: GOLD, frames: 2 } });
+M.hide('#caret', 82);
+M.kf('#fieldline', 'borderColor', [[0, '#e3e7ee'], [36, '#e3e7ee'], [36, GOLD]]);
+M.kf('#field', 'scale', [[84, 1], [96, .58, 'gentleIn']]);
+M.kf('#field', 'y', [[84, 0], [96, -40, 'gentleIn']]);
+
+/* BEAT 2 CEFR */
+let t = B.cefr;
+M.cut(t, { hide: ['#s1'], show: ['#s2'] });
+M.kf('#chip', 'y', [[t, 95], [t + 14, 0, 'softLand']]);
+M.kf('#chip', 'scale', [[t, 1.12], [t + 14, 1, 'softLand']]);
+M.words('#h2a', { at: t + 4, mech: 'rise', dist: 70, frames: 12 });
+M.words('#h2b', { at: t + 12, mech: 'rise', dist: 70, frames: 12, accent: { color: GOLD, frames: 24, word: -1 } });
+M.cascade(LV.map(l => '#n' + l[0]), { at: t + 6, gaps: 3, fn: (el, f) => M.enter(el, { at: f, frames: 12, ease: 'softLand', from: { scale: 1.6, blur: 10 } }) });
+M.kf('#dB2', 'backgroundColor', [[0, '#ffffff'], [t + 38, '#ffffff'], [t + 38, GOLD]]);
+M.kf('#dB2', 'borderColor', [[0, '#9fb3d6'], [t + 38, '#9fb3d6'], [t + 38, '#957b28']]);
+M.kf('#dB2', 'color', [[0, '#0f2c5c'], [t + 38, '#0f2c5c'], [t + 38, '#0b1a33']]);
+M.kf('#nB2', 'scale', [[t + 38, 1.28], [t + 50, 1.12, 'softLand']]);
+M.kf('#tB2', 'color', [[0, '#5a6b85'], [t + 38, '#5a6b85'], [t + 38, '#0b1a33']]);
+M.mark(t + 38, 'show', 'B2 acende');
+M.drift('#chipIn', { prop: 'rotation', from: -2, to: 2, start: t + 14, end: B.dash });
+M.camera('#cam2', [[t + 54, { scale: 1 }], [B.dash, { scale: 3.2 }, 'gentleIn']], { origin: '228px 860px' });
+
+/* BEAT 3 PAINEL: o B2 em close vira o "Nível atual B2" da área do aluno */
+t = B.dash;
+M.cut(t, { hide: ['#s2'], show: ['#s3d'] });
+M.snap('#cam3d', { at: t, from: { scale: 2.8 }, to: { scale: 1 }, firstFrameShare: .55, tail: 18, origin: '941px 618px' });
+M.words('#h3da', { at: t + 16, mech: 'rise', dist: 70, frames: 12 });
+M.words('#h3db', { at: t + 26, mech: 'rise', dist: 70, frames: 12, accent: { color: GOLD, frames: 30, word: -1 } });
+M.count('#k1', { at: t + 22, from: 0, to: 24, frames: 22, round: true });
+M.count('#k3', { at: t + 26, from: 0, to: 92, frames: 22, round: true, format: v => v + '%' });
+M.count('#k4', { at: t + 30, from: 0, to: 94, frames: 22, round: true, format: v => (v / 10).toFixed(1).replace('.', ',') });
+M.drift('#dash', { prop: 'y', from: 0, to: -70, start: t + 18, end: t + 168 });
+/* o menu lateral entra; o cursor escolhe "Agenda" */
+M.enter('#dim', { at: t + 108, frames: 10, ease: 'softLand', from: { opacity: 0 } });
+M.enter('#sb', { at: t + 108, frames: 12, ease: 'softLand', from: { x: -560 }, smear: { axis: 'x', px: 40, frames: 3 } });
+M.cursor('#cur3', { keys: [[t + 112, 1100, 1400, 3, -20], [t + 132, 200, 646, 1, 0]], ease: 'glide' });
+M.press('#cur3', '#sbAgenda', { at: t + 138, cursorDepth: .82, targetDepth: .95, lag: 1, frames: 3 });
+M.kf('#sbbar', 'y', [[0, 0], [t + 140, 0], [t + 146, 90, 'whip']]);
+M.kf('#sbAgenda', 'color', [[0, 'rgba(255,255,255,0.75)'], [t + 140, 'rgba(255,255,255,0.75)'], [t + 140, '#ffffff']]);
+M.camera('#cam3d', [[t + 146, { scale: 1 }], [B.agenda, { scale: 1.25 }, 'gentleIn']], { origin: '200px 646px' });
+
+/* BEAT 4 AGENDA */
+t = B.agenda;
+M.cut(t, { hide: ['#s3d'], show: ['#s4a'] });
+M.kf('#cam4a', 'x', [[t, -260], [t + 14, 0, 'softLand']]);
+M.words('#h4aa', { at: t + 6, mech: 'rise', dist: 70, frames: 12 });
+M.words('#h4ab', { at: t + 14, mech: 'rise', dist: 70, frames: 12, accent: { color: GOLD, frames: 30, word: -1 } });
+M.cascade(EV.map(e => '#' + e[0]), { at: t + 14, gaps: 4, fn: (el, f) => M.enter(el, { at: f, frames: 10, ease: 'softLand', from: { y: -24, scale: 1.18, blur: 6 } }) });
+M.cursor('#cur4', { keys: [[t + 46, 1150, 1800, 3, -20], [t + 70, 240, 1550, 1, 0]], ease: 'glide' });
+M.press('#cur4', '#ev3', { at: t + 76, cursorDepth: .82, targetDepth: .95, lag: 1, frames: 3 });
+M.enter('#pop', { at: t + 80, frames: 12, ease: 'softLand', from: { y: 40, scale: .92 }, smear: { axis: 'y', px: 24, frames: 3 } });
+M.mark(t + 80, 'show', 'detalhe da aula');
+M.drift('#cam4a', { prop: 'scale', from: 1, to: 1.03, start: t + 14, end: t + 110 });
+M.camera('#cam4a', [[t + 112, { scale: 1 }], [B.prof, { scale: 2.6 }, 'gentleIn']], { origin: '620px 1200px' });
+
+/* BEAT 5 PROFESSOR: o detalhe da aula abre o card da próxima aula */
+t = B.prof;
+M.cut(t, { hide: ['#s4a'], show: ['#s3'] });
+M.snap('#cam3', { at: t, from: { scale: 2.4 }, to: { scale: 1 }, firstFrameShare: .55, tail: 18, origin: '540px 850px' });
+M.kf('#next', 'rotationX', [[t, 14], [t + 32, 0, 'softLand']]);
+M.kf('#next', 'rotationY', [[t, -10], [t + 32, 0, 'softLand']]);
+M.words('#h3a', { at: t + 14, mech: 'rise', dist: 70, frames: 12 });
+M.words('#h3b', { at: t + 24, mech: 'rise', dist: 70, frames: 12, accent: { color: GOLD, frames: 30, word: -1 } });
+M.enter('#prof', { at: t + 40, frames: 14, ease: 'softLand', from: { x: 520 }, smear: { axis: 'x', px: 40, frames: 3 } });
+M.drift('#cam3', { prop: 'scale', from: 1, to: 1.04, start: t + 18, end: t + 108 });
+M.whip('#cam3', { at: B.tasks - 12, dx: 0, dy: -900, frames: 12, smearPx: 50 });
+
+/* BEAT 6 TAREFAS: entra subindo, o cursor abre a tarefa corrigida */
+t = B.tasks;
+M.cut(t, { hide: ['#s3'], show: ['#s6t'] });
+M.kf('#cam6t', 'y', [[t, 700], [t + 12, 0, 'softLand']]);
+M.words('#h6ta', { at: t + 8, mech: 'rise', dist: 70, frames: 12 });
+M.words('#h6tb', { at: t + 18, mech: 'rise', dist: 70, frames: 12, accent: { color: GOLD, frames: 30, word: -1 } });
+M.drift('#tasks', { prop: 'y', from: 0, to: -36, start: t + 12, end: t + 70 });
+M.cursor('#cur6', { keys: [[t + 34, 1150, 1850, 3, -20], [t + 60, 640, 1110, 1, 0]], ease: 'glide' });
+M.press('#cur6', '#trow2', { at: t + 66, cursorDepth: .82, targetDepth: .97, lag: 1, frames: 3 });
+M.camera('#cam6t', [[t + 70, { scale: 1 }], [B.fix, { scale: 2.4 }, 'gentleIn']], { origin: '540px 1094px' });
+
+/* BEAT 7 CORREÇÃO */
+t = B.fix;
+M.cut(t, { hide: ['#s6t'], show: ['#s4'] });
+M.snap('#cam4', { at: t, from: { scale: 2.2 }, to: { scale: 1 }, firstFrameShare: .55, tail: 16, origin: '540px 700px' });
+M.words('#h4a', { at: t + 8, mech: 'rise', dist: 70, frames: 12 });
+M.words('#h4b', { at: t + 20, mech: 'rise', dist: 70, frames: 12, accent: { color: GOLD, frames: 30, word: 'all' } });
+M.kf('#strike', 'scaleX', [[0, 0], [t + 32, 0], [t + 40, 1, 'whip']]);
+M.kf('#wrong', 'color', [[0, '#0b1a33'], [t + 36, '#0b1a33'], [t + 36, '#9aa6b8']]);
+M.enter('#fix', { at: t + 42, frames: 12, ease: 'softLand', from: { y: -40, scale: 1.5 } });
+M.mark(t + 42, 'show', 'correção');
+M.enter('#note', { at: t + 58, frames: 14, ease: 'softLand', from: { y: 80 }, smear: { axis: 'y', px: 30, frames: 3 } });
+M.drift('#task', { prop: 'y', from: 20, to: -20, start: t + 12, end: t + 66 });
+M.camera('#cam4', [[t + 66, { scale: 1 }], [B.notif, { scale: 1.14 }, 'gentleIn']], { origin: '540px 1220px' });
+
+/* BEAT 8 OBJETIVO CONCLUÍDO */
+t = B.notif;
+M.cut(t, { hide: ['#s4'], show: ['#s5'] });
+M.enter('#n1', { at: t, frames: 12, ease: 'softLand', from: { y: -60, scale: 1.04 } });
+M.enter('#n2', { at: t + 10, frames: 14, ease: 'snapSettle', from: { y: -520 }, smear: { axis: 'y', px: 40, frames: 3 } });
+M.kf('#n1', 'y', [[t + 10, 0], [t + 22, 60, 'softLand']]);
+M.kf('#n1', 'opacity', [[t + 10, 1], [t + 22, .55]]);
+M.kf('#checkc', 'scale', [[t + 16, 1.5], [t + 28, 1, 'softLand']]);
+M.mark(t + 16, 'show', 'objetivo concluído');
+M.drift('#cam5', { prop: 'scale', from: 1, to: 1.06, start: t, end: t + 70 });
+M.camera('#cam5', [[t + 70, { scale: 1 }], [B.cta, { scale: 2.4 }, 'gentleIn']], { origin: '155px 885px' });
+
+/* BEAT 9 CTA */
+t = B.cta;
+M.cut(t, { hide: ['#s5'], show: ['#s6'] });
+M.enter('#logo', { at: t, frames: 20, ease: 'snapSettle', from: { scale: 3.5, blur: 14 } });
+M.words('#e1', { at: t + 12, mech: 'rise', dist: 60, gaps: 3, frames: 11 });
+M.words('#e2', { at: t + 22, mech: 'rise', dist: 60, gaps: 3, frames: 11 });
+M.enter('#btnw', { at: t + 18, frames: 14, ease: 'softLand', from: { y: 140, scale: .96 } });
+M.drift('#cam6', { prop: 'scale', from: 1, to: .97, start: t + 20, end: 990 });
+M.cursor('#cursor', { keys: [[t + 26, 1180, 1700, 3.2, -24], [t + 44, 640, 1330, 1, 0]], ease: 'glide' });
+M.press('#cursor', '#btn', { at: t + 50, cursorDepth: .82, targetDepth: .94, lag: 1, frames: 3, targetStep: { backgroundColor: '#b8921c' } });
+
+window.__ready = Motion.loaded().then(() => { if (/selftest/.test(location.search)) Motion.selfTest(M, { samples: 24 }); });
+</script>
+</body>
+</html>

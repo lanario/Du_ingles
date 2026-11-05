@@ -13,6 +13,13 @@ funcionalidade estão em `src/components/features/`. A interface é própria e
 usa Tailwind CSS 4; shadcn/ui não está adotado e não deve ser introduzido como
 efeito colateral de uma tarefa.
 
+A folha da aula no editor (`.lesson-sheet`) tem largura fixa de 715,28px (= coluna
+do PDF, 515pt) e usa a Inter do PDF (`public/fonts/lesson/`, cópia dos arquivos
+de `src/lib/pdf/fonts/`, OFL), com pesos 400/700. Motivo: paridade de quebras de
+linha entre editor e PDF. O resto da UI segue Geist. Imagens guardam o attr
+`colWidth` para reescalar documentos antigos à folha. Em telas estreitas a folha
+rola na horizontal; o modo apresentação continua em largura cheia.
+
 ## Critérios para novas interfaces
 
 - Reusar tokens, componentes e padrões de navegação existentes antes de criar

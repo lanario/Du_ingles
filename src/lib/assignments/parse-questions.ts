@@ -30,7 +30,7 @@ function normalize(value: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[.;:!?)\]}"']+$/g, "")
+    .replace(/^[([{"'\s]+|[.;:!?)\]}"'\s]+$/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -73,9 +73,13 @@ function readBool(value: string): boolean | null {
   return null;
 }
 
-/** Índice da letra: "a" → 0, "C)" → 2. Só letra sozinha conta como gabarito. */
+/** Índice da letra: "a" → 0, "C)" → 2, "Letra B" → 1, "Alternativa C" → 2. */
 function letterIndex(value: string): number | null {
-  const match = /^\s*\(?([a-hA-H])\)?\s*[.)\-–]?\s*$/.exec(value);
+  const trimmed = value.trim();
+  const match =
+    /^\s*(?:letra|alternativa|op(?:ç|c)(?:ã|a)o)?\s*\(?([a-hA-H])\)?(?:\s*[.)\-–:]|\s*\(.*|\s*$)/i.exec(
+      trimmed,
+    );
   if (!match) return null;
   return match[1]!.toLowerCase().charCodeAt(0) - 97;
 }
@@ -220,9 +224,9 @@ function buildQuestion(block: Block): ParsedQuestion | null {
     }
   }
 
-  // Lacunas chegam em tamanhos variados ("__", "_____", "......"); o app só
-  // entende um marcador.
-  prompt = prompt.replace(/_{2,}|\.{4,}/g, BLANK_TOKEN);
+  // Lacunas chegam em tamanhos variados ("__", "_____", "......", "[___]", "(___)");
+  // o app só entende um marcador.
+  prompt = prompt.replace(/\[_{2,}\]|\(_{2,}\)|_{2,}|\.{4,}/g, BLANK_TOKEN);
 
   const base: ParsedQuestion = {
     type: "short_text",

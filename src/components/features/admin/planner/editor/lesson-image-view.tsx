@@ -5,7 +5,14 @@ import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { LessonAlign } from "./extensions";
-import { clamp, freeAnchorStyle, freeTransform, useFreeMove } from "./free-placement";
+import {
+  clamp,
+  colWidthPatch,
+  freeAnchorStyle,
+  freeTransform,
+  paperContentWidth,
+  useFreeMove,
+} from "./free-placement";
 
 const MIN_WIDTH = 96;
 
@@ -37,10 +44,14 @@ export function LessonImageView(props: ReactNodeViewProps) {
     align: LessonAlign;
     offsetX: number | null;
     offsetY: number | null;
+    colWidth: number | null;
     free: boolean;
     uploadId: string | null;
   };
 
+  // Os handlers de arrasto vivem além do render que os criou: leem o nó de agora.
+  const attrsRef = useRef(attrs);
+  attrsRef.current = attrs;
   const figureRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -63,7 +74,13 @@ export function LessonImageView(props: ReactNodeViewProps) {
    */
   const commitMove = useCallback(
     (offset: { x: number; y: number }) => {
-      updateAttributes({ offsetX: offset.x, offsetY: offset.y, free: true });
+      const col = paperContentWidth(figureRef.current);
+      updateAttributes({
+        offsetX: offset.x,
+        offsetY: offset.y,
+        free: true,
+        ...(col ? { colWidth: col } : null),
+      });
     },
     [updateAttributes],
   );
@@ -97,6 +114,11 @@ export function LessonImageView(props: ReactNodeViewProps) {
   const getMaxPageWidth = useCallback(() => {
     const figure = figureRef.current;
     if (!figure) return 1800;
+    // Fora da apresentação o limite é a folha (= coluna do PDF), não o papel.
+    if (!figure.closest(".lesson-sheet-presenting")) {
+      const col = paperContentWidth(figure);
+      if (col) return Math.max(MIN_WIDTH, col);
+    }
     const paper = figure.closest(".lesson-paper") as HTMLElement | null;
     if (paper) {
       const paperStyle = window.getComputedStyle(paper);
@@ -120,11 +142,12 @@ export function LessonImageView(props: ReactNodeViewProps) {
     if (imageRef.current) {
       imageRef.current.style.width = `${nextWidth}px`;
     }
-    if (!isFull && free) {
-      updateAttributes({ width: nextWidth, offsetX: 0 });
-    } else {
-      updateAttributes({ width: nextWidth });
-    }
+    const patch = colWidthPatch(attrsRef.current, paperContentWidth(figureRef.current));
+    updateAttributes({
+      width: nextWidth,
+      ...patch,
+      ...(!isFull && free ? { offsetX: 0 } : null),
+    });
   }, [editable, free, getMaxPageWidth, liveWidth, updateAttributes]);
 
   /**
@@ -197,7 +220,10 @@ export function LessonImageView(props: ReactNodeViewProps) {
         // A largura vira atributo do nó só aqui — é o que persiste no
         // documento. O estilo inline continua no lugar, então não há
         // piscada entre a transação e o novo render.
-        updateAttributes({ width: next });
+        updateAttributes({
+          width: next,
+          ...colWidthPatch(attrsRef.current, paperContentWidth(figure)),
+        });
       };
 
       handle.addEventListener("pointermove", onMove);

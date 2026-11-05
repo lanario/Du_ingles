@@ -12,6 +12,14 @@ vivo; tarefas e envios; biblioteca, planos de aula e progresso; mensagens;
 alunos, usuários, cursos, relatórios, financeiro, auditoria e operações LGPD.
 Há integrações opcionais com Stripe e Google Agenda/Meet.
 
+### Regras de professores e turmas
+
+- O filtro de professores em `/admin/turmas` mostra somente professores ativos
+  que respondem por pelo menos uma turma ativa.
+- Um professor com turmas ativas não pode ser desativado, excluído/arquivado ou
+  ter o papel alterado. Antes, cada turma precisa ser reatribuída a outro
+  professor ativo ou arquivada.
+
 ## Limites e incertezas
 
 - Não há documento de produto anterior nem definição explícita de MVP ou

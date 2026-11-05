@@ -1,6 +1,7 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
+import { paperContentWidth } from "./free-placement";
 
 /**
  * Colar/soltar imagem no canvas. O caminho é sempre o mesmo:
@@ -176,6 +177,7 @@ export async function insertImageFiles(
           src: prepared.previewUrl,
           alt: file.name.replace(/\.[^.]+$/, ""),
           width: Math.min(prepared.width, 720),
+          colWidth: paperContentWidth(editor.view.dom),
           align: "center",
           uploadId,
         },

@@ -1,0 +1,727 @@
+[
+{
+"t": 0,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 0,
+"sfx": "sfx/bed.wav",
+"gain": -20
+},
+{
+"t": 0.133,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 0.3,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 0.4,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 0.467,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 0.867,
+"sfx": "sfx/pop.wav",
+"gain": -11
+},
+{
+"t": 1.267,
+"sfx": "sfx/key0.wav",
+"gain": -14
+},
+{
+"t": 1.333,
+"sfx": "sfx/key1.wav",
+"gain": -14
+},
+{
+"t": 1.433,
+"sfx": "sfx/key2.wav",
+"gain": -14
+},
+{
+"t": 1.5,
+"sfx": "sfx/key0.wav",
+"gain": -14
+},
+{
+"t": 1.533,
+"sfx": "sfx/key1.wav",
+"gain": -14
+},
+{
+"t": 1.633,
+"sfx": "sfx/key2.wav",
+"gain": -14
+},
+{
+"t": 1.7,
+"sfx": "sfx/key0.wav",
+"gain": -14
+},
+{
+"t": 1.833,
+"sfx": "sfx/key1.wav",
+"gain": -14
+},
+{
+"t": 1.9,
+"sfx": "sfx/key2.wav",
+"gain": -14
+},
+{
+"t": 1.967,
+"sfx": "sfx/key0.wav",
+"gain": -14
+},
+{
+"t": 2.067,
+"sfx": "sfx/key1.wav",
+"gain": -14
+},
+{
+"t": 2.133,
+"sfx": "sfx/key2.wav",
+"gain": -14
+},
+{
+"t": 2.233,
+"sfx": "sfx/key0.wav",
+"gain": -14
+},
+{
+"t": 2.3,
+"sfx": "sfx/key1.wav",
+"gain": -14
+},
+{
+"t": 2.333,
+"sfx": "sfx/key2.wav",
+"gain": -14
+},
+{
+"t": 2.433,
+"sfx": "sfx/key0.wav",
+"gain": -14
+},
+{
+"t": 2.5,
+"sfx": "sfx/key1.wav",
+"gain": -14
+},
+{
+"t": 2.82,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 3.2,
+"sfx": "sfx/thump.wav",
+"gain": -11
+},
+{
+"t": 3.333,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 3.4,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 3.467,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 3.5,
+"sfx": "sfx/pop_hi.wav",
+"gain": -15
+},
+{
+"t": 3.6,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 3.6,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 3.7,
+"sfx": "sfx/pop_hi.wav",
+"gain": -15
+},
+{
+"t": 3.733,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 3.8,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 3.9,
+"sfx": "sfx/pop_hi.wav",
+"gain": -15
+},
+{
+"t": 3.933,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 4.467,
+"sfx": "sfx/ding.wav",
+"gain": -6
+},
+{
+"t": 6.22,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 6.6,
+"sfx": "sfx/thump.wav",
+"gain": -7
+},
+{
+"t": 7.133,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 7.267,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 7.333,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.367,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 7.4,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.467,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.467,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 7.467,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.533,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.533,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.567,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 7.6,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.6,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.6,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.667,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.667,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.667,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.733,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.733,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.733,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.8,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.8,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.8,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.8,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 7.867,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.867,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.867,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.933,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.933,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 7.933,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.0,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.0,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.0,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.067,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.067,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.133,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.133,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.2,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 8.267,
+"sfx": "sfx/count.wav",
+"gain": -21
+},
+{
+"t": 10.12,
+"sfx": "sfx/whip.wav",
+"gain": -9
+},
+{
+"t": 11.2,
+"sfx": "sfx/click.wav",
+"gain": -4
+},
+{
+"t": 11.82,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 12.2,
+"sfx": "sfx/thump.wav",
+"gain": -11
+},
+{
+"t": 12.4,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 12.533,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 12.667,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 12.667,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 12.8,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 12.8,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 12.933,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 13,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 13.067,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 13.2,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 13.333,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 13.467,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 14.733,
+"sfx": "sfx/click.wav",
+"gain": -4
+},
+{
+"t": 14.867,
+"sfx": "sfx/pop.wav",
+"gain": -11
+},
+{
+"t": 14.867,
+"sfx": "sfx/ding.wav",
+"gain": -14
+},
+{
+"t": 16.287,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 16.667,
+"sfx": "sfx/thump.wav",
+"gain": -7
+},
+{
+"t": 17.133,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 17.267,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 17.467,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 17.6,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 17.7,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 17.8,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 18,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 18,
+"sfx": "sfx/pop.wav",
+"gain": -11
+},
+{
+"t": 20.217,
+"sfx": "sfx/whip.wav",
+"gain": -4
+},
+{
+"t": 20.287,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 20.667,
+"sfx": "sfx/thump.wav",
+"gain": -11
+},
+{
+"t": 20.933,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 21.067,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 21.267,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 21.4,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 21.6,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 22.867,
+"sfx": "sfx/click.wav",
+"gain": -4
+},
+{
+"t": 23.687,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 24.067,
+"sfx": "sfx/thump.wav",
+"gain": -7
+},
+{
+"t": 24.333,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 24.467,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 24.667,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 24.733,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 24.867,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 25.067,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 25.467,
+"sfx": "sfx/pop.wav",
+"gain": -11
+},
+{
+"t": 25.467,
+"sfx": "sfx/ding.wav",
+"gain": -14
+},
+{
+"t": 26,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 27.687,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 28.067,
+"sfx": "sfx/thump.wav",
+"gain": -11
+},
+{
+"t": 28.067,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 28.4,
+"sfx": "sfx/pop.wav",
+"gain": -15
+},
+{
+"t": 28.6,
+"sfx": "sfx/chime.wav",
+"gain": -2
+},
+{
+"t": 30.42,
+"sfx": "sfx/whoosh.wav",
+"gain": -5
+},
+{
+"t": 30.8,
+"sfx": "sfx/impact.wav",
+"gain": -1
+},
+{
+"t": 31.2,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.3,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.4,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.4,
+"sfx": "sfx/pop.wav",
+"gain": -11
+},
+{
+"t": 31.5,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.6,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.7,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.833,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 31.933,
+"sfx": "sfx/tick.wav",
+"gain": -22
+},
+{
+"t": 32.467,
+"sfx": "sfx/click.wav",
+"gain": -4
+}
+]

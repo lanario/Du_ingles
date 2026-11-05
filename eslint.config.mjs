@@ -15,7 +15,7 @@ const eslintConfig = defineConfig([
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   prettierConfig,
   // Skills de terceiros são fontes vendorizadas e lockadas, não código do app.
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".agents/skills/**"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".agents/skills/**", "instagram-reel/**"]),
 ]);
 
 export default eslintConfig;

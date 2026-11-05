@@ -12,7 +12,7 @@
  * não alcança — é `splitQuestionDrafts`, no servidor.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BLANK_TOKEN,
   QUESTION_TYPE_LABEL,
@@ -67,17 +67,29 @@ function serialize(drafts: Draft[]): string {
   if (drafts.length === 0) return "";
   return JSON.stringify(
     drafts.map((d) => {
-      const base = { id: d.id, type: d.type, prompt: d.prompt.trim(), points: d.points };
+      const base = {
+        id: d.id,
+        type: d.type,
+        prompt: d.prompt.trim(),
+        points: Number.isFinite(d.points) && d.points >= 0 ? d.points : 0,
+      };
       if (d.type === "multiple_choice") {
+        const options = d.options.map((o) => o.trim());
+        const clampedCorrect = Math.max(0, Math.min(d.correctIndex, Math.max(0, options.length - 1)));
         return {
           ...base,
-          options: d.options.map((o) => o.trim()).filter(Boolean),
-          correct: d.correctIndex,
+          options,
+          correct: clampedCorrect,
         };
       }
-      if (d.type === "true_false") return { ...base, correct: d.correctBool };
+      if (d.type === "true_false") return { ...base, correct: Boolean(d.correctBool) };
       if (d.type === "fill_blank") {
-        return { ...base, accepted: d.accepted.map((a) => a.trim()).filter(Boolean) };
+        const accepted = d.accepted.map((a) => a.trim());
+        const valid = accepted.filter(Boolean);
+        return {
+          ...base,
+          accepted: valid.length > 0 ? valid : [""],
+        };
       }
       return base;
     }),
@@ -106,7 +118,15 @@ Resposta: verdadeiro
 
 4. Describe your last vacation using the Present Perfect.`;
 
-export function QuestionBuilder({ name = "questions" }: { name?: string }) {
+export function QuestionBuilder({
+  name = "questions",
+  errors,
+  onTotalPointsChange,
+}: {
+  name?: string;
+  errors?: string[];
+  onTotalPointsChange?: (total: number) => void;
+}) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [pasting, setPasting] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -122,12 +142,46 @@ export function QuestionBuilder({ name = "questions" }: { name?: string }) {
     [drafts],
   );
 
+  useEffect(() => {
+    onTotalPointsChange?.(totalPoints);
+  }, [totalPoints, onTotalPointsChange]);
+
+  const errorsByQuestion = useMemo(() => {
+    const map: Record<number, string[]> = {};
+    if (!errors || errors.length === 0) return map;
+    for (const err of errors) {
+      const match = /^Questão (\d+):\s*(.+)$/i.exec(err);
+      if (match) {
+        const qIndex = parseInt(match[1]!, 10) - 1;
+        if (!map[qIndex]) map[qIndex] = [];
+        map[qIndex]!.push(match[2]!);
+      }
+    }
+    return map;
+  }, [errors]);
+
   function update(id: string, patch: Partial<Draft>) {
     setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   }
 
   function remove(id: string) {
     setDrafts((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  function duplicate(index: number) {
+    setDrafts((prev) => {
+      const original = prev[index];
+      if (!original) return prev;
+      const copy: Draft = {
+        ...original,
+        id: newId(),
+        options: [...original.options],
+        accepted: [...original.accepted],
+      };
+      const next = [...prev];
+      next.splice(index + 1, 0, copy);
+      return next;
+    });
   }
 
   function importPasted() {
@@ -178,8 +232,10 @@ export function QuestionBuilder({ name = "questions" }: { name?: string }) {
               draft={draft}
               index={index}
               total={drafts.length}
+              cardErrors={errorsByQuestion[index]}
               onChange={(patch) => update(draft.id, patch)}
               onRemove={() => remove(draft.id)}
+              onDuplicate={() => duplicate(index)}
               onMove={(delta) => move(index, delta)}
             />
           ))}
@@ -283,23 +339,42 @@ function QuestionCard({
   draft,
   index,
   total,
+  cardErrors,
   onChange,
   onRemove,
+  onDuplicate,
   onMove,
 }: {
   draft: Draft;
   index: number;
   total: number;
+  cardErrors?: string[];
   onChange: (patch: Partial<Draft>) => void;
   onRemove: () => void;
+  onDuplicate: () => void;
   onMove: (delta: number) => void;
 }) {
   const auto = isObjective(draft.type);
+  const hasErrors = Boolean(cardErrors && cardErrors.length > 0);
 
   return (
-    <li className="rounded-xl border border-admin-border bg-admin-background p-3.5">
+    <li
+      className={cn(
+        "rounded-xl border p-3.5 transition-colors",
+        hasErrors
+          ? "border-destructive/60 bg-destructive/[0.02]"
+          : "border-admin-border bg-admin-background",
+      )}
+    >
       <div className="flex items-center gap-2">
-        <span className="grid h-6 w-6 flex-none place-items-center rounded-md bg-navy-900 text-xs font-semibold text-gold-400">
+        <span
+          className={cn(
+            "grid h-6 w-6 flex-none place-items-center rounded-md text-xs font-semibold",
+            hasErrors
+              ? "bg-destructive text-white"
+              : "bg-navy-900 text-gold-400",
+          )}
+        >
           {index + 1}
         </span>
 
@@ -331,6 +406,13 @@ function QuestionCard({
           >
             ↓
           </IconButton>
+          <IconButton
+            label={`Duplicar questão ${index + 1}`}
+            disabled={false}
+            onClick={onDuplicate}
+          >
+            <CopyIcon className="h-3.5 w-3.5" />
+          </IconButton>
           <button
             type="button"
             onClick={onRemove}
@@ -349,15 +431,43 @@ function QuestionCard({
         maxLength={1000}
         placeholder={PLACEHOLDER[draft.type]}
         aria-label={`Enunciado da questão ${index + 1}`}
-        className="mt-2.5 w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-sm text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+        className={cn(
+          "mt-2.5 w-full rounded-lg border bg-admin-surface px-3 py-2 text-sm text-admin-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500",
+          hasErrors && draft.prompt.trim() === ""
+            ? "border-destructive/60 focus-visible:ring-destructive"
+            : "border-admin-border",
+        )}
       />
 
       {draft.type === "fill_blank" && (
-        <p className="mt-1 text-xs text-admin-foreground/50">
-          Escreva <code className="font-mono text-gold-700">{BLANK_TOKEN}</code> no lugar
-          da lacuna.
-        </p>
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <p className="text-admin-foreground/60">
+            Escreva <code className="font-mono text-gold-700">{BLANK_TOKEN}</code> no lugar
+            da lacuna.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const token = BLANK_TOKEN;
+              const current = draft.prompt;
+              const sep = current && !current.endsWith(" ") ? " " : "";
+              onChange({ prompt: `${current}${sep}${token} ` });
+            }}
+            className="inline-flex items-center gap-1 rounded-md border border-gold-300 bg-gold-50 px-2 py-0.5 font-medium text-navy-900 transition-colors hover:bg-gold-100"
+          >
+            <PlusIcon className="h-3 w-3" />
+            Inserir lacuna ({BLANK_TOKEN})
+          </button>
+        </div>
       )}
+
+      {draft.type === "fill_blank" &&
+        draft.prompt.trim() !== "" &&
+        !draft.prompt.includes(BLANK_TOKEN) && (
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+            ⚠️ Atenção: o enunciado não possui <code className="font-mono font-semibold">{BLANK_TOKEN}</code>. O campo de resposta será exibido abaixo do texto.
+          </p>
+        )}
 
       {draft.type === "multiple_choice" && (
         <ChoiceEditor draft={draft} index={index} onChange={onChange} />
@@ -388,6 +498,17 @@ function QuestionCard({
         <AcceptedEditor draft={draft} index={index} onChange={onChange} />
       )}
 
+      {cardErrors && cardErrors.length > 0 && (
+        <div
+          role="alert"
+          className="mt-2.5 space-y-0.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
+        >
+          {cardErrors.map((msg, i) => (
+            <p key={i}>• {msg}</p>
+          ))}
+        </div>
+      )}
+
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-admin-border pt-2.5">
         <span
           className={cn(
@@ -404,8 +525,18 @@ function QuestionCard({
             min={0}
             max={100}
             step="0.5"
-            value={draft.points}
-            onChange={(e) => onChange({ points: Number(e.target.value) })}
+            value={Number.isFinite(draft.points) ? draft.points : ""}
+            placeholder="1"
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                onChange({ points: 0 });
+                return;
+              }
+              const val = Number(raw);
+              if (!Number.isFinite(val)) return;
+              onChange({ points: Math.max(0, Math.min(100, val)) });
+            }}
             aria-label={`Pontos da questão ${index + 1}`}
             className="h-8 w-16 border-admin-border bg-admin-surface px-2 text-xs focus-visible:ring-gold-500"
           />

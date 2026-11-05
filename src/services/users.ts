@@ -1,16 +1,19 @@
 import * as usersRepo from "@/repositories/users";
 import { listGroupsByTeacher } from "@/repositories/groups";
+import {
+  activeTeacherGroupConflict,
+  type ActiveTeacherGroup,
+} from "@/lib/teacher-group-conflict";
 import type { AppRole } from "@/types/domain";
 import type { UpdateUserInput } from "@/schemas/users";
 
 export type ServiceResult<T> =
-  { success: true; data: T } | { success: false; message: string };
+  | { success: true; data: T }
+  | { success: false; message: string; activeGroups?: ActiveTeacherGroup[] };
 
 /**
- * Turmas ativas que ficariam órfãs se este professor saísse agora — a
- * desativação segue em frente sem checar nada, `groups.teacher_id` continua
- * apontando pra uma conta inativa e ninguém é avisado. Reatribuir antes é o
- * que fecha essa porta.
+ * Impede que um professor seja desativado, excluído ou deixe de ser professor
+ * enquanto ainda responde por turmas ativas.
  */
 export async function blockedByActiveGroups(
   id: string,
@@ -18,13 +21,12 @@ export async function blockedByActiveGroups(
   const target = await usersRepo.getUserRoleAndOrg(id);
   if (!target || target.role !== "teacher") return null;
 
-  const activeGroups = (await listGroupsByTeacher(id)).filter((g) => g.isActive);
-  if (activeGroups.length === 0) return null;
-
-  const names = activeGroups.map((g) => g.name).join(", ");
+  const conflict = activeTeacherGroupConflict(await listGroupsByTeacher(id));
+  if (!conflict) return null;
   return {
     success: false,
-    message: `Reatribua a turma antes: este professor ainda responde por ${activeGroups.length === 1 ? "a turma" : "as turmas"} ${names}.`,
+    message: conflict.message,
+    activeGroups: conflict.activeGroups,
   };
 }
 
@@ -74,6 +76,11 @@ export async function changeUserRole(
   id: string,
   role: AppRole,
 ): Promise<ServiceResult<void>> {
+  if (role !== "teacher") {
+    const blocked = await blockedByActiveGroups(id);
+    if (blocked) return blocked;
+  }
+
   const ok = await usersRepo.changeUserRole(id, role);
   if (!ok) return { success: false, message: "Falha ao alterar o papel do usuário." };
   // Claim `app_role` só é atualizada na renovação do token — sem revogar a

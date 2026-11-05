@@ -33,6 +33,13 @@ configurado executa arquitetura, unit, integração, lint, typecheck e build;
 `npm audit` está marcado informativo (`|| true`). Acesso autenticado ao GitHub
 Actions não foi possível nesta execução.
 
+PDF da aula: `tests/pdf-assets.test.mts` (roda um processo filho com
+`--conditions=react-server`, por causa de `server-only`) cobre SSRF, caminho de
+asset e teto de bytes; `tests/pdf-tiptap-nodes.test.mts` cobre o renderer.
+Limites conhecidos: DNS rebinding não coberto (checagem só textual do host);
+imagens soltas usam heurística de fluxo; `lineHeight` por parágrafo; `rowspan`
+não suportado no PDF.
+
 ## Baseline executado nesta adoção
 
 No checkout inicial, antes de mudanças, lint, typecheck, teste de arquitetura,

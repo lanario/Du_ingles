@@ -176,6 +176,13 @@ export const LessonImage = Image.extend({
           attributes.width ? { width: String(attributes.width) } : {},
       },
       free: freeAttribute,
+      /** Largura útil do papel (px) quando width/offset foram gravados; o PDF escala por ela. */
+      colWidth: {
+        default: null,
+        parseHTML: (element) => toOffset(element.getAttribute("data-col-width")) || null,
+        renderHTML: (attributes) =>
+          attributes.colWidth ? { "data-col-width": String(attributes.colWidth) } : {},
+      },
       align: {
         default: "center",
         parseHTML: (element) => element.getAttribute("data-align") ?? "center",

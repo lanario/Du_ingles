@@ -200,6 +200,8 @@ export function TaskTemplateFormPanel({
   // chave a cada abertura é o que garante painel novo = tarefa em branco.
   const [builderKey, setBuilderKey] = useState(0);
   const [folderId, setFolderId] = useState<string | null>(defaultFolderId);
+  const [totalQuestionPoints, setTotalQuestionPoints] = useState<number>(0);
+  const [maxScoreVal, setMaxScoreVal] = useState<string>("10");
 
   const fields = state && !state.success ? state.error.fields : undefined;
 
@@ -207,6 +209,8 @@ export function TaskTemplateFormPanel({
     if (open) {
       setBuilderKey((k) => k + 1);
       setFolderId(defaultFolderId);
+      setTotalQuestionPoints(0);
+      setMaxScoreVal("10");
     }
   }, [open, defaultFolderId]);
 
@@ -262,14 +266,29 @@ export function TaskTemplateFormPanel({
           </div>
 
           <div className="border-t border-admin-border pt-5">
-            <QuestionBuilder key={builderKey} />
+            <QuestionBuilder
+              key={builderKey}
+              errors={fields?.["questions"]}
+              onTotalPointsChange={setTotalQuestionPoints}
+            />
             <FieldError messages={fields?.["questions"]} />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="template-maxScore" className="text-admin-foreground">
-              Nota máxima
-            </Label>
+            <div className="flex items-center justify-between gap-2 max-w-[10rem]">
+              <Label htmlFor="template-maxScore" className="text-admin-foreground">
+                Nota máxima
+              </Label>
+              {totalQuestionPoints > 0 && Number(maxScoreVal) !== totalQuestionPoints && (
+                <button
+                  type="button"
+                  onClick={() => setMaxScoreVal(String(totalQuestionPoints))}
+                  className="text-[11px] font-medium text-navy-700 underline underline-offset-2 hover:text-navy-900"
+                >
+                  Usar {totalQuestionPoints} pt{totalQuestionPoints === 1 ? "" : "s"}
+                </button>
+              )}
+            </div>
             <Input
               id="template-maxScore"
               name="maxScore"
@@ -277,7 +296,8 @@ export function TaskTemplateFormPanel({
               min={0}
               max={1000}
               step="0.1"
-              defaultValue={10}
+              value={maxScoreVal}
+              onChange={(e) => setMaxScoreVal(e.target.value)}
               className="max-w-[10rem] border-admin-border bg-admin-background focus-visible:ring-gold-500"
             />
             <FieldError messages={fields?.["maxScore"]} />

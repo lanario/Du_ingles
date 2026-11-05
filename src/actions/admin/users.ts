@@ -11,8 +11,32 @@ import {
   changeUserRoleSchema,
   adminSetPasswordSchema,
 } from "@/schemas/users";
-import { fail, ok, type ActionResult } from "@/types/action-result";
+import { fail, ok, type ActionResult, type ErrorCode } from "@/types/action-result";
 import type { AppRole } from "@/types/domain";
+import type { ActiveTeacherGroup } from "@/lib/teacher-group-conflict";
+
+type AdminUserActionResult =
+  | Extract<ActionResult<never>, { success: true }>
+  | {
+      success: false;
+      error: Extract<ActionResult<never>, { success: false }>["error"] & {
+        details?: { activeGroups: ActiveTeacherGroup[] };
+      };
+    };
+
+function userActionFailure(
+  code: ErrorCode,
+  result: { message: string; activeGroups?: ActiveTeacherGroup[] },
+): AdminUserActionResult {
+  return {
+    success: false,
+    error: {
+      code,
+      message: result.message,
+      ...(result.activeGroups ? { details: { activeGroups: result.activeGroups } } : {}),
+    },
+  };
+}
 
 /** O id vem do cliente: admin só age sobre usuário da própria organização. */
 async function inMyOrg(organizationId: string, userId: string): Promise<boolean> {
@@ -60,7 +84,9 @@ export async function updateUserAction(
   return ok(undefined as never);
 }
 
-export async function deactivateUserAction(userId: string): Promise<ActionResult<never>> {
+export async function deactivateUserAction(
+  userId: string,
+): Promise<AdminUserActionResult> {
   const ctx = await requireRole(["admin"]);
   if (!(await inMyOrg(ctx.organizationId, userId)))
     return fail("NOT_FOUND", "Usuário não encontrado.");
@@ -71,7 +97,7 @@ export async function deactivateUserAction(userId: string): Promise<ActionResult
   }
 
   const result = await usersService.deactivateUser(userId);
-  if (!result.success) return fail("CONFLICT", result.message);
+  if (!result.success) return userActionFailure("CONFLICT", result);
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -84,6 +110,7 @@ export async function deactivateUserAction(userId: string): Promise<ActionResult
 
   revalidatePath("/admin/usuarios");
   revalidatePath("/admin/alunos");
+  revalidatePath("/admin/turmas");
   revalidatePath(`/admin/usuarios/${userId}`);
   return ok(undefined as never);
 }
@@ -107,11 +134,14 @@ export async function reactivateUserAction(userId: string): Promise<ActionResult
 
   revalidatePath("/admin/usuarios");
   revalidatePath("/admin/alunos");
+  revalidatePath("/admin/turmas");
   revalidatePath(`/admin/usuarios/${userId}`);
   return ok(undefined as never);
 }
 
-export async function softDeleteUserAction(userId: string): Promise<ActionResult<never>> {
+export async function softDeleteUserAction(
+  userId: string,
+): Promise<AdminUserActionResult> {
   const ctx = await requireRole(["admin"]);
   if (!(await inMyOrg(ctx.organizationId, userId)))
     return fail("NOT_FOUND", "Usuário não encontrado.");
@@ -122,7 +152,7 @@ export async function softDeleteUserAction(userId: string): Promise<ActionResult
   }
 
   const result = await usersService.softDeleteUser(userId);
-  if (!result.success) return fail("CONFLICT", result.message);
+  if (!result.success) return userActionFailure("CONFLICT", result);
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -134,14 +164,15 @@ export async function softDeleteUserAction(userId: string): Promise<ActionResult
   });
 
   revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/turmas");
   return ok(undefined as never);
 }
 
 export async function changeUserRoleAction(
   userId: string,
-  _prev: ActionResult<never> | null,
+  _prev: AdminUserActionResult | null,
   formData: FormData,
-): Promise<ActionResult<never>> {
+): Promise<AdminUserActionResult> {
   const ctx = await requireRole(["admin"]);
   if (!(await inMyOrg(ctx.organizationId, userId)))
     return fail("NOT_FOUND", "Usuário não encontrado.");
@@ -161,7 +192,9 @@ export async function changeUserRoleAction(
   }
 
   const result = await usersService.changeUserRole(userId, parsed.data.role as AppRole);
-  if (!result.success) return fail("INTERNAL_ERROR", result.message);
+  if (!result.success) {
+    return userActionFailure(result.activeGroups ? "CONFLICT" : "INTERNAL_ERROR", result);
+  }
 
   await auditLog({
     organizationId: ctx.organizationId,
@@ -181,6 +214,7 @@ export async function changeUserRoleAction(
   });
 
   revalidatePath(`/admin/usuarios/${userId}`);
+  revalidatePath("/admin/turmas");
   return ok(undefined as never);
 }
 
