@@ -639,6 +639,7 @@ export function StudentsView({
                 <span>Turma</span>
                 <span>Nível</span>
                 <span>Status</span>
+                <span>Telefone</span>
                 <span>Cadastro</span>
                 <span className="text-right">Ações</span>
               </div>

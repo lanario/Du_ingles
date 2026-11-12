@@ -11,6 +11,7 @@ export interface StudentListItem {
   id: string;
   fullName: string;
   email: string;
+  phone: string | null;
   isActive: boolean;
   mustChangePassword: boolean;
   createdAt: string;
@@ -34,7 +35,7 @@ export async function listStudents(organizationId: string): Promise<StudentListI
     await Promise.all([
       admin
         .from("profiles")
-        .select("id, full_name, email, is_active, must_change_password, created_at")
+        .select("id, full_name, email, phone, is_active, must_change_password, created_at")
         .eq("organization_id", organizationId)
         .eq("role", "student")
         .is("deleted_at", null)
@@ -65,6 +66,7 @@ export async function listStudents(organizationId: string): Promise<StudentListI
       id: row.id,
       fullName: row.full_name,
       email: row.email,
+      phone: row.phone,
       isActive: row.is_active,
       mustChangePassword: row.must_change_password,
       createdAt: row.created_at,

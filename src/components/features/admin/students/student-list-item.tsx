@@ -17,7 +17,7 @@ import { formatDate, type Student } from "./students-utils";
 import { LoadingVeil } from "@/components/ui/logo-loader";
 
 export const LIST_GRID =
-  "grid grid-cols-[1.6fr_1fr_0.7fr_0.8fr_1fr_auto] items-center gap-3";
+  "grid grid-cols-[1.6fr_1fr_0.7fr_0.8fr_1fr_1fr_auto] items-center gap-3";
 
 interface StudentListItemProps {
   student: Student;
@@ -159,6 +159,10 @@ export function StudentListItem({
 
       <div>
         <StatusPill isActive={student.isActive} />
+      </div>
+
+      <div className="min-w-0 truncate text-xs text-admin-foreground/70">
+        {student.phone ?? "—"}
       </div>
 
       <div className="flex items-center gap-1.5 text-xs text-admin-foreground/50">

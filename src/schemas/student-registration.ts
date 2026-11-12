@@ -78,7 +78,7 @@ export const studentRegistrationSchema = z
       .string()
       .trim()
       .superRefine((value, ctx) => {
-        const problem = phoneIssue(value);
+        const problem = phoneIssue(value, { allowInternational: true });
         if (problem) ctx.addIssue({ code: "custom", message: problem });
       }),
     isAdult: z.enum(["yes", "no"], { error: "Informe se você tem 18 anos ou mais." }),
