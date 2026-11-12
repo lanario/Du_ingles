@@ -14,6 +14,7 @@ import {
   estimateTableHeight,
   estimateRowHeight,
   fitsOnPage,
+  canKeepListItemTogether,
 } from "../src/lib/pdf/tiptap-nodes";
 import { colWidthPatch } from "../src/components/features/admin/planner/editor/free-placement";
 
@@ -150,6 +151,39 @@ test("tabela curta cabe; tabela de poucas linhas muito altas não", () => {
 test("caixa de texto curta cabe; longa não", () => {
   assert.ok(fitsOnPage(estimateBlocksHeight([P("oi")], 200, 11, 1.6)));
   assert.ok(!fitsOnPage(estimateBlocksHeight([P("palavra ".repeat(1500))], 200, 11, 1.6)));
+});
+
+test("item de lista curto fica junto; item maior que a página pode quebrar", () => {
+  assert.ok(
+    canKeepListItemTogether(
+      [P("Who is your teacher? — Quem é seu professor?")],
+      COLUMN - 20,
+      11.5,
+      1.75,
+    ),
+  );
+  assert.ok(
+    !canKeepListItemTogether(
+      [
+        P(
+          "Who is the person that helps students understand new words and practice speaking? — Quem é a pessoa que ajuda os alunos a entender palavras novas e praticar a conversação? ".repeat(
+            75,
+          ),
+        ),
+      ],
+      COLUMN - 20,
+      11.5,
+      1.75,
+    ),
+  );
+});
+
+test("bloco composto em item de lista permanece quebrável", () => {
+  const content = [
+    { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Exemplo" }] },
+    P("Who is your teacher? — Quem é seu professor?"),
+  ];
+  assert.equal(canKeepListItemTogether(content, COLUMN - 20, 11.5, 1.75), false);
 });
 
 test("linha alta (mais de 0,9 página) deixa de ser indivisível; linha curta não", () => {

@@ -36,6 +36,9 @@ Actions não foi possível nesta execução.
 PDF da aula: `tests/pdf-assets.test.mts` (roda um processo filho com
 `--conditions=react-server`, por causa de `server-only`) cobre SSRF, caminho de
 asset e teto de bytes; `tests/pdf-tiptap-nodes.test.mts` cobre o renderer.
+Itens de texto simples curtos ficam juntos; itens longos ou com blocos
+compostos podem quebrar entre páginas, com regressão em
+`tests/pdf-tiptap-nodes.test.mts`.
 Limites conhecidos: DNS rebinding não coberto (checagem só textual do host);
 imagens soltas usam heurística de fluxo; `lineHeight` por parágrafo; `rowspan`
 não suportado no PDF.

@@ -1,28 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { EmailOtpType } from "@supabase/supabase-js";
 
 /**
- * Destino do link enviado por `resetPasswordForEmail`. Troca o `token_hash`
- * por uma sessão de recovery (cookie) e só então redireciona para a tela
- * de definição de senha — assim o Server Action de lá já enxerga o usuário
- * autenticado via `getUser()`.
+ * Destino do link enviado por `resetPasswordForEmail`. NÃO consome o token:
+ * scanners de e-mail (Safe Links, prefetch) fazem GET no link e queimariam o
+ * OTP de uso único. A verificação acontece no navegador, em `/redefinir-senha`.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
+  const type = searchParams.get("type");
   // Só caminho interno: `//host` e `https://host` virariam open redirect.
   const requestedNext = searchParams.get("next") ?? "";
   const next = /^\/(?![/\\])/.test(requestedNext) ? requestedNext : "/redefinir-senha";
 
-  // Esta rota existe só para o link de recuperação de senha.
   if (tokenHash && type === "recovery") {
-    const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) {
-      return NextResponse.redirect(new URL(next, origin));
-    }
+    const url = new URL(next, origin);
+    url.searchParams.set("token_hash", tokenHash);
+    url.searchParams.set("type", type);
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.redirect(new URL("/recuperar-senha?error=invalid_link", origin));

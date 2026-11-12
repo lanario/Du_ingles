@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { requestPasswordResetAction } from "@/actions/auth/request-password-reset";
 import { AuthField } from "@/components/features/auth/auth-field";
@@ -19,6 +19,9 @@ export interface RequestResetFormProps {
 export function RequestResetForm({ onBack }: RequestResetFormProps = {}) {
   const [state, formAction, isPending] = useActionState(requestPasswordResetAction, null);
 
+  const [showForm, setShowForm] = useState(false);
+  const [email, setEmail] = useState("");
+
   const backClass =
     "flex min-h-11 w-full items-center justify-center text-sm text-muted-foreground hover:text-primary hover:underline";
   const back = onBack ? (
@@ -31,20 +34,27 @@ export function RequestResetForm({ onBack }: RequestResetFormProps = {}) {
     </Link>
   );
 
-  if (state?.success) {
+  if (state?.success && !showForm) {
     return (
       <div className="space-y-4 text-left">
         <FormBanner tone="success">
           Se esse e-mail estiver cadastrado, você receberá um link para redefinir a senha
           em instantes.
         </FormBanner>
+        <button type="button" onClick={() => setShowForm(true)} className={backClass}>
+          Enviar novamente
+        </button>
         {back}
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-3 text-left" noValidate>
+    <form
+      action={(fd) => {
+        setShowForm(false);
+        formAction(fd);
+      }} className="space-y-3 text-left" noValidate>
       {state && !state.success && !state.error.fields && (
         <FormBanner tone="error">{state.error.message}</FormBanner>
       )}
@@ -58,6 +68,8 @@ export function RequestResetForm({ onBack }: RequestResetFormProps = {}) {
         placeholder="E-mail"
         required
         icon={<MailIcon className="size-5" />}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         errors={state && !state.success ? state.error.fields?.["email"] : undefined}
       />
 

@@ -639,16 +639,26 @@ function renderList(node: JSONContent, key: number | string, ctx: Ctx) {
   // Tarefa: ul com padding .2em, caixa nativa (~13px) + gap .6em; as demais, 1.4em.
   const boxW = 13 * PX;
   const indent = task ? ctx.size * 0.2 + boxW + ctx.size * 0.6 : ctx.size * 1.4;
+  const listPadding = task ? ctx.size * 0.2 : ctx.size * 0.3;
   const line = ctx.line ?? LINE;
+  const itemWidth = Math.max(20, (ctx.maxWidth ?? COLUMN) - listPadding - indent);
 
   return (
-    <View key={key} style={{ paddingLeft: task ? ctx.size * 0.2 : ctx.size * 0.3 }}>
+    <View key={key} style={{ paddingLeft: listPadding }}>
       {node.content?.map((item, i) => {
         const marker = task ? null : ordered ? `${start + i}.` : "•";
         return (
           <View
             key={i}
-            wrap={false}
+            wrap={
+              !canKeepListItemTogether(
+                item.content,
+                itemWidth,
+                ctx.size,
+                line,
+                i === 0 ? 0 : ctx.size * 0.25,
+              )
+            }
             style={{ flexDirection: "row", marginTop: i === 0 ? 0 : ctx.size * 0.25 }}
           >
             {marker === null ? (
@@ -738,6 +748,33 @@ export function estimateTableHeight(table: JSONContent, avail: number, size: num
 /** Cabe inteiro numa página? Só então o bloco pode usar wrap={false}. */
 export function fitsOnPage(estimate: number): boolean {
   return estimate <= USABLE_HEIGHT * NO_WRAP_RATIO;
+}
+
+/**
+ * Texto simples fica junto para preservar o marcador; conteúdo longo ou
+ * composto pode quebrar entre páginas. `wrap={false}` numa View maior que a
+ * página faz o react-pdf comprimir seus filhos e sobrepor linhas.
+ */
+export function canKeepListItemTogether(
+  nodes: JSONContent[] | undefined,
+  width: number,
+  size: number,
+  line: number,
+  spacing = 0,
+): boolean {
+  // Só estimamos blocos de texto simples. Cabeçalhos grandes, quebras manuais,
+  // mídia, tabelas e caixas têm geometria própria; deixá-los quebráveis evita
+  // que uma estimativa otimista os comprima dentro de uma View indivisível.
+  const simpleText = (nodes ?? []).every(
+    (node) =>
+      node.type === "paragraph" &&
+      !runSizesOf(node, size).some((run) => run > size) &&
+      (node.content ?? []).every((inline) => inline.type === "text"),
+  );
+  if (!simpleText) return false;
+
+  const contentHeight = estimateBlocksHeight(nodes, width, size, line);
+  return fitsOnPage(Math.max(contentHeight, size * line) + spacing);
 }
 
 const SHORT_TABLE_ROWS = 10;
